@@ -33,27 +33,33 @@ jobs:
         working-directory: .
 
       - name: Type check
-        run: npm run type-check
+        run: npm run typecheck:common-ts
+        working-directory: .
 
       - name: Lint code
-        run: npm run lint
+        run: npm run lint:common-ts
+        working-directory: .
 
       - name: Run tests
-        run: npm run test:ci-no-coverage
+        run: npm run test:common-ts
+        working-directory: .
 
       - name: Build
-        run: npm run build
+        run: npm run build:common-ts
+        working-directory: .
 
       - name: Verify build output
         run: |
-          if [ ! -d "dist" ]; then
+          if [ ! -d "common-ts/dist" ]; then
             echo "Build failed - dist directory not found"
             exit 1
           fi
           echo "Build successful - dist directory created"
+        working-directory: .
 
       - name: Generate GraphQL types
-        run: npm run codegen
+        run: npm run codegen:common-ts
+        working-directory: .
 
       - name: Verify GraphQL generation
         run: |

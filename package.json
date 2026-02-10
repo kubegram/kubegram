@@ -12,7 +12,12 @@
     "@types/react-dom": "^19.2.0"
   },
   "scripts": {
-    "build:common-ts": "npm --workspace common-ts run build",
+    "build:common-ts": "npm run build --workspace @kubegram/common-ts",
+    "test:common-ts": "npm run test:ci-no-coverage --workspace @kubegram/common-ts",
+    "lint:common-ts": "npm run lint --workspace @kubegram/common-ts",
+    "typecheck:common-ts": "npm run type-check --workspace @kubegram/common-ts",
+    "codegen:common-ts": "npm run codegen --workspace @kubegram/common-ts",
+    "check:common-ts": "npm run check-all --workspace @kubegram/common-ts",
     "build:all": "npm --workspaces run build --if-present",
     "dev:kuberag": "npm --workspace kuberag run dev",
     "dev:kubegram-server": "npm --workspace kubegram-server run dev",

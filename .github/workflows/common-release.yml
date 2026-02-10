@@ -33,16 +33,20 @@ jobs:
         working-directory: .
 
       - name: Type check
-        run: npm run type-check
+        run: npm run typecheck:common-ts
+        working-directory: .
 
       - name: Lint code
-        run: npm run lint
+        run: npm run lint:common-ts
+        working-directory: .
 
       - name: Run tests
-        run: npm run test:ci-no-coverage
+        run: npm run test:common-ts
+        working-directory: .
 
       - name: Build
-        run: npm run build
+        run: npm run build:common-ts
+        working-directory: .
 
       - name: Verify build output
         run: |
