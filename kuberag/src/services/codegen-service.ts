@@ -9,13 +9,13 @@ import { dgraphClient } from '../db/client';
 import { codegenCheckpointer } from '../state/checkpointer';
 import { codegenPubSub } from '../state/pubsub';
 import { codegenCache } from '../state/cache';
-import { 
-  runCodegenWorkflow, 
-  getCodegenWorkflowStatus 
+import {
+  runCodegenWorkflow,
+  getCodegenWorkflowStatus
 } from '../workflows/codegen-workflow';
-import { 
-  computeGraphHash, 
-  validateGraph 
+import {
+  computeGraphHash,
+  validateGraph
 } from '../utils/codegen';
 import { Graph } from '../types/graph';
 import {
@@ -79,11 +79,11 @@ export class CodegenService {
     this.startJobProcessor();
   }
 
-/**
-   * Generate code for a graph using the workflow
-   */
+  /**
+     * Generate code for a graph using the workflow
+     */
   async generateCode(
-    graph: Graph, 
+    graph: Graph,
     options: JobSubmissionOptions = {},
     userContext?: string[]
   ): Promise<GeneratedCodeGraph> {
@@ -141,7 +141,7 @@ export class CodegenService {
    * Submit a code generation job to be processed in the background
    */
   async submitJob(
-    graph: Graph, 
+    graph: Graph,
     options: JobSubmissionOptions = {},
     userContext?: string[]
   ): Promise<JobStatus> {
@@ -160,13 +160,13 @@ export class CodegenService {
         const cachedResult = await this.checkCache(graph);
         if (cachedResult) {
           console.info(`Cache hit for graph ${graph.name}`);
-          
+
           // Store result for this job
           this.jobResults.set(jobId, cachedResult);
-          
+
           // Publish cached result
           await this.pubsub.publish(`codegen:results:${jobId}`, {
-            type: 'completed',
+            type: JobStatusStatus.COMPLETED,
             jobId,
             graphId: graph.id,
             graphName: graph.name,
@@ -177,7 +177,7 @@ export class CodegenService {
 
           return {
             jobId,
-            status: 'completed',
+            status: JobStatusStatus.COMPLETED,
             step: 'completed',
           };
         }
@@ -186,7 +186,7 @@ export class CodegenService {
       // Set job as inflight
       const jobStatus: CodegenJobStatus = {
         jobId,
-        status: 'pending',
+        status: JobStatusStatus.PENDING,
         step: 'queued',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -234,25 +234,25 @@ export class CodegenService {
         jobId,
         graphId: graph.id,
         graphName: graph.name,
-        status: 'pending',
+        status: JobStatusStatus.PENDING,
         timestamp: new Date().toISOString(),
       });
 
       console.info(`✓ Job ${jobId} submitted successfully`);
-      
+
       return {
         jobId,
-        status: 'pending',
+        status: JobStatusStatus.PENDING,
         step: 'queued',
       };
 
     } catch (error) {
       console.error(`Failed to submit job ${jobId}:`, error);
-      
+
       // Update job status to failed
       const failedStatus: CodegenJobStatus = {
         jobId,
-        status: 'failed',
+        status: JobStatusStatus.FAILED,
         step: 'submission_failed',
         error: error instanceof Error ? error.message : String(error),
         createdAt: new Date().toISOString(),
@@ -265,7 +265,7 @@ export class CodegenService {
       };
 
       await this.cache.set(`job:${jobId}:status`, failedStatus, 3600);
-      
+
       throw error;
     }
   }
@@ -279,7 +279,7 @@ export class CodegenService {
       const activeJob = this.activeJobs.get(jobId);
       if (activeJob) {
         const workflowStatus = await getCodegenWorkflowStatus(activeJob.threadId);
-        
+
         if (workflowStatus) {
           return {
             jobId,
@@ -304,7 +304,7 @@ export class CodegenService {
       if (result) {
         return {
           jobId,
-          status: 'completed',
+          status: JobStatusStatus.COMPLETED,
           step: 'completed',
         };
       }
@@ -345,20 +345,20 @@ export class CodegenService {
 
       // Wait for job completion
       console.info(`Waiting for job ${jobId} completion (timeout: ${timeout}ms)`);
-      
+
       const startTime = Date.now();
       const timeoutMs = timeout;
 
       // Subscribe to job results
       const subscription = await this.pubsub.subscribe(`codegen:results:${jobId}`);
-      
+
       try {
         for await (const message of subscription) {
-          if (message.type === 'completed' && message.result) {
+          if (message.type === JobStatusStatus.COMPLETED && message.result) {
             console.info(`✓ Job ${jobId} completed successfully`);
             this.jobResults.set(jobId, message.result);
             return message.result;
-          } else if (message.type === 'failed') {
+          } else if (message.type === JobStatusStatus.FAILED) {
             console.error(`Job ${jobId} failed: ${message.error}`);
             return null;
           }
@@ -396,15 +396,15 @@ export class CodegenService {
 
       // Cancel workflow
       const cancelled = await this.cancelCodegenWorkflow(activeJob.threadId);
-      
+
       if (cancelled) {
         // Remove from active jobs
         this.activeJobs.delete(jobId);
-        
+
         // Update job status
         const cancelledStatus: CodegenJobStatus = {
           jobId,
-          status: 'cancelled',
+          status: JobStatusStatus.CANCELLED,
           step: 'cancelled',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -419,7 +419,7 @@ export class CodegenService {
 
         // Publish cancellation event
         await this.pubsub.publish(`codegen:jobs:${jobId}`, {
-          type: 'cancelled',
+          type: JobStatusStatus.CANCELLED,
           jobId,
           graphId: activeJob.graph.id,
           graphName: activeJob.graph.name,
@@ -487,13 +487,13 @@ export class CodegenService {
     try {
       // Clear active jobs
       this.activeJobs.clear();
-      
+
       // Clear results
       this.jobResults.clear();
-      
+
       // Clear Redis cache (implementation depends on your cache service)
       // await this.cache.clear();
-      
+
       console.info('Job cache cleared');
     } catch (error) {
       console.error('Failed to clear job cache:', error);
@@ -507,12 +507,12 @@ export class CodegenService {
     try {
       const graphHash = computeGraphHash(graph);
       const cacheKey = `codegen:cache:${graphHash}`;
-      
+
       const cached = await this.cache.get(cacheKey);
       if (cached) {
         return cached as GeneratedCodeGraph;
       }
-      
+
       return null;
     } catch (error) {
       console.error('Error checking cache:', error);
@@ -529,7 +529,7 @@ export class CodegenService {
       if (graph) {
         const graphHash = computeGraphHash(graph);
         const cacheKey = `codegen:cache:${graphHash}`;
-        
+
         // Cache for 1 hour
         await this.cache.set(cacheKey, result, 3600);
         console.info(`Cached result for graph ${graph.name} (hash: ${graphHash})`);
@@ -557,14 +557,14 @@ export class CodegenService {
    */
   private async processBackgroundJob(context: BackgroundJobContext): Promise<void> {
     const { jobId, graph, options } = context;
-    
+
     try {
       console.info(`Processing background job ${jobId} for graph ${graph.name}`);
-      
+
       // Update job status to running
       const runningStatus: CodegenJobStatus = {
         jobId,
-        status: 'running',
+        status: JobStatusStatus.RUNNING,
         step: 'processing',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -576,33 +576,33 @@ export class CodegenService {
       };
 
       await this.cache.set(`job:${jobId}:status`, runningStatus, 3600);
-      
+
       // Publish status update
       await this.pubsub.publish(`codegen:jobs:${jobId}`, {
-        type: 'started',
+        type: JobStatusStatus.STARTED,
         jobId,
         graphId: graph.id,
         graphName: graph.name,
-        status: 'running',
+        status: JobStatusStatus.RUNNING,
         timestamp: new Date().toISOString(),
       });
 
       // Run workflow
       const result = await this.generateCode(graph, options, context.userContext);
-      
+
       // Cache result
       await this.cacheResult(graph.id, result);
-      
+
       // Store result
       this.jobResults.set(jobId, result);
-      
+
       // Remove from active jobs
       this.activeJobs.delete(jobId);
-      
+
       // Update job status to completed
       const completedStatus: CodegenJobStatus = {
         jobId,
-        status: 'completed',
+        status: JobStatusStatus.COMPLETED,
         step: 'completed',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -614,14 +614,14 @@ export class CodegenService {
       };
 
       await this.cache.set(`job:${jobId}:status`, completedStatus, 3600);
-      
+
       // Publish completion event
       await this.pubsub.publish(`codegen:jobs:${jobId}`, {
-        type: 'completed',
+        type: JobStatusStatus.COMPLETED,
         jobId,
         graphId: graph.id,
         graphName: graph.name,
-        status: 'completed',
+        status: JobStatusStatus.COMPLETED,
         result,
         timestamp: new Date().toISOString(),
       });
@@ -630,11 +630,11 @@ export class CodegenService {
 
     } catch (error) {
       console.error(`Background job ${jobId} failed:`, error);
-      
+
       // Update job status to failed
       const failedStatus: CodegenJobStatus = {
         jobId,
-        status: 'failed',
+        status: JobStatusStatus.FAILED,
         step: 'failed',
         error: error instanceof Error ? error.message : String(error),
         createdAt: new Date().toISOString(),
@@ -647,17 +647,17 @@ export class CodegenService {
       };
 
       await this.cache.set(`job:${jobId}:status`, failedStatus, 3600);
-      
+
       // Remove from active jobs
       this.activeJobs.delete(jobId);
-      
+
       // Publish failure event
       await this.pubsub.publish(`codegen:jobs:${jobId}`, {
-        type: 'failed',
+        type: JobStatusStatus.FAILED,
         jobId,
         graphId: graph.id,
         graphName: graph.name,
-        status: 'failed',
+        status: JobStatusStatus.FAILED,
         error: failedStatus.error,
         timestamp: new Date().toISOString(),
       });
@@ -692,7 +692,7 @@ export const codegenService = new CodegenService();
 
 // Export convenience functions
 export async function submitCodegenJob(
-  graph: Graph, 
+  graph: Graph,
   options?: JobSubmissionOptions
 ): Promise<JobStatus> {
   return await codegenService.submitJob(graph, options);
@@ -703,7 +703,7 @@ export async function getCodegenJobStatus(jobId: string): Promise<JobStatus | nu
 }
 
 export async function getCodegenJobResult(
-  jobId: string, 
+  jobId: string,
   timeout?: number
 ): Promise<GeneratedCodeGraph | null> {
   return await codegenService.getGeneratedCode(jobId, timeout);

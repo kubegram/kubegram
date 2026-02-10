@@ -59,6 +59,7 @@ import type {
   GeneratedCodeGraphInput,
   DeployInfrastructureInput,
   ValidateConnectionInput,
+  InitializePlanInput,
 } from '../types/codegen';
 import type { PlanJobStatus } from '../services/plan-service';
 import type { PlanResult } from './types/plan';
@@ -144,6 +145,7 @@ export interface AppSchemaTypes extends PothosSchemaTypes.UserSchemaTypes {
     GeneratedCodeGraphInput: GeneratedCodeGraphInput;
     DeployInfrastructureInput: DeployInfrastructureInput;
     ValidateConnectionInput: ValidateConnectionInput;
+    InitializePlanInput: InitializePlanInput;
   };
   Enums: {
     GraphNodeType: GraphNodeType;

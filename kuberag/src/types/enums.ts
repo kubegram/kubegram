@@ -14,7 +14,7 @@ export enum GraphNodeType {
   REPLICASET = 'REPLICASET',
   JOB = 'JOB',
   CRONJOB = 'CRONJOB',
-  
+
   // Kubernetes Configuration & Storage
   CONFIGMAP = 'CONFIGMAP',
   SECRET = 'SECRET',
@@ -22,12 +22,12 @@ export enum GraphNodeType {
   PERSISTENTVOLUMECLAIM = 'PERSISTENTVOLUMECLAIM',
   STORAGECLASS = 'STORAGECLASS',
   VOLUME = 'VOLUME',
-  
+
   // Kubernetes Networking
   INGRESS = 'INGRESS',
   NETWORKPOLICY = 'NETWORKPOLICY',
   ENDPOINT = 'ENDPOINT',
-  
+
   // Kubernetes RBAC & Security
   SERVICEACCOUNT = 'SERVICEACCOUNT',
   ROLE = 'ROLE',
@@ -35,26 +35,26 @@ export enum GraphNodeType {
   CLUSTERROLE = 'CLUSTERROLE',
   CLUSTERROLEBINDING = 'CLUSTERROLEBINDING',
   PODSECURITYPOLICY = 'PODSECURITYPOLICY',
-  
+
   // Kubernetes Cluster Resources
   NAMESPACE = 'NAMESPACE',
   NODE = 'NODE',
   PRIORITYCLASS = 'PRIORITYCLASS',
   RESOURCEQUOTA = 'RESOURCEQUOTA',
   LIMITRANGE = 'LIMITRANGE',
-  
+
   // Kubernetes Autoscaling
   HORIZONTALPODAUTOSCALER = 'HORIZONTALPODAUTOSCALER',
   VERTICALPODAUTOSCALER = 'VERTICALPODAUTOSCALER',
   PODDISRUPTIONBUDGET = 'PODDISRUPTIONBUDGET',
-  
+
   // Kubernetes Custom Resources
   CUSTOMRESOURCEDEFINITION = 'CUSTOMRESOURCEDEFINITION',
-  
+
   // Application & Infrastructure Types
   MICROSERVICE = 'MICROSERVICE',
   EXTERNAL_DEPENDENCY = 'EXTERNAL_DEPENDENCY',
-  
+
   // Infrastructure Components
   DATABASE = 'DATABASE',
   CACHE = 'CACHE',
@@ -62,10 +62,10 @@ export enum GraphNodeType {
   PROXY = 'PROXY',
   LOAD_BALANCER = 'LOAD_BALANCER',
   GATEWAY = 'GATEWAY',
-  
+
   // Monitoring
   MONITORING = 'MONITORING',
-  
+
   // Utility Types
   CONFIG = 'CONFIG',
   COMMAND = 'COMMAND',
@@ -160,7 +160,7 @@ export enum ConnectionType {
   TRACES_TO = 'TRACES_TO',
   TRANSLATES_TO = 'TRANSLATES_TO',
   UPDATES = 'UPDATES',
-  
+
   // Similarity
   SIMILAR_TO = 'SIMILAR_TO',
 }
@@ -184,6 +184,7 @@ export enum DeploymentStrategy {
 // Job status values for background workflows
 export enum JobStatusStatus {
   PENDING = 'pending',
+  STARTED = 'started',
   RUNNING = 'running',
   COMPLETED = 'completed',
   FAILED = 'failed',

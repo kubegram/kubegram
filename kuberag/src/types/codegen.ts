@@ -155,3 +155,10 @@ export interface ValidateConnectionInput {
   targetId: ID;
   connectionType?: ConnectionType;
 }
+
+export interface InitializePlanInput {
+  graph: GraphInput;
+  userRequest?: string;
+  modelProvider?: string;
+  modelName?: string;
+}

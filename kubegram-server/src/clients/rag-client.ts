@@ -55,8 +55,7 @@ export type {
   // Connection types
   ConnectionType,
   ConnectionValidation,
-  ConnectionValidationResult,
-  ConnectionSuggestion,
+  GraphConnectionSuggestion,
 
   // Common scalars
   Maybe,
