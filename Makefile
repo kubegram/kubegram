@@ -130,6 +130,31 @@ rebuild-kubegram:
 	docker-compose up -d --no-deps --build kubegram-server
 	@echo "Rebuilt and restarted kubegram-server"
 
+# ============================================================================
+# Monorepo & CI Management
+# ============================================================================
+
+# Clean install dependencies
+ci-install:
+	npm ci
+
+# common-ts CI steps
+ci-typecheck-common:
+	npm run typecheck:common-ts
+
+ci-lint-common:
+	npm run lint:common-ts
+
+ci-test-common:
+	npm run test:common-ts
+
+ci-build-common:
+	npm run build:common-ts
+
+# Run all common-ts CI steps
+ci-all-common: ci-install ci-typecheck-common ci-lint-common ci-test-common ci-build-common
+	@echo "✅ All common-ts CI checks passed"
+
 health-check:
 	@echo "🏥 Checking service health..."
 	@curl -s http://localhost:8090/api/public/v1/healthz/live | jq '.' 2>/dev/null || echo "❌ Kubegram Server unhealthy"

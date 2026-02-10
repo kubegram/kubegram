@@ -11,9 +11,6 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: common-ts
 
     steps:
       - name: Checkout code
@@ -29,26 +26,22 @@ jobs:
           scope: '@kubegram'
 
       - name: Install dependencies
-        run: npm ci
-        working-directory: .
+        run: make ci-install
 
       - name: Type check
-        run: npm run typecheck:common-ts
-        working-directory: .
+        run: make ci-typecheck-common
 
       - name: Lint code
-        run: npm run lint:common-ts
-        working-directory: .
+        run: make ci-lint-common
 
       - name: Run tests
-        run: npm run test:common-ts
-        working-directory: .
+        run: make ci-test-common
 
       - name: Build
-        run: npm run build:common-ts
-        working-directory: .
+        run: make ci-build-common
 
       - name: Verify build output
+        working-directory: common-ts
         run: |
           if [ ! -d "dist" ]; then
             echo "Build failed - dist directory not found"
@@ -58,6 +51,7 @@ jobs:
 
       - name: Check if version changed
         id: version-check
+        working-directory: common-ts
         run: |
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
@@ -74,6 +68,7 @@ jobs:
 
       - name: Publish to GitHub Packages
         if: steps.version-check.outputs.should-publish == 'true'
+        working-directory: common-ts
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
