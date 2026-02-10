@@ -1,3 +1,4 @@
+// the RAG system Job status
 export const JOB_STATUS = {
   PENDING: 'pending',
   RUNNING: 'running',
