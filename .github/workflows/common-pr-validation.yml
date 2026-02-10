@@ -11,9 +11,6 @@ jobs:
   validate:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: common-ts
 
     strategy:
       matrix:
@@ -29,39 +26,34 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        run: npm ci
-        working-directory: .
+        run: make ci-install
 
       - name: Type check
-        run: npm run typecheck:common-ts
-        working-directory: .
+        run: make ci-typecheck-common
 
       - name: Lint code
-        run: npm run lint:common-ts
-        working-directory: .
+        run: make ci-lint-common
 
       - name: Run tests
-        run: npm run test:common-ts
-        working-directory: .
+        run: make ci-test-common
 
       - name: Build
-        run: npm run build:common-ts
-        working-directory: .
+        run: make ci-build-common
 
       - name: Verify build output
+        working-directory: common-ts
         run: |
-          if [ ! -d "common-ts/dist" ]; then
+          if [ ! -d "dist" ]; then
             echo "Build failed - dist directory not found"
             exit 1
           fi
           echo "Build successful - dist directory created"
-        working-directory: .
 
       - name: Generate GraphQL types
-        run: npm run codegen:common-ts
-        working-directory: .
+        run: make ci-codegen-common
 
       - name: Verify GraphQL generation
+        working-directory: common-ts
         run: |
           if [ ! -f "src/graphql/generated/types.ts" ]; then
             echo "GraphQL codegen failed - types.ts not found"
@@ -70,4 +62,4 @@ jobs:
           echo "GraphQL codegen successful"
 
       - name: Run tests after GraphQL generation
-        run: npm run test:ci-no-coverage
+        run: make ci-test-common

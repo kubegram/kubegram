@@ -151,8 +151,11 @@ ci-test-common:
 ci-build-common:
 	npm run build:common-ts
 
+ci-codegen-common:
+	npm run codegen:common-ts
+
 # Run all common-ts CI steps
-ci-all-common: ci-install ci-typecheck-common ci-lint-common ci-test-common ci-build-common
+ci-all-common: ci-install ci-codegen-common ci-typecheck-common ci-lint-common ci-test-common ci-build-common
 	@echo "✅ All common-ts CI checks passed"
 
 health-check:
