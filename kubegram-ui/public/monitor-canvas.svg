@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="777"
+   height="753.91779"
+   viewBox="0 0 400 200"
+   version="1.1"
+   id="svg16"
+   sodipodi:docname="monitor-canvas.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview16"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="1.0253107"
+     inkscape:cx="388.66266"
+     inkscape:cy="376.95889"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg16" />
+  <!-- Define gradients -->
+  <defs
+     id="defs9">
+    <!-- Purple to blue gradient for background -->
+    <linearGradient
+       id="analyticsGradient"
+       x1="0%"
+       y1="0%"
+       x2="100%"
+       y2="0%">
+      <stop
+         offset="0%"
+         style="stop-color:#A855F7;stop-opacity:1"
+         id="stop1" />
+      <stop
+         offset="25%"
+         style="stop-color:#8B5CF6;stop-opacity:1"
+         id="stop2" />
+      <stop
+         offset="50%"
+         style="stop-color:#7C3AED;stop-opacity:1"
+         id="stop3" />
+      <stop
+         offset="75%"
+         style="stop-color:#6366F1;stop-opacity:1"
+         id="stop4" />
+      <stop
+         offset="100%"
+         style="stop-color:#3B82F6;stop-opacity:1"
+         id="stop5" />
+    </linearGradient>
+    <!-- Radial light effect -->
+    <radialGradient
+       id="lightEffectChart"
+       cx="50%"
+       cy="50%"
+       r="50%">
+      <stop
+         offset="0%"
+         style="stop-color:rgba(255,255,255,0.4);stop-opacity:1"
+         id="stop6" />
+      <stop
+         offset="30%"
+         style="stop-color:rgba(255,255,255,0.2);stop-opacity:1"
+         id="stop7" />
+      <stop
+         offset="70%"
+         style="stop-color:rgba(255,255,255,0.1);stop-opacity:1"
+         id="stop8" />
+      <stop
+         offset="100%"
+         style="stop-color:rgba(255,255,255,0);stop-opacity:0"
+         id="stop9" />
+    </radialGradient>
+    <marker
+       style="overflow:visible"
+       id="Triangle"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Triangle arrow"
+       markerWidth="1.5"
+       markerHeight="1.5"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid"
+       markerUnits="userSpaceOnUse">
+      <path
+         transform="scale(0.5)"
+         style="fill:context-stroke;fill-rule:evenodd;stroke:context-stroke;stroke-width:1pt"
+         d="M 5.77,0 -2.88,5 V -5 Z"
+         id="path135" />
+    </marker>
+  </defs>
+  <!-- Main rounded rectangle with gradient background -->
+  <!-- Radial light effect overlay -->
+  <!-- Analytics chart icon - centered -->
+  <!-- Chart axes -->
+  <!-- Y-axis (vertical) -->
+  <!-- X-axis (horizontal) -->
+  <!-- Bar chart bars (increasing height) -->
+  <!-- Growth trend line with arrow -->
+  <!-- Arrow head pointing up and right -->
+  <g
+     id="g58"
+     transform="matrix(4.6762533,0,0,4.6762533,-8368.3235,-9366.0557)">
+    <g
+       id="g64"
+       transform="matrix(0.95782903,0,0,0.95782903,479.15174,374.4345)"
+       style="stroke:#d9d9d9;stroke-opacity:1">
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:6.61199;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 1372.3753,1700.1927 v 46.7155 h 75.2409"
+         id="path58"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:6.61199;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 1384.7776,1746.9082 v -14.4694 z"
+         id="path59"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:6.61199;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 1398.6269,1746.9082 v -20.6705 z"
+         id="path60"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:6.61199;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 1412.4762,1746.9082 v -28.9388 z"
+         id="path61"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:6.61199;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 1426.3255,1746.9082 v -37.6205 z"
+         id="path62"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:6.61199;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         d="m 1440.1748,1746.9082 v -46.7155 z"
+         id="path63"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="fill:#313131;fill-opacity:1;stroke:#d9d9d9;stroke-width:2.381;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;marker-end:url(#Triangle);paint-order:markers stroke fill"
+         d="m 1451.7162,1708.1375 0.086,-8.0524"
+         id="path16-21"
+         sodipodi:nodetypes="cc" />
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="40"
+   height="40"
+   viewBox="0 0 40 40"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   sodipodi:docname="tenant icon dark ui.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="px"
+     inkscape:zoom="12.078125"
+     inkscape:cx="8.3208279"
+     inkscape:cy="17.345407"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g1"
+       transform="translate(0,1.1473613)">
+      <path
+         d="M 19.740005,23.257327 18.199281,21.80356 c -7.558169,0.175238 -11.6731249,1.715669 -13.9790495,9.797914 -2.3830303,8.352519 6.6597865,4.670711 15.3457035,4.670671 8.685723,-3.9e-5 18.986352,3.524504 16.108571,-4.670671 -2.884012,-8.212524 -6.639149,-9.660235 -14.37859,-9.794915 l -1.534882,1.450768 v 0.03602 l 1.80825,9.467513 -1.80825,2.039468 v 0.02394 -0.01169 l -0.01947,0.01169 v -0.02394 l -1.809059,-2.039463 1.809058,-9.467514 z"
+         style="fill:#f3f3f3;fill-opacity:1;stroke-width:3.94283;stroke-linecap:round;stroke-linejoin:round;paint-order:markers fill stroke"
+         id="path9" />
+      <path
+         d="M 20,0.6248368 A 9.9128168,9.9128168 0 0 0 10.088007,10.536869 9.9128168,9.9128168 0 0 0 20,20.448919 9.9128168,9.9128168 0 0 0 29.911993,10.536869 9.9128168,9.9128168 0 0 0 20,0.6248368 Z"
+         style="fill:#f3f3f3;fill-opacity:1;stroke-width:3.94283;stroke-linecap:round;stroke-linejoin:round;paint-order:markers fill stroke"
+         id="path7" />
+    </g>
+  </g>
+</svg>

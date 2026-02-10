@@ -1,0 +1,6 @@
+name: kubegram-ui
+runtime:
+  name: nodejs
+  options:
+    packagemanager: bun
+description: A Pulumi project to deploy Kubegram UI

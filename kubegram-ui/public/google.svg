@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- created by svgstack.com | Attribution is required. -->
+
+<svg
+   width="40"
+   height="40"
+   viewBox="0 0 40 40"
+   version="1.1"
+   id="svg5"
+   sodipodi:docname="g-pay-logo_svgstack_com_30481755077778.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs5" />
+  <sodipodi:namedview
+     id="namedview5"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="4.0572082"
+     inkscape:cx="-36.108573"
+     inkscape:cy="40.052171"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5" />
+  <g
+     fill="none"
+     fill-rule="nonzero"
+     id="g5"
+     transform="matrix(0.26898827,0,0,0.26898827,1.0116917,0.60681306)">
+    <path
+       fill="#4285f4"
+       d="m 142.1,73.6 c 0,-4.9 -0.4,-9.8 -1.2,-14.6 H 73 v 27.7 h 38.9 c -1.6,8.9 -6.8,16.9 -14.4,21.9 v 18 h 23.2 c 13.6,-12.5 21.4,-31 21.4,-53 z"
+       id="path2" />
+    <path
+       fill="#34a853"
+       d="m 73,144 c 19.4,0 35.8,-6.4 47.7,-17.4 l -23.2,-18 C 91,113 82.7,115.5 73,115.5 54.2,115.5 38.3,102.8 32.6,85.8 H 8.7 v 18.6 C 20.9,128.6 45.8,144 73,144 Z"
+       id="path3" />
+    <path
+       fill="#fbbc04"
+       d="m 32.6,85.8 c -3,-8.9 -3,-18.6 0,-27.6 V 39.7 H 8.7 a 71.39,71.39 0 0 0 0,64.6 z"
+       id="path4" />
+    <path
+       fill="#ea4335"
+       d="m 73,28.5 c 10.3,-0.2 20.2,3.7 27.6,10.8 L 121.1,18.8 C 108.1,6.5 90.9,-0.2 73,0 45.8,0 20.9,15.4 8.7,39.7 L 32.6,58.3 C 38.3,41.2 54.2,28.5 73,28.5 Z"
+       id="path5" />
+  </g>
+</svg>

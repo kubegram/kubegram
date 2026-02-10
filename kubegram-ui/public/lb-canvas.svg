@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="777"
+   height="753.91779"
+   viewBox="0 0 600 400"
+   version="1.1"
+   id="svg16"
+   sodipodi:docname="lb-canvas.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview16"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:zoom="0.51265537"
+     inkscape:cx="155.07494"
+     inkscape:cy="377.44655"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg16" />
+  <!-- Define gradients -->
+  <defs
+     id="defs8">
+    <!-- Purple to blue gradient for main box -->
+    <linearGradient
+       id="mainGradient"
+       x1="0%"
+       y1="0%"
+       x2="100%"
+       y2="0%">
+      <stop
+         offset="0%"
+         style="stop-color:#A855F7;stop-opacity:1"
+         id="stop1" />
+      <stop
+         offset="100%"
+         style="stop-color:#3B82F6;stop-opacity:1"
+         id="stop2" />
+    </linearGradient>
+    <!-- Purple to blue gradient for first three child boxes -->
+    <linearGradient
+       id="childGradient1"
+       x1="0%"
+       y1="0%"
+       x2="100%"
+       y2="0%">
+      <stop
+         offset="0%"
+         style="stop-color:#A855F7;stop-opacity:1"
+         id="stop3" />
+      <stop
+         offset="100%"
+         style="stop-color:#3B82F6;stop-opacity:1"
+         id="stop4" />
+    </linearGradient>
+    <!-- Blue gradient for last two child boxes -->
+    <linearGradient
+       id="childGradient2"
+       x1="0%"
+       y1="0%"
+       x2="100%"
+       y2="0%">
+      <stop
+         offset="0%"
+         style="stop-color:#3B82F6;stop-opacity:1"
+         id="stop5" />
+      <stop
+         offset="100%"
+         style="stop-color:#1E40AF;stop-opacity:1"
+         id="stop6" />
+    </linearGradient>
+    <!-- Curved arrow gradient -->
+    <linearGradient
+       id="arrowGradient"
+       x1="0%"
+       y1="0%"
+       x2="100%"
+       y2="0%">
+      <stop
+         offset="0%"
+         style="stop-color:#A855F7;stop-opacity:1"
+         id="stop7" />
+      <stop
+         offset="100%"
+         style="stop-color:#1E293B;stop-opacity:1"
+         id="stop8" />
+    </linearGradient>
+    <marker
+       style="overflow:visible"
+       id="ArrowWideRounded"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Wide, rounded arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid"
+       markerUnits="userSpaceOnUse">
+      <path
+         style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:round"
+         d="M 3,-3 0,0 3,3"
+         transform="rotate(180,0.125,0)"
+         sodipodi:nodetypes="ccc"
+         id="path85" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker88"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Wide, rounded arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid"
+       markerUnits="userSpaceOnUse">
+      <path
+         style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:round"
+         d="M 3,-3 0,0 3,3"
+         transform="rotate(180,0.125,0)"
+         sodipodi:nodetypes="ccc"
+         id="path88" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="marker87"
+       refX="0"
+       refY="0"
+       orient="auto-start-reverse"
+       inkscape:stockid="Wide, rounded arrow"
+       markerWidth="1"
+       markerHeight="1"
+       viewBox="0 0 1 1"
+       inkscape:isstock="true"
+       inkscape:collect="always"
+       preserveAspectRatio="xMidYMid"
+       markerUnits="userSpaceOnUse">
+      <path
+         style="fill:none;stroke:context-stroke;stroke-width:1;stroke-linecap:round"
+         d="M 3,-3 0,0 3,3"
+         transform="rotate(180,0.125,0)"
+         sodipodi:nodetypes="ccc"
+         id="path87" />
+    </marker>
+  </defs>
+  <!-- Curved arrow pointing down -->
+  <!-- Arrow head -->
+  <!-- Main rectangle (top) -->
+  <!-- Connection lines from main box to child boxes -->
+  <!-- Child rectangles (bottom row) -->
+  <!-- First child (purple to blue) -->
+  <!-- Second child (purple to blue) -->
+  <!-- Third child (purple to blue) -->
+  <!-- Fourth child (blue) -->
+  <!-- Fifth child (blue) -->
+  <g
+     id="g71"
+     transform="matrix(7.0230781,0,0,7.0230781,-12354.275,-14030.392)"
+     style="stroke-width:1.00001;stroke-dasharray:none">
+    <g
+       id="g89"
+       transform="translate(396.56039,303.51964)"
+       style="fill:#d9d9d9;fill-opacity:1;stroke:#d9d9d9;stroke-width:1.00001;stroke-dasharray:none;stroke-opacity:1">
+      <rect
+         style="fill:#d9d9d9;fill-opacity:1;stroke:none;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         id="rect73-3"
+         width="17.569986"
+         height="26.458332"
+         x="1429.0696"
+         y="1722.9097"
+         ry="6.5877686" />
+      <rect
+         style="fill:#d9d9d9;fill-opacity:1;stroke:none;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         id="rect71"
+         width="21.497396"
+         height="52.503296"
+         x="1378.5383"
+         y="1696.6787"
+         ry="8.6548262" />
+      <path
+         d="m 1435.7689,1709.4944 c -3.6496,0 -6.5877,2.6633 -6.5877,5.9715 v 11.0549 c 0,-3.3082 2.9381,-5.9715 6.5877,-5.9715 h 4.3946 c 3.6496,0 6.5877,2.6633 6.5877,5.9715 v -11.0549 c 0,-3.3082 -2.9381,-5.9715 -6.5877,-5.9715 z"
+         style="fill:#d9d9d9;fill-opacity:1;stroke:none;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         id="path73" />
+      <path
+         d="m 1435.7689,1696.0585 c -3.6496,0 -6.5877,2.6633 -6.5877,5.9715 v 11.0549 c 0,-3.3082 2.9381,-5.9715 6.5877,-5.9715 h 4.3946 c 3.6496,0 6.5877,2.6633 6.5877,5.9715 V 1702.03 c 0,-3.3082 -2.9381,-5.9715 -6.5877,-5.9715 z"
+         style="fill:#d9d9d9;fill-opacity:1;stroke:none;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+         id="path74" />
+      <path
+         style="fill:#d9d9d9;fill-opacity:1;stroke:#d9d9d9;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ArrowWideRounded);paint-order:markers stroke fill"
+         d="m 1398.7954,1710.3274 21.8282,-5.8489"
+         id="path75" />
+      <path
+         style="fill:#d9d9d9;fill-opacity:1;stroke:#d9d9d9;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker88);paint-order:markers stroke fill"
+         d="m 1398.7954,1733.4188 21.8282,5.8489"
+         id="path76" />
+      <path
+         style="fill:#d9d9d9;fill-opacity:1;stroke:#d9d9d9;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker87);paint-order:markers stroke fill"
+         d="m 1398.9067,1721.7321 h 24.1909"
+         id="path77"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;fill-opacity:1;stroke:#d9d9d9;stroke-width:1.00001;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker87);paint-order:markers stroke fill"
+         d="m 1364.2546,1737.6996 c 0.2897,-27.1408 -1.5909,-25.6775 8.6103,-25.5668"
+         id="path89"
+         sodipodi:nodetypes="cc" />
+    </g>
+  </g>
+</svg>

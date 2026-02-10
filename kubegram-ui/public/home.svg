@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="40"
+   height="40"
+   viewBox="0 0 10.583333 10.583333"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   sodipodi:docname="home icon dark ui.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     inkscape:zoom="15.581903"
+     inkscape:cx="22.044804"
+     inkscape:cy="20.440378"
+     inkscape:window-width="1920"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g46"
+       style="fill:#f3f3f3;fill-opacity:1"
+       transform="matrix(0.24655332,0,0,0.24655332,-429.71138,-34.953565)">
+      <path
+         d="m 1753.5545,158.71693 c -2.3331,0 -4.2111,1.87805 -4.2111,4.21111 v 13.86479 c 0,2.33305 1.878,4.21111 4.2111,4.21111 h 7.9509 c -0.8859,-0.50496 -1.4805,-1.45717 -1.4805,-2.55385 v -3.40444 c 0,-1.62789 1.3104,-2.93884 2.9383,-2.93884 h 2.7466 c 1.6279,0 2.9388,1.31095 2.9388,2.93884 v 3.40444 c 0,1.09668 -0.5951,2.04889 -1.481,2.55385 h 7.9514 c 2.3331,0 4.2112,-1.87806 4.2112,-4.21111 v -13.86479 c 0,-2.33306 -1.8781,-4.21111 -4.2112,-4.21111 z"
+         style="fill:#f3f3f3;fill-opacity:1;stroke-width:3.04816;stroke-linecap:round;stroke-linejoin:round;paint-order:markers stroke fill"
+         id="path46" />
+      <path
+         id="path42"
+         style="fill:#f3f3f3;fill-opacity:1;stroke-width:3.76362;stroke-linecap:round;stroke-linejoin:round;paint-order:markers stroke fill"
+         inkscape:transform-center-x="-6.8917008e-05"
+         inkscape:transform-center-y="-3.3344379"
+         d="m 1783.3182,165.46552 -18.8624,0.0985 -19.1003,-0.0985 c -9.1951,-0.0474 15.2159,-19.9463 18.9813,-20.00662 3.7654,-0.0603 28.175,19.95861 18.9814,20.00662 z"
+         sodipodi:nodetypes="scszs" />
+    </g>
+  </g>
+</svg>
