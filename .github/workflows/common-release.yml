@@ -68,8 +68,7 @@ jobs:
 
       - name: Publish to GitHub Packages
         if: steps.version-check.outputs.should-publish == 'true'
-        working-directory: common-ts
-        run: npm publish
+        run: make ci-publish-common
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 

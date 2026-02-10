@@ -154,6 +154,9 @@ ci-build-common:
 ci-codegen-common:
 	npm run codegen:common-ts
 
+ci-publish-common:
+	npm publish --workspace @kubegram/common-ts
+
 # Run all common-ts CI steps
 ci-all-common: ci-install ci-codegen-common ci-typecheck-common ci-lint-common ci-test-common ci-build-common
 	@echo "✅ All common-ts CI checks passed"
