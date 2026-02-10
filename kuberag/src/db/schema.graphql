@@ -1,0 +1,722 @@
+"""Graph Node type"""
+enum GraphNodeType {
+  # Kubernetes Core Resources
+  POD
+  SERVICE
+  DEPLOYMET
+  STATEFULSET
+  DAEMONSET
+  REPLICASET
+  JOB
+  CRONJOB
+  
+  # Kubernetes Configuration & Storage
+  CONFIGMAP
+  SECRET
+  PERSISTENTVOLUME
+  PERSISTENTVOLUMECLAIM
+  STORAGECLASS
+  VOLUME
+  
+  # Kubernetes Networking
+  INGRESS
+  NETWORKPOLICY
+  ENDPOINT
+  
+  # Kubernetes RBAC & Security
+  SERVICEACCOUNT
+  ROLE
+  ROLEBINDING
+  CLUSTERROLE
+  CLUSTERROLEBINDING
+  PODSECURITYPOLICY
+  
+  # Kubernetes Cluster Resources
+  NAMESPACE
+  NODE
+  PRIORITYCLASS
+  RESOURCEQUOTA
+  LIMITRANGE
+  
+  # Kubernetes Autoscaling
+  HORIZONTALPODAUTOSCALER
+  VERTICALPODAUTOSCALER
+  PODDISRUPTIONBUDGET
+  
+  # Kubernetes Custom Resources
+  CUSTOMRESOURCEDEFINITION
+  
+  # Application & Infrastructure Types
+  MICROSERVICE
+  EXTERNAL_DEPENDENCY
+  
+  # Infrastructure Components
+  DATABASE
+  CACHE
+  MESSAGE_QUEUE
+  PROXY
+  LOAD_BALANCER
+  MONITORING
+  GATEWAY
+  
+  # Utility Types
+  CONFIG
+  COMMAND
+  DEBUGING
+}
+
+enum DependencyType {
+  # Infrastructure Components
+  DATABASE
+  CACHE
+  MESSAGE_QUEUE
+  PROXY
+  LOAD_BALANCER
+}
+
+enum GraphType {
+  KUBERNETES
+  INFRASTRUCTURE
+  ABSTRACT
+  DEBUGING
+  MICROSERVICE
+}
+
+type Graph {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  createdAt: DateTime @search(by: [hour])
+  updatedAt: DateTime @search(by: [hour])
+  graphType: GraphType
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+
+  nodes: [GraphNode]
+  # computed embedding of the context of the entire graph
+  contextEmbedding: [Float!] @embedding @search(by: ["hnsw(metric: \"cosine\")"])
+  bridges: [Graph] @hasInverse(field: bridgedBy)
+  bridgedBy: [Graph]
+
+  cluster: KubernetesCluster
+
+  subgraphs: [Graph] @hasInverse(field: parent)
+  parent: Graph
+}
+
+type GraphNode {
+  # node unique identifier
+  id: ID!
+  name: String! @search(by: [term, exact])
+  # owner
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+  # isExternalDependency: Boolean! @search(by: [exact])
+  
+  nodeType: GraphNodeType @search(by: [exact])
+  namespace: String @search(by: [exact])
+  createdAt: DateTime @search(by: [hour])
+  updatedAt: DateTime @search(by: [hour])
+
+  # Relationships
+  contains: [GraphNode] @hasInverse(field: belongsTo)
+  belongsTo: [GraphNode]
+  dependsOn: [GraphNode] @hasInverse(field: requiredBy)
+  requiredBy: [GraphNode]
+  connectsTo: [GraphNode] @hasInverse(field: connectedFrom)
+  connectedFrom: [GraphNode]
+
+  # Traffic Relationships
+  allowsTraffic: [GraphNode] @hasInverse(field: routedTo)
+  routedTo: [GraphNode]
+  blocksTraffic: [GraphNode] @hasInverse(field: blockedBy)
+  blockedBy: [GraphNode]
+
+   # Security relationships
+  authenticatesTo: [GraphNode] @hasInverse(field: authenticatesFrom)
+  authenticatesFrom: [GraphNode]
+  authorizes: [GraphNode] @hasInverse(field: authorizedBy)
+  authorizedBy: [GraphNode]
+  encrypts: [GraphNode] @hasInverse(field: encryptedBy)
+  encryptedBy: [GraphNode]
+
+  # Storage relationships
+  backsUp: [GraphNode] @hasInverse(field: backsUpTo)
+  backsUpTo: [GraphNode]
+  caches: [GraphNode] @hasInverse(field: cachedBy)
+  cachedBy: [GraphNode]
+  
+  # Resource relationships
+  binds: [GraphNode] @hasInverse(field: boundBy)
+  boundBy: [GraphNode]
+  claims: [GraphNode] @hasInverse(field: claimedBy)
+  claimedBy: [GraphNode]
+
+   # Processing relationships
+  compresses: [GraphNode] @hasInverse(field: compressedBy)
+  compressedBy: [GraphNode]
+  
+  # Configuration relationships
+  configures: [GraphNode] @hasInverse(field: configuredBy)
+  configuredBy: [GraphNode]
+
+   # Deployment relationships
+  deploys: [GraphNode] @hasInverse(field: deployedBy)
+  deployedBy: [GraphNode]
+
+  # Discovery relationships
+  discovers: [GraphNode] @hasInverse(field: discoveredBy)
+  discoveredBy: [GraphNode]
+
+  # Network relationships
+  ingresses: [GraphNode] @hasInverse(field: egressesFrom)
+  egressesFrom: [GraphNode]
+
+  # Extension relationships
+  extends: [GraphNode] @hasInverse(field: extendedBy)
+  extendedBy: [GraphNode]
+
+  # Resilience relationships
+  failsOverTo: [GraphNode] @hasInverse(field: failedOverBy)
+  failedOverBy: [GraphNode]
+
+  # Inheritance relationships
+  inheritsFrom: [GraphNode] @hasInverse(field: inheritedBy)
+  inheritedBy: [GraphNode]
+
+  # Rate limiting relationships
+  rateLimits: [GraphNode] @hasInverse(field: rateLimitedBy)
+  rateLimitedBy: [GraphNode]
+
+  # Load balancing relationships
+  loadBalances: [GraphNode] @hasInverse(field: loadBalancedBy)
+  loadBalancedBy: [GraphNode]
+
+  # Logging relationships
+  logs: [GraphNode] @hasInverse(field: logsTo)
+  logsTo: [GraphNode]
+
+  # Management relationships
+  managedBy: [GraphNode] @hasInverse(field: manages)
+  manages: [GraphNode]
+
+  # Monitoring relationships
+  monitors: [GraphNode] @hasInverse(field: monitoredBy)
+  monitoredBy: [GraphNode]
+
+  # Service mesh relationships
+  meshAuthenticates: [GraphNode] @hasInverse(field: meshAuthenticatedBy)
+  meshAuthenticatedBy: [GraphNode]
+  meshCircuitBreaks: [GraphNode] @hasInverse(field: meshCircuitBrokenBy)
+  meshCircuitBrokenBy: [GraphNode]
+  meshSplitsTraffic: [GraphNode] @hasInverse(field: meshSplitTrafficBy)
+  meshSplitTrafficBy: [GraphNode]
+  meshMirrors: [GraphNode] @hasInverse(field: meshMirroredBy)
+  meshMirroredBy: [GraphNode]
+
+  # Kubernetes-style relationships
+  serviceExposesPod: [GraphNode]
+  podRunsOnNode: [GraphNode]
+  ingressRoutesToService: [GraphNode]
+
+  # Microservice
+  microservice: Microservice
+  microserviceDependsOn: [GraphNode]
+  microserviceCalls: [GraphNode]
+  microservicePublishesTo: [GraphNode]
+  microserviceSubscribesTo: [GraphNode]
+
+  # Infrastructure components
+  database: Database
+  cache: Cache
+  messageQueue: MessageQueue
+  proxy: Proxy
+  loadBalancer: LoadBalancer
+  monitoring: Monitoring
+  gateway: Gateway
+
+  # Graph relationships
+  translatesTo: Graph
+
+  # Configuration data
+  scripts: [Script]
+  configMaps: [ConfigMap]
+  secrets: [Secret]
+
+  # Embeddings
+  embedding: [Float!] @embedding @search(by: ["hnsw(metric: \"cosine\")"])
+}
+
+type Microservice {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term])
+  namespace: String @search(by: [exact])
+  language: String @search(by: [exact])
+  framework: String @search(by: [exact])
+  version: String @search(by: [exact])
+  category: String @search(by: [exact])
+  repository: String @search(by: [hash])
+  baseImage: String @search(by: [hash])
+  image: String @search(by: [hash])
+  dependencies: [String]
+  ports: [Int]
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+
+  translatesTo: Graph
+}
+
+"""Database resource"""
+type Database {
+  id: ID!
+  graphId: String
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  name: String! @search(by: [term, exact])
+  namespace: String @search(by: [exact])
+  engine: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  databaseName: String @search(by: [exact])
+  username: String
+  connectionString: String
+  maxConnections: Int
+  storageSize: String
+  storageClass: String
+  replicationEnabled: Boolean
+  replicaCount: Int
+  backupEnabled: Boolean
+  backupSchedule: String
+  sslEnabled: Boolean
+  charset: String
+  collation: String
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""Cache resource"""
+type Cache {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term, exact])
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  namespace: String @search(by: [exact])
+  engine: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  clusterMode: Boolean
+  replicaCount: Int
+  maxMemory: String
+  evictionPolicy: String
+  persistenceEnabled: Boolean
+  persistenceStrategy: String
+  password: String
+  tlsEnabled: Boolean
+  sentinelEnabled: Boolean
+  sentinelHosts: [String]
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""Message queue resource"""
+type MessageQueue {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term, exact])
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  namespace: String @search(by: [exact])
+  engine: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  protocol: String @search(by: [exact])
+  topics: [String]
+  queues: [String]
+  exchanges: [String]
+  clusterMode: Boolean
+  replicaCount: Int
+  partitions: Int
+  replicationFactor: Int
+  retentionPeriod: String
+  maxMessageSize: String
+  dlqEnabled: Boolean
+  dlqName: String
+  tlsEnabled: Boolean
+  authEnabled: Boolean
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""Proxy resource"""
+type Proxy {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term, exact])
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  namespace: String @search(by: [exact])
+  proxyType: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  protocol: String @search(by: [exact])
+  upstreams: [String]
+  tlsEnabled: Boolean
+  tlsCertificate: String
+  tlsKey: String
+  rateLimitEnabled: Boolean
+  rateLimitRequests: Int
+  rateLimitPeriod: String
+  timeoutConnect: String
+  timeoutRead: String
+  timeoutWrite: String
+  retries: Int
+  healthCheckEnabled: Boolean
+  healthCheckPath: String
+  healthCheckInterval: String
+  compressionEnabled: Boolean
+  cachingEnabled: Boolean
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""Load balancer resource"""
+type LoadBalancer {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term, exact])
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  namespace: String @search(by: [exact])
+  loadBalancerType: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  protocol: String @search(by: [exact])
+  backends: [String]
+  algorithm: String @search(by: [exact])
+  healthCheckEnabled: Boolean
+  healthCheckPath: String
+  healthCheckInterval: String
+  healthCheckTimeout: String
+  healthCheckHealthyThreshold: Int
+  healthCheckUnhealthyThreshold: Int
+  stickySessionEnabled: Boolean
+  stickySessionCookie: String
+  stickySessionDuration: String
+  tlsEnabled: Boolean
+  tlsCertificate: String
+  tlsKey: String
+  crossZoneEnabled: Boolean
+  idleTimeout: String
+  connectionDrainingEnabled: Boolean
+  connectionDrainingTimeout: String
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""Monitoring resource"""
+type Monitoring {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term, exact])
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  namespace: String @search(by: [exact])
+  monitoringType: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  scrapeInterval: String
+  scrapeTimeout: String
+  retentionPeriod: String
+  storageSize: String
+  metrics: [String]
+  dashboards: [String]
+  alertRules: [String]
+  alertmanagerEnabled: Boolean
+  alertmanagerUrl: String
+  exporters: [String]
+  serviceMonitors: [String]
+  remoteWriteEnabled: Boolean
+  remoteWriteUrl: String
+  tlsEnabled: Boolean
+  authEnabled: Boolean
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""API Gateway resource"""
+type Gateway {
+  id: ID!
+  graphId: String
+  name: String! @search(by: [term, exact])
+  kind: String! @search(by: [exact])
+  url: String! @search(by: [hash])
+  namespace: String @search(by: [exact])
+  gatewayType: String @search(by: [exact])
+  version: String @search(by: [exact])
+  host: String @search(by: [hash])
+  port: Int
+  protocol: String @search(by: [exact])
+  
+  # Routing configuration
+  routes: [String]
+  upstreams: [String]
+  domains: [String]
+  basePath: String
+  
+  # Security
+  tlsEnabled: Boolean
+  tlsCertificate: String
+  tlsKey: String
+  tlsMinVersion: String
+  authEnabled: Boolean
+  authType: String @search(by: [exact])
+  corsEnabled: Boolean
+  corsOrigins: [String]
+  corsMethods: [String]
+  corsHeaders: [String]
+  
+  # Rate limiting
+  rateLimitEnabled: Boolean
+  rateLimitRequests: Int
+  rateLimitPeriod: String
+  rateLimitBurstSize: Int
+  
+  # Timeouts
+  timeoutConnect: String
+  timeoutRead: String
+  timeoutWrite: String
+  timeoutIdle: String
+  
+  # Load balancing
+  loadBalancingAlgorithm: String @search(by: [exact])
+  healthCheckEnabled: Boolean
+  healthCheckPath: String
+  healthCheckInterval: String
+  healthCheckTimeout: String
+  healthCheckHealthyThreshold: Int
+  healthCheckUnhealthyThreshold: Int
+  
+  # Circuit breaker
+  circuitBreakerEnabled: Boolean
+  circuitBreakerThreshold: Int
+  circuitBreakerTimeout: String
+  
+  # Retry policy
+  retries: Int
+  retryTimeout: String
+  retryBackoff: String
+  
+  # Caching
+  cachingEnabled: Boolean
+  cacheSize: String
+  cacheTTL: String
+  
+  # Compression
+  compressionEnabled: Boolean
+  compressionLevel: Int
+  compressionTypes: [String]
+  
+  # Logging and monitoring
+  accessLogEnabled: Boolean
+  accessLogFormat: String
+  metricsEnabled: Boolean
+  metricsPath: String
+  tracingEnabled: Boolean
+  tracingProvider: String @search(by: [exact])
+  tracingSampleRate: Float
+  
+  # WebSocket support
+  websocketEnabled: Boolean
+  websocketTimeout: String
+  
+  # Request/Response transformation
+  requestHeadersAdd: [String]
+  requestHeadersRemove: [String]
+  responseHeadersAdd: [String]
+  responseHeadersRemove: [String]
+  
+  # IP filtering
+  ipWhitelist: [String]
+  ipBlacklist: [String]
+  
+  # Service mesh integration
+  serviceMeshEnabled: Boolean
+  serviceMeshProvider: String @search(by: [exact])
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+}
+
+"""Top-level Kubernetes cluster information"""
+type KubernetesCluster {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  provider: String @search(by: [exact])
+  region: String @search(by: [exact])
+  type: KubernetesClusterType
+  version: String
+  metadata: String  
+  url: String
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+
+  """All nodes in this cluster"""
+  nodes: [Graph] @hasInverse(field: cluster)
+  
+  """Cloud credentials for this cluster"""
+  credentials: CloudCredentials
+}
+
+"""Cloud credentials for role-based authentication"""
+type CloudCredentials {
+  id: ID!
+  name: String! @search(by: [term, exact])
+  description: String
+  
+  # Cloud provider information
+  provider: CloudProvider! @search(by: [exact])
+  
+  # Role-based authentication
+  # AWS: IAM Role ARN (arn:aws:iam::123456789012:role/MyRole)
+  # Azure: Managed Identity Client ID
+  # GCP: Service Account Email
+  roleArn: String @search(by: [hash])
+  
+  # AWS: External ID for STS AssumeRole
+  externalId: String
+  
+  # Session configuration
+  sessionName: String
+  sessionDuration: Int  # Duration in seconds
+  
+  # Region/Location
+  region: String @search(by: [exact])
+  
+  # Optional: OIDC/Workload Identity configuration
+  oidcProvider: String
+  oidcAudience: String
+  serviceAccountName: String  # Kubernetes service account
+  serviceAccountNamespace: String
+  
+  # GCP Workload Identity
+  gcpServiceAccount: String  # GCP service account email
+  gcpProjectId: String @search(by: [exact])
+  
+  # Azure Workload Identity
+  azureTenantId: String
+  azureClientId: String
+  azureSubscriptionId: String
+  azureResourceGroup: String
+  
+  # AWS IRSA (IAM Roles for Service Accounts)
+  awsAccountId: String
+  awsOidcProvider: String
+  
+  # Additional metadata
+  tags: [String]
+  createdAt: DateTime @search(by: [hour])
+  updatedAt: DateTime @search(by: [hour])
+  
+  # Multi-tenancy fields
+  companyId: String! @search(by: [exact])
+  userId: String! @search(by: [exact])
+  
+  # Associations
+  cluster: KubernetesCluster @hasInverse(field: credentials)
+}
+
+
+"""Secret information"""
+type Secret {
+  """Secret key"""
+  key: String
+  """Secret name"""
+  name: String!
+  """Secret value"""
+  value: String
+}
+
+"""Script information"""
+type Script {
+  """Script command"""
+  command: String!
+  """Script name"""
+  name: String!
+  calledBy: [GraphNode]
+  results: [ScriptResult]
+  retryCount: Int
+}
+
+type ScriptResult {
+  status: String!
+  output: String
+}
+
+
+"""Cloud provider types"""
+enum CloudProvider {
+  AWS
+  AZURE
+  GCP
+  ALIBABA
+  ORACLE
+  IBM
+  DIGITALOCEAN
+  LINODE
+  VULTR
+  OTHER
+}
+
+"""Kubernetes cluster types"""
+enum KubernetesClusterType {
+  MANAGED
+  SELF_HOSTED
+  HYBRID
+}
+
+"""Config map information"""
+type ConfigMap {
+  """Config key"""
+  key: String
+  """Config map name"""
+  name: String!
+  """Config value"""
+  value: String
+}
+
+type KnowledgeTree {
+  id: ID!
+  name: String!
+}
+
+type KnowledgeLeaf {
+  id: ID!
+  name: String!
+}

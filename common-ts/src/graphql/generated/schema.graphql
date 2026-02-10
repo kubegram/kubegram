@@ -1,0 +1,1432 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+"""Cache resource"""
+type Cache {
+  clusterMode: Boolean
+  configMaps: [ConfigMap]
+  engine: String
+  environmentVariables: [EnvironmentVariable]
+  evictionPolicy: String
+  graphId: String
+  host: String
+  id: ID!
+  kind: String!
+  maxMemory: String
+  name: String!
+  namespace: String
+  password: String
+  persistenceEnabled: Boolean
+  persistenceStrategy: String
+  port: Int
+  replicaCount: Int
+  secrets: [Secret]
+  sentinelEnabled: Boolean
+  sentinelHosts: [String]
+  spec: JSON
+  tlsEnabled: Boolean
+  translatesTo: Graph
+  url: String!
+  version: String
+}
+
+"""Input for cache resource"""
+input CacheInput {
+  clusterMode: Boolean
+  configMaps: [ConfigMapInput]
+  engine: String
+  environmentVariables: [EnvironmentVariableInput]
+  evictionPolicy: String
+  graphId: String
+  host: String
+  id: ID
+  kind: String
+  maxMemory: String
+  name: String
+  namespace: String
+  password: String
+  persistenceEnabled: Boolean
+  persistenceStrategy: String
+  port: Int
+  replicaCount: Int
+  secrets: [SecretInput]
+  sentinelEnabled: Boolean
+  sentinelHosts: [String]
+  spec: JSON
+  tlsEnabled: Boolean
+  url: String
+  version: String
+}
+
+"""Config map information"""
+type ConfigMap {
+  """Config key"""
+  key: String
+  """Config map name"""
+  name: String!
+  """Config value"""
+  value: String
+}
+
+"""Input for config map information"""
+input ConfigMapInput {
+  """Config key"""
+  key: String
+  """Config map name"""
+  name: String!
+  """Config value"""
+  value: String
+}
+
+"""Connection types between resources"""
+enum ConnectionType {
+  ALLOWS_TRAFFIC
+  AUTHENTICATES
+  AUTHORIZES
+  BACKS_UP
+  BACKS_UP_TO
+  BELONGS_TO
+  BINDS
+  BLOCKS_TRAFFIC
+  BRIDGES
+  CACHES
+  CLAIMS
+  COMPRESSES
+  CONFIGURES
+  CONNECTS_TO
+  CUSTOM
+  DEPENDS_ON
+  DEPENDS_ON_GRAPH
+  DEPLOYS_TO
+  DISCOVERS
+  EGRESS_FROM
+  ENCRYPTS
+  EXTENDS
+  FAILS_OVER_TO
+  FROM
+  HAS
+  INGRESS_ROUTES_TO_SERVICE
+  INGRESS_TO
+  INHERITS_FROM
+  ISOLATES
+  LIMITS
+  LOAD_BALANCES
+  LOGS_TO
+  MANAGED_BY
+  MANAGES
+  MESH_AUTHORIZES
+  MESH_CIRCUIT_BREAKER
+  MESH_CONNECTS
+  MESH_MIRRORS
+  MESH_RETRIES
+  MESH_SPLITS_TRAFFIC
+  MESH_TIMEOUTS
+  METRICS_TO
+  MICROSERVICE_CALLS
+  MICROSERVICE_DEPENDS_ON
+  MICROSERVICE_PUBLISHES_TO
+  MICROSERVICE_SUBSCRIBES_TO
+  MONITORS
+  MOUNTS
+  OPTIONAL_FOR
+  POD_RUNS_ON_NODE
+  QUOTAS
+  RATE_LIMITS
+  REGISTERS
+  REPLICATES
+  REQUESTS
+  REQUIRES
+  RESOLVES
+  RESTORES_FROM
+  ROLLS_BACK
+  ROUTES_TO
+  SCALES
+  SERVICE_EXPOSES_POD
+  SIGNS
+  SIMILAR_TO
+  SYNC
+  SYNCHRONIZES_WITH
+  TRACES_TO
+  TRANSLATES_TO
+  UPDATES
+}
+
+"""Connection validation result with suggestions"""
+type ConnectionValidation {
+  """Whether the connection is valid"""
+  isValid: Boolean!
+  """Suggested graph connection if needed"""
+  suggestion: ConnectionType!
+}
+
+"""Input for creating a graph"""
+input CreateGraphInput {
+  """Bridges"""
+  bridges: [GraphBridgeInput]
+  """Cluster ID"""
+  clusterId: String
+  """Company ID"""
+  companyId: String!
+  """Graph description"""
+  description: String
+  """Graph type"""
+  graphType: GraphType!
+  """Graph name"""
+  name: String!
+  """Nodes"""
+  nodes: [NodeInput]
+  parentGraphId: String
+  """Subgraphs"""
+  subgraphs: [GraphInput]
+  """Owner user ID"""
+  userId: String!
+}
+
+"""Input for creating a Kubernetes cluster"""
+input CreateKubernetesClusterInput {
+  """Company ID"""
+  companyId: String!
+  """Cluster metadata"""
+  metadata: JSON
+  """Cluster name"""
+  name: String!
+  """Cluster provider"""
+  provider: String
+  """Cluster region"""
+  region: String
+  """Cluster type"""
+  type: KubernetesClusterType
+  """Owner user ID"""
+  userId: String!
+  """Cluster version"""
+  version: String
+}
+
+"""Input for creating a Kubernetes graph"""
+input CreateKubernetesGraphInput {
+  """Kubernetes cluster information"""
+  clusterId: String!
+  """Company ID"""
+  companyId: String!
+  """Graph description"""
+  description: String
+  """Graph name"""
+  name: String!
+  """Graph tags"""
+  tags: [String!]
+  """Owner user ID"""
+  userId: String!
+  """Graph version"""
+  version: String
+}
+
+"""Input for creating a microservice"""
+input CreateMicroserviceInput {
+  baseImage: String!
+  companyId: String!
+  config: [ConfigMapInput!]
+  dependencies: [String!]
+  environmentVariables: [EnvironmentVariableInput!]
+  externalDependencies: [ID!]
+  framework: String
+  graphId: ID!
+  image: String!
+  imageTag: String
+  internalDependencies: [ID!]
+  language: String!
+  name: String!
+  networks: [String!]
+  packageManager: String
+  ports: [Int!]
+  scripts: [ScriptInput!]
+  secrets: [SecretInput!]
+  userId: String!
+  version: String!
+  volumes: [String!]
+}
+
+"""Database resource"""
+type Database {
+  backupEnabled: Boolean
+  backupSchedule: String
+  charset: String
+  collation: String
+  configMaps: [ConfigMap]
+  connectionString: String
+  databaseName: String
+  engine: String
+  environmentVariables: [EnvironmentVariable]
+  graphId: String
+  host: String
+  id: ID!
+  kind: String!
+  maxConnections: Int
+  name: String!
+  namespace: String
+  port: Int
+  replicaCount: Int
+  replicationEnabled: Boolean
+  secrets: [Secret]
+  spec: JSON
+  sslEnabled: Boolean
+  storageClass: String
+  storageSize: String
+  translatesTo: Graph
+  url: String!
+  username: String
+  version: String
+}
+
+"""Input for database resource"""
+input DatabaseInput {
+  backupEnabled: Boolean
+  backupSchedule: String
+  charset: String
+  collation: String
+  configMaps: [ConfigMapInput]
+  connectionString: String
+  databaseName: String
+  engine: String
+  environmentVariables: [EnvironmentVariableInput]
+  graphId: String
+  host: String
+  id: ID
+  kind: String
+  maxConnections: Int
+  name: String
+  namespace: String
+  port: Int
+  replicaCount: Int
+  replicationEnabled: Boolean
+  secrets: [SecretInput]
+  spec: JSON
+  sslEnabled: Boolean
+  storageClass: String
+  storageSize: String
+  url: String
+  username: String
+  version: String
+}
+
+"""A scalar type representing a timestamp in ISO 8601 format"""
+scalar DateTime
+
+enum DependencyType {
+  CACHE
+  DATABASE
+  LOAD_BALANCER
+  MESSAGE_QUEUE
+  PROXY
+}
+
+"""Input for deploying infrastructure"""
+input DeployInfrastructureInput {
+  graph: GeneratedCodeGraphInput!
+}
+
+"""Deployment strategies"""
+enum DeploymentStrategy {
+  """A/B testing"""
+  A_B_TESTING
+  """Blue-green"""
+  BLUE_GREEN
+  """Canary"""
+  CANARY
+  """Recreate"""
+  RECREATE
+  """Rolling update"""
+  ROLLING_UPDATE
+}
+
+type Edge {
+  connectionType: ConnectionType!
+  node: GraphNode!
+}
+
+"""Input for creating an edge"""
+input EdgeInput {
+  """Connection type"""
+  connectionType: ConnectionType!
+  endNodeId: String
+  endX: Float
+  endY: Float
+  id: ID
+  """Target node"""
+  node: NodeInput!
+  startNodeId: String
+  startX: Float
+  startY: Float
+}
+
+"""Environment variable type"""
+type EnvironmentVariable {
+  """Variable name"""
+  name: String!
+  """Variable value"""
+  value: String!
+}
+
+"""Input for environment variable"""
+input EnvironmentVariableInput {
+  """Variable name"""
+  name: String!
+  """Variable value"""
+  value: String!
+}
+
+"""API Gateway resource"""
+type Gateway {
+  accessLogEnabled: Boolean
+  accessLogFormat: String
+  authEnabled: Boolean
+  authType: String
+  basePath: String
+  cacheSize: String
+  cacheTTL: String
+  cachingEnabled: Boolean
+  circuitBreakerEnabled: Boolean
+  circuitBreakerThreshold: Int
+  circuitBreakerTimeout: String
+  compressionEnabled: Boolean
+  compressionLevel: Int
+  compressionTypes: [String]
+  configMaps: [ConfigMap]
+  corsEnabled: Boolean
+  corsHeaders: [String]
+  corsMethods: [String]
+  corsOrigins: [String]
+  domains: [String]
+  environmentVariables: [EnvironmentVariable]
+  gatewayType: String
+  graphId: String
+  healthCheckEnabled: Boolean
+  healthCheckHealthyThreshold: Int
+  healthCheckInterval: String
+  healthCheckPath: String
+  healthCheckTimeout: String
+  healthCheckUnhealthyThreshold: Int
+  host: String
+  id: ID!
+  ipBlacklist: [String]
+  ipWhitelist: [String]
+  kind: String!
+  loadBalancingAlgorithm: String
+  metricsEnabled: Boolean
+  metricsPath: String
+  name: String!
+  namespace: String
+  port: Int
+  protocol: String
+  rateLimitBurstSize: Int
+  rateLimitEnabled: Boolean
+  rateLimitPeriod: String
+  rateLimitRequests: Int
+  requestHeadersAdd: [String]
+  requestHeadersRemove: [String]
+  responseHeadersAdd: [String]
+  responseHeadersRemove: [String]
+  retries: Int
+  retryBackoff: String
+  retryTimeout: String
+  routes: [String]
+  secrets: [Secret]
+  serviceMeshEnabled: Boolean
+  serviceMeshProvider: String
+  spec: JSON
+  timeoutConnect: String
+  timeoutIdle: String
+  timeoutRead: String
+  timeoutWrite: String
+  tlsCertificate: String
+  tlsEnabled: Boolean
+  tlsKey: String
+  tlsMinVersion: String
+  tracingEnabled: Boolean
+  tracingProvider: String
+  tracingSampleRate: Float
+  translatesTo: Graph
+  upstreams: [String]
+  url: String!
+  version: String
+  websocketEnabled: Boolean
+  websocketTimeout: String
+}
+
+"""Input for API gateway resource"""
+input GatewayInput {
+  accessLogEnabled: Boolean
+  accessLogFormat: String
+  authEnabled: Boolean
+  authType: String
+  basePath: String
+  cacheSize: String
+  cacheTTL: String
+  cachingEnabled: Boolean
+  circuitBreakerEnabled: Boolean
+  circuitBreakerThreshold: Int
+  circuitBreakerTimeout: String
+  compressionEnabled: Boolean
+  compressionLevel: Int
+  compressionTypes: [String]
+  configMaps: [ConfigMapInput]
+  corsEnabled: Boolean
+  corsHeaders: [String]
+  corsMethods: [String]
+  corsOrigins: [String]
+  domains: [String]
+  environmentVariables: [EnvironmentVariableInput]
+  gatewayType: String
+  graphId: String
+  healthCheckEnabled: Boolean
+  healthCheckHealthyThreshold: Int
+  healthCheckInterval: String
+  healthCheckPath: String
+  healthCheckTimeout: String
+  healthCheckUnhealthyThreshold: Int
+  host: String
+  id: ID
+  ipBlacklist: [String]
+  ipWhitelist: [String]
+  kind: String
+  loadBalancingAlgorithm: String
+  metricsEnabled: Boolean
+  metricsPath: String
+  name: String
+  namespace: String
+  port: Int
+  protocol: String
+  rateLimitBurstSize: Int
+  rateLimitEnabled: Boolean
+  rateLimitPeriod: String
+  rateLimitRequests: Int
+  requestHeadersAdd: [String]
+  requestHeadersRemove: [String]
+  responseHeadersAdd: [String]
+  responseHeadersRemove: [String]
+  retries: Int
+  retryBackoff: String
+  retryTimeout: String
+  routes: [String]
+  secrets: [SecretInput]
+  serviceMeshEnabled: Boolean
+  serviceMeshProvider: String
+  spec: JSON
+  timeoutConnect: String
+  timeoutIdle: String
+  timeoutRead: String
+  timeoutWrite: String
+  tlsCertificate: String
+  tlsEnabled: Boolean
+  tlsKey: String
+  tlsMinVersion: String
+  tracingEnabled: Boolean
+  tracingProvider: String
+  tracingSampleRate: Float
+  upstreams: [String]
+  url: String
+  version: String
+  websocketEnabled: Boolean
+  websocketTimeout: String
+}
+
+"""Input for generating code from a graph"""
+input GenerateCodeInput {
+  """Graph to generate code from"""
+  graph: GraphInput!
+  """LLM configuration"""
+  llmConfig: LLMConfigInput
+}
+
+type GeneratedCodeGraph {
+  """Graph ID"""
+  graphId: String!
+  """Namespace for the generated graph"""
+  namespace: String!
+  """Generated code nodes"""
+  nodes: [GeneratedCodeNode!]
+  """Original graph ID"""
+  originalGraphId: String!
+  """Total number of files generated"""
+  totalFiles: Int!
+}
+
+"""Input for generated code graph"""
+input GeneratedCodeGraphInput {
+  graphId: String!
+  namespace: String!
+  nodes: [GeneratedCodeNodeInput!]
+  originalGraphId: String!
+  totalFiles: Int!
+}
+
+"""Metadata for generated code"""
+type GeneratedCodeMetadata {
+  """File name"""
+  fileName: String!
+  """File path"""
+  path: String!
+}
+
+type GeneratedCodeNode {
+  cache: Cache
+  command: Script
+  companyId: String!
+  config: YAML
+  createdAt: DateTime
+  database: Database
+  dependencyType: DependencyType
+  edges: [Edge]
+  gateway: Gateway
+  generatedCodeMetadata: GeneratedCodeMetadata!
+  id: ID!
+  loadBalancer: LoadBalancer
+  messageQueue: MessageQueue
+  microservice: Microservice
+  monitoring: Monitoring
+  name: String!
+  namespace: String
+  nodeType: GraphNodeType!
+  orginalNodeId: String
+  orginalNodeName: String
+  orginalNodeType: String
+  proxy: Proxy
+  spec: JSON
+  updatedAt: DateTime
+  userId: String!
+}
+
+"""Input for generated code node"""
+input GeneratedCodeNodeInput {
+  command: ScriptInput
+  companyId: String
+  config: YAML
+  id: String
+  name: String!
+  namespace: String
+  nodeType: GraphNodeType!
+  orginalNodeId: String
+  orginalNodeName: String
+  orginalNodeType: String
+  spec: JSON
+  userId: String
+}
+
+type Graph {
+  bridges: [GraphBridge]
+  cluster: KubernetesCluster
+  companyId: String!
+  createdAt: DateTime
+  description: String
+  graphType: GraphType!
+  id: ID!
+  name: String!
+  nodes: [GraphNode]
+  parent: Graph
+  subgraphs: [Graph]
+  updatedAt: DateTime
+  userId: String!
+}
+
+"""Graph bridge for connecting graphs"""
+type GraphBridge {
+  connectionType: ConnectionType!
+  graph: Graph!
+}
+
+"""Input for graph bridge"""
+input GraphBridgeInput {
+  connectionType: ConnectionType!
+  graphId: ID!
+}
+
+"""Graph connection suggestion information"""
+type GraphConnectionSuggestion {
+  """Source node ID"""
+  sourceId: String!
+  """Source node type"""
+  sourceType: GraphNodeType!
+  """Connection suggestions"""
+  suggestions: [Suggestion!]!
+}
+
+"""Input representing a graph structure"""
+input GraphInput {
+  bridges: [GraphBridgeInput]
+  clusterId: String
+  companyId: String!
+  description: String
+  graphType: GraphType
+  id: String
+  name: String!
+  nodes: [NodeInput]
+  parent: GraphInput
+  subgraphs: [GraphInput]
+  userId: String!
+}
+
+"""Input for graph metadata"""
+input GraphMetadataInput {
+  """Metadata key-value pairs"""
+  data: JSON
+}
+
+type GraphNode {
+  cache: Cache
+  companyId: String!
+  config: YAML
+  createdAt: DateTime
+  database: Database
+  dependencyType: DependencyType
+  edges: [Edge]
+  gateway: Gateway
+  id: ID!
+  loadBalancer: LoadBalancer
+  messageQueue: MessageQueue
+  microservice: Microservice
+  monitoring: Monitoring
+  name: String!
+  namespace: String
+  nodeType: GraphNodeType!
+  orginalNodeId: String
+  orginalNodeName: String
+  orginalNodeType: String
+  proxy: Proxy
+  spec: JSON
+  updatedAt: DateTime
+  userId: String!
+}
+
+"""Graph Node type"""
+enum GraphNodeType {
+  CACHE
+  CLUSTERROLE
+  CLUSTERROLEBINDING
+  COMMAND
+  CONFIG
+  CONFIGMAP
+  CRONJOB
+  CUSTOMRESOURCEDEFINITION
+  DAEMONSET
+  DATABASE
+  DEBUGGING
+  DEPLOYMENT
+  ENDPOINT
+  EXTERNAL_DEPENDENCY
+  GATEWAY
+  HORIZONTALPODAUTOSCALER
+  INGRESS
+  JOB
+  LIMITRANGE
+  LOAD_BALANCER
+  MESSAGE_QUEUE
+  MICROSERVICE
+  MONITORING
+  NAMESPACE
+  NETWORKPOLICY
+  NODE
+  PERSISTENTVOLUME
+  PERSISTENTVOLUMECLAIM
+  POD
+  PODDISRUPTIONBUDGET
+  PODSECURITYPOLICY
+  PRIORITYCLASS
+  PROXY
+  REPLICASET
+  RESOURCEQUOTA
+  ROLE
+  ROLEBINDING
+  SECRET
+  SERVICE
+  SERVICEACCOUNT
+  STATEFULSET
+  STORAGECLASS
+  VERTICALPODAUTOSCALER
+  VOLUME
+}
+
+enum GraphType {
+  ABSTRACT
+  DEBUGGING
+  INFRASTRUCTURE
+  KUBERNETES
+  MICROSERVICE
+}
+
+"""Graph validation result with suggestions"""
+type GraphValidation {
+  """Whether the graph is valid"""
+  isValid: Boolean!
+  """Suggested corrected graph if needed"""
+  suggestedGraph: Graph!
+}
+
+"""Input for initializing a plan"""
+input InitializePlanInput {
+  """The graph to plan for (required)"""
+  graph: GraphInput!
+  """Optional model name"""
+  modelName: String
+  """Optional model provider"""
+  modelProvider: String
+  """Optional user request for modifications"""
+  userRequest: String
+}
+
+"""A scalar type representing JSON data"""
+scalar JSON
+
+"""Capture the job Id for follow ups"""
+type JobStatus {
+  jobId: String!
+  status: JobStatusStatus!
+  step: String!
+}
+
+input JobStatusInput {
+  jobId: String!
+}
+
+"""Canonical job status values"""
+enum JobStatusStatus {
+  cancelled
+  completed
+  failed
+  pending
+  running
+}
+
+"""Top-level Kubernetes cluster information"""
+type KubernetesCluster {
+  id: ID!
+  metadata: String
+  name: String!
+  """All nodes in this cluster"""
+  nodes: [Graph]
+  provider: String
+  region: String
+  spec: JSON
+  type: KubernetesClusterType
+  version: String
+}
+
+"""Kubernetes cluster types"""
+enum KubernetesClusterType {
+  HYBRID
+  MANAGED
+  SELF_HOSTED
+}
+
+input LLMConfigInput {
+  model: String
+  provider: ModelProvider
+}
+
+"""Load balancer resource"""
+type LoadBalancer {
+  algorithm: String
+  backends: [String]
+  configMaps: [ConfigMap]
+  connectionDrainingEnabled: Boolean
+  connectionDrainingTimeout: String
+  crossZoneEnabled: Boolean
+  environmentVariables: [EnvironmentVariable]
+  graphId: String
+  healthCheckEnabled: Boolean
+  healthCheckHealthyThreshold: Int
+  healthCheckInterval: String
+  healthCheckPath: String
+  healthCheckTimeout: String
+  healthCheckUnhealthyThreshold: Int
+  host: String
+  id: ID!
+  idleTimeout: String
+  kind: String!
+  loadBalancerType: String
+  name: String!
+  namespace: String
+  port: Int
+  protocol: String
+  secrets: [Secret]
+  spec: JSON
+  stickySessionCookie: String
+  stickySessionDuration: String
+  stickySessionEnabled: Boolean
+  tlsCertificate: String
+  tlsEnabled: Boolean
+  tlsKey: String
+  translatesTo: Graph
+  url: String!
+  version: String
+}
+
+"""Input for load balancer resource"""
+input LoadBalancerInput {
+  algorithm: String
+  backends: [String]
+  configMaps: [ConfigMapInput]
+  connectionDrainingEnabled: Boolean
+  connectionDrainingTimeout: String
+  crossZoneEnabled: Boolean
+  environmentVariables: [EnvironmentVariableInput]
+  graphId: String
+  healthCheckEnabled: Boolean
+  healthCheckHealthyThreshold: Int
+  healthCheckInterval: String
+  healthCheckPath: String
+  healthCheckTimeout: String
+  healthCheckUnhealthyThreshold: Int
+  host: String
+  id: ID
+  idleTimeout: String
+  kind: String
+  loadBalancerType: String
+  name: String
+  namespace: String
+  port: Int
+  protocol: String
+  secrets: [SecretInput]
+  spec: JSON
+  stickySessionCookie: String
+  stickySessionDuration: String
+  stickySessionEnabled: Boolean
+  tlsCertificate: String
+  tlsEnabled: Boolean
+  tlsKey: String
+  url: String
+  version: String
+}
+
+"""Message queue resource"""
+type MessageQueue {
+  authEnabled: Boolean
+  clusterMode: Boolean
+  configMaps: [ConfigMap]
+  dlqEnabled: Boolean
+  dlqName: String
+  engine: String
+  environmentVariables: [EnvironmentVariable]
+  exchanges: [String]
+  graphId: String
+  host: String
+  id: ID!
+  kind: String!
+  maxMessageSize: String
+  name: String!
+  namespace: String
+  partitions: Int
+  port: Int
+  protocol: String
+  queues: [String]
+  replicaCount: Int
+  replicationFactor: Int
+  retentionPeriod: String
+  secrets: [Secret]
+  spec: JSON
+  tlsEnabled: Boolean
+  topics: [String]
+  translatesTo: Graph
+  url: String!
+  version: String
+}
+
+"""Input for message queue resource"""
+input MessageQueueInput {
+  authEnabled: Boolean
+  clusterMode: Boolean
+  configMaps: [ConfigMapInput]
+  dlqEnabled: Boolean
+  dlqName: String
+  engine: String
+  environmentVariables: [EnvironmentVariableInput]
+  exchanges: [String]
+  graphId: String
+  host: String
+  id: ID
+  kind: String
+  maxMessageSize: String
+  name: String
+  namespace: String
+  partitions: Int
+  port: Int
+  protocol: String
+  queues: [String]
+  replicaCount: Int
+  replicationFactor: Int
+  retentionPeriod: String
+  secrets: [SecretInput]
+  spec: JSON
+  tlsEnabled: Boolean
+  topics: [String]
+  url: String
+  version: String
+}
+
+type Microservice {
+  baseImage: String
+  category: String
+  configMaps: [ConfigMap!]
+  dependencies: [String]
+  environmentVariables: [EnvironmentVariable!]
+  framework: String
+  graphId: String
+  id: ID!
+  image: String
+  language: String
+  name: String!
+  namespace: String
+  ports: [Int]
+  repository: String
+  scripts: [Script!]
+  secrets: [Secret!]
+  spec: JSON
+  translatesTo: Graph
+  version: String
+}
+
+"""Input for microservice resource"""
+input MicroserviceInput {
+  baseImage: String
+  category: String
+  configMaps: [ConfigMapInput]
+  dependencies: [String]
+  environmentVariables: [EnvironmentVariableInput]
+  framework: String
+  graphId: String
+  id: ID
+  image: String
+  language: String
+  name: String
+  namespace: String
+  ports: [Int]
+  repository: String
+  scripts: [ScriptInput]
+  secrets: [SecretInput]
+  spec: JSON
+  version: String
+}
+
+enum ModelProvider {
+  claude
+  deepseek
+  gemma
+  google
+  openai
+}
+
+"""Monitoring resource"""
+type Monitoring {
+  alertRules: [String]
+  alertmanagerEnabled: Boolean
+  alertmanagerUrl: String
+  authEnabled: Boolean
+  configMaps: [ConfigMap]
+  dashboards: [String]
+  environmentVariables: [EnvironmentVariable]
+  exporters: [String]
+  graphId: String
+  host: String
+  id: ID!
+  kind: String!
+  metrics: [String]
+  monitoringType: String
+  name: String!
+  namespace: String
+  port: Int
+  remoteWriteEnabled: Boolean
+  remoteWriteUrl: String
+  retentionPeriod: String
+  scrapeInterval: String
+  scrapeTimeout: String
+  secrets: [Secret]
+  serviceMonitors: [String]
+  spec: JSON
+  storageSize: String
+  tlsEnabled: Boolean
+  translatesTo: Graph
+  url: String!
+  version: String
+}
+
+"""Input for monitoring resource"""
+input MonitoringInput {
+  alertRules: [String]
+  alertmanagerEnabled: Boolean
+  alertmanagerUrl: String
+  authEnabled: Boolean
+  configMaps: [ConfigMapInput]
+  dashboards: [String]
+  environmentVariables: [EnvironmentVariableInput]
+  exporters: [String]
+  graphId: String
+  host: String
+  id: ID
+  kind: String
+  metrics: [String]
+  monitoringType: String
+  name: String
+  namespace: String
+  port: Int
+  remoteWriteEnabled: Boolean
+  remoteWriteUrl: String
+  retentionPeriod: String
+  scrapeInterval: String
+  scrapeTimeout: String
+  secrets: [SecretInput]
+  serviceMonitors: [String]
+  spec: JSON
+  storageSize: String
+  tlsEnabled: Boolean
+  url: String
+  version: String
+}
+
+"""The root mutation type"""
+type Mutation {
+  """Create a graph"""
+  createGraph(input: CreateGraphInput!): Graph!
+  """Create a Kubernetes cluster"""
+  createKubernetesCluster(input: CreateKubernetesClusterInput!): KubernetesCluster!
+  """Create a Kubernetes graph"""
+  createKubernetesGraph(input: CreateKubernetesGraphInput!): Graph!
+  """Create a microservice"""
+  createMicroservice(input: CreateMicroserviceInput!): Microservice!
+  """Delete a graph"""
+  deleteGraph(companyId: String!, id: ID!, userId: String): Boolean!
+  """Delete a Kubernetes cluster"""
+  deleteKubernetesCluster(companyId: String!, id: ID!, userId: String): Boolean!
+  """Delete a Kubernetes graph"""
+  deleteKubernetesGraph(companyId: String!, id: ID!, userId: String): Boolean!
+  """Delete a microservice"""
+  deleteMicroservice(companyId: String!, id: ID!, userId: String): Boolean!
+  """Deploy infrastructure"""
+  deployInfrastructure(input: DeployInfrastructureInput!): Graph!
+  """Initialize code generation"""
+  initializeCodeGen(input: GenerateCodeInput!): JobStatus!
+  """Initialize a planning job"""
+  initializePlan(input: InitializePlanInput!): PlanJobStatus!
+  """Update a graph"""
+  updateGraph(id: ID!, input: UpdateGraphInput!): Graph
+  """Update a Kubernetes cluster"""
+  updateKubernetesCluster(input: UpdateKubernetesClusterInput!): KubernetesCluster
+  """Update a Kubernetes graph"""
+  updateKubernetesGraph(input: UpdateKubernetesGraphInput!): Graph
+  """Update a microservice"""
+  updateMicroservice(input: UpdateMicroserviceInput!): Microservice
+}
+
+"""Input for creating a node"""
+input NodeInput {
+  cache: CacheInput
+  companyId: String!
+  createdAt: DateTime
+  database: DatabaseInput
+  dependencyType: DependencyType
+  edges: [EdgeInput]
+  gateway: GatewayInput
+  height: Float
+  iconSrc: String
+  id: ID
+  label: String
+  loadBalancer: LoadBalancerInput
+  messageQueue: MessageQueueInput
+  microservice: MicroserviceInput
+  monitoring: MonitoringInput
+  name: String!
+  namespace: String
+  nodeType: String
+  proxy: ProxyInput
+  spec: JSON
+  type: String
+  updatedAt: DateTime
+  userId: String!
+  width: Float
+  x: Float
+  y: Float
+}
+
+"""Status of a planning job"""
+type PlanJobStatus {
+  error: String
+  jobId: String!
+  status: String!
+  step: String!
+}
+
+"""Result of a planning operation"""
+type PlanResult {
+  context: [String]
+  graph: Graph
+}
+
+"""Proxy resource"""
+type Proxy {
+  cachingEnabled: Boolean
+  compressionEnabled: Boolean
+  configMaps: [ConfigMap]
+  environmentVariables: [EnvironmentVariable]
+  graphId: String
+  healthCheckEnabled: Boolean
+  healthCheckInterval: String
+  healthCheckPath: String
+  host: String
+  id: ID!
+  kind: String!
+  name: String!
+  namespace: String
+  port: Int
+  protocol: String
+  proxyType: String
+  rateLimitEnabled: Boolean
+  rateLimitPeriod: String
+  rateLimitRequests: Int
+  retries: Int
+  secrets: [Secret]
+  spec: JSON
+  timeoutConnect: String
+  timeoutRead: String
+  timeoutWrite: String
+  tlsCertificate: String
+  tlsEnabled: Boolean
+  tlsKey: String
+  translatesTo: Graph
+  upstreams: [String]
+  url: String!
+  version: String
+}
+
+"""Input for proxy resource"""
+input ProxyInput {
+  cachingEnabled: Boolean
+  compressionEnabled: Boolean
+  configMaps: [ConfigMapInput]
+  environmentVariables: [EnvironmentVariableInput]
+  graphId: String
+  healthCheckEnabled: Boolean
+  healthCheckInterval: String
+  healthCheckPath: String
+  host: String
+  id: ID
+  kind: String
+  name: String
+  namespace: String
+  port: Int
+  protocol: String
+  proxyType: String
+  rateLimitEnabled: Boolean
+  rateLimitPeriod: String
+  rateLimitRequests: Int
+  retries: Int
+  secrets: [SecretInput]
+  spec: JSON
+  timeoutConnect: String
+  timeoutRead: String
+  timeoutWrite: String
+  tlsCertificate: String
+  tlsEnabled: Boolean
+  tlsKey: String
+  upstreams: [String]
+  url: String
+  version: String
+}
+
+"""The root query type"""
+type Query {
+  """Get connection type between nodes"""
+  connectionType(graphId: ID!, sourceType: String!, targetType: String!): ConnectionType
+  """Get external dependencies for a graph"""
+  externalDependencies(graphId: ID!): [GraphNode!]!
+  """Get external dependency by ID"""
+  externalDependency(graphId: ID!, id: ID!): GraphNode!
+  """Get generated code for a job"""
+  generatedCode(jobId: String!): GeneratedCodeGraph
+  """Get a plan result"""
+  getPlan(jobId: String!): PlanResult
+  """Get suggestions for graph connections"""
+  getSuggestion(sourceId: String!, sourceType: GraphNodeType!): GraphConnectionSuggestion!
+  """Get a graph by ID"""
+  graph(companyId: String!, id: ID!, userId: String): Graph
+  """Get Graph by name"""
+  graphByName(companyId: String!, name: String!): [Graph!]!
+  """Get all graphs"""
+  graphs(companyId: String!, limit: Int, userId: String): [Graph!]!
+  """Get job status"""
+  jobStatus(input: JobStatusInput!): JobStatus!
+  """Get Kubernetes cluster by ID"""
+  kubernetesCluster(id: ID!): KubernetesCluster!
+  """Get all Kubernetes clusters"""
+  kubernetesClusters(companyId: String!): [KubernetesCluster!]!
+  """Get Kubernetes graph by ID"""
+  kubernetesGraph(id: ID!): Graph!
+  """Get all Kubernetes graphs"""
+  kubernetesGraphs(companyId: String!): [Graph!]!
+  """Get Kubernetes resources by namespace"""
+  kubernetesResourcesByNamespace(companyId: String!, namespace: String!): [GraphNode!]!
+  """Get Kubernetes resources by type"""
+  kubernetesResourcesByType(companyId: String!, type: String!): [GraphNode!]!
+  """Get a microservice by ID"""
+  microservice(id: ID!): Microservice
+  """Get all microservices"""
+  microservices(companyId: String!, limit: Int): [Microservice!]!
+  """Get node by ID"""
+  node(id: ID!): GraphNode!
+  """Get nodes for a graph"""
+  nodes(graphId: ID!): [GraphNode!]!
+  """Validate a connection between nodes"""
+  validateConnection(input: ValidateConnectionInput!): ConnectionValidation!
+  """Validate a graph structure"""
+  validateGraph(graphId: String!): GraphValidation!
+}
+
+"""Script information"""
+type Script {
+  calledBy: [GraphNode]
+  """Script command"""
+  command: String!
+  """Script name"""
+  name: String!
+  results: [ScriptResult]
+  retryCount: Int
+}
+
+"""Input for script information"""
+input ScriptInput {
+  """Script command"""
+  command: String!
+  """Script name"""
+  name: String!
+}
+
+type ScriptResult {
+  output: String
+  status: String!
+}
+
+"""Secret information"""
+type Secret {
+  encryptionPublicKey: String!
+  """Secret key"""
+  key: String
+  """Secret name"""
+  name: String!
+  """Secret value"""
+  value: String
+}
+
+"""Input for secret information"""
+input SecretInput {
+  encryptionPublicKey: String!
+  key: String
+  name: String!
+  value: String
+}
+
+"""The root subscription type"""
+type Subscription {
+  """Generate code in real-time"""
+  generateCode(input: GenerateCodeInput!): JobStatus
+}
+
+"""Connection suggestion"""
+type Suggestion {
+  """Suggested connection type"""
+  targetConnectionType: ConnectionType!
+  """Target node type"""
+  targetType: GraphNodeType!
+}
+
+"""Input for updating a graph"""
+input UpdateGraphInput {
+  """Bridges"""
+  bridges: [GraphBridgeInput]
+  """Cluster ID"""
+  clusterId: String
+  """Graph description"""
+  description: String
+  """Graph type"""
+  graphType: GraphType
+  id: ID!
+  """Graph name"""
+  name: String
+  """Nodes"""
+  nodes: [NodeInput]
+  """Subgraphs"""
+  subgraphs: [GraphInput]
+}
+
+"""Input for updating a Kubernetes cluster"""
+input UpdateKubernetesClusterInput {
+  id: ID!
+  """Cluster metadata"""
+  metadata: JSON
+  """Cluster name"""
+  name: String
+  """Cluster provider"""
+  provider: String
+  """Cluster region"""
+  region: String
+  """Cluster type"""
+  type: KubernetesClusterType
+  """Cluster version"""
+  version: String
+}
+
+"""Input for updating a Kubernetes graph"""
+input UpdateKubernetesGraphInput {
+  companyId: String
+  """Graph description"""
+  description: String
+  id: ID!
+  """Kubernetes cluster information"""
+  kubernetesCluster: UpdateKubernetesClusterInput
+  """Graph metadata"""
+  metadata: GraphMetadataInput
+  """Graph name"""
+  name: String
+  """Graph tags"""
+  tags: [String!]
+  userId: String
+  """Graph version"""
+  version: String
+}
+
+"""Input for updating a microservice"""
+input UpdateMicroserviceInput {
+  baseImage: String
+  companyId: String!
+  config: [ConfigMapInput!]
+  dependencies: [String!]
+  environmentVariables: [EnvironmentVariableInput!]
+  externalDependencies: [ID!]
+  framework: String
+  graphId: ID
+  id: ID!
+  image: String
+  imageTag: String
+  internalDependencies: [ID!]
+  language: String
+  name: String
+  networks: [String!]
+  packageManager: String
+  ports: [Int!]
+  scripts: [ScriptInput!]
+  secrets: [SecretInput!]
+  userId: String!
+  version: String
+  volumes: [String!]
+}
+
+"""Input for validating connections between graph nodes"""
+input ValidateConnectionInput {
+  """Proposed connection type"""
+  connectionType: ConnectionType
+  """Source node ID"""
+  sourceId: ID!
+  """Target node ID"""
+  targetId: ID!
+}
+
+"""A scalar type representing YAML data"""
+scalar YAML

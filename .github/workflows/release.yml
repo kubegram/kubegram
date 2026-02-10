@@ -1,0 +1,98 @@
+name: Release common-ts
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'common-ts/**'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: common-ts
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kubegram'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:ci-no-coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed - dist directory not found"
+            exit 1
+          fi
+          echo "Build successful - dist directory created"
+
+      - name: Check if version changed
+        id: version-check
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          if npm view @kubegram/common-ts@$CURRENT_VERSION version > /dev/null 2>&1; then
+            echo "Version $CURRENT_VERSION already exists on npm"
+            echo "should-publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version $CURRENT_VERSION is new, will publish"
+            echo "should-publish=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Publish to GitHub Packages
+        if: steps.version-check.outputs.should-publish == 'true'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.version-check.outputs.should-publish == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: common-ts/v${{ steps.version-check.outputs.current-version }}
+          release_name: common-ts v${{ steps.version-check.outputs.current-version }}
+          body: |
+            ## @kubegram/common-ts v${{ steps.version-check.outputs.current-version }}
+
+            ### Installation
+            ```bash
+            npm install @kubegram/common-ts@${{ steps.version-check.outputs.current-version }}
+            ```
+          draft: false
+          prerelease: false
+
+      - name: Skip release notification
+        if: steps.version-check.outputs.should-publish == 'false'
+        run: |
+          echo "Skipping release - version ${{ steps.version-check.outputs.current-version }} already exists"

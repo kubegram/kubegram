@@ -1,0 +1,25 @@
+{
+  "name": "kubegram",
+  "private": true,
+  "workspaces": [
+    "common-ts",
+    "kuberag",
+    "kubegram-server",
+    "kubegram-ui"
+  ],
+  "overrides": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0"
+  },
+  "scripts": {
+    "build:common-ts": "npm --workspace common-ts run build",
+    "build:all": "npm --workspaces run build --if-present",
+    "dev:kuberag": "npm --workspace kuberag run dev",
+    "dev:kubegram-server": "npm --workspace kubegram-server run dev",
+    "dev:kubegram-ui": "npm --workspace kubegram-ui run dev",
+    "test:all": "npm --workspaces run test --if-present",
+    "lint:all": "npm --workspaces run lint --if-present",
+    "lint:fix:all": "npm --workspaces run lint:fix --if-present",
+    "typecheck:all": "npm --workspaces run typecheck --if-present"
+  }
+}

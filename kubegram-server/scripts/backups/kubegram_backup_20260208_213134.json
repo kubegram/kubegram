@@ -1,0 +1,14 @@
+{
+  "backup_id": "kubegram_backup_20260208_213134",
+  "timestamp": "2026-02-09T04:31:35Z",
+  "database": "kubegram",
+  "container": "kubegram-server-postgres-1",
+  "tables_backed_up": [companies,company_certificates,company_llm_tokens,organizations,teams,users,projects,generation_jobs,generation_job_artifacts,openauth_sessions,openauth_codes,openauth_kv],
+  "table_details": [{"table":"companies","records":     1,"size_bytes":},{"table":"company_certificates","records":     0,"size_bytes":},{"table":"company_llm_tokens","records":     0,"size_bytes":},{"table":"organizations","records":     1,"size_bytes":},{"table":"teams","records":     1,"size_bytes":},{"table":"users","records":     1,"size_bytes":},{"table":"projects","records":     0,"size_bytes":},{"table":"generation_jobs","records":     0,"size_bytes":},{"table":"generation_job_artifacts","records":     0,"size_bytes":},{"table":"openauth_sessions","records":     0,"size_bytes":},{"table":"openauth_codes","records":     0,"size_bytes":},{"table":"openauth_kv","records":     6,"size_bytes":}],
+  "total_records": 10,
+  "total_size_bytes": 0,
+  "total_size_mb": 0,
+  "backup_file": "/Users/salehshehata/github.com/kubegram/kubegram/kubegram-server/scripts/backups/kubegram_backup_20260208_213134.sql",
+  "created_by": "clear-database.sh v1.0.0",
+  "environment": "development"
+}

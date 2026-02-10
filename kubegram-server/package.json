@@ -1,0 +1,43 @@
+{
+    "name": "kubegram-server-v2",
+    "version": "1.0.0",
+    "description": "Bun server with SSR and API routes for Kubegram",
+    "type": "module",
+    "scripts": {
+        "dev": "bun --watch src/index.ts",
+        "dev:debug": "bun --inspect=0.0.0.0:6464/kubegram-debug --watch src/index.ts",
+        "start": "NODE_ENV=production bun src/index.ts",
+        "copy-ui": "chmod +x scripts/copy-ui.sh && ./scripts/copy-ui.sh",
+        "db:clear": "./scripts/clear-database.sh",
+        "db:restore": "./scripts/restore-database.sh", 
+        "db:backup": "./scripts/clear-database.sh --backup-only",
+        "db:status": "./scripts/clear-database.sh --status-only",
+        "db:shell": "docker exec -it kubegram-server-postgres-1 psql -U postgres -d kubegram",
+        "db:reset": "docker-compose down && docker volume rm kubegram-server_postgres_data && docker-compose up -d",
+        "clear-db": "./scripts/clear-database.sh",
+        "restore-db": "./scripts/restore-database.sh",
+        "backup-db": "./scripts/clear-database.sh --backup-only",
+        "db-backup": "./scripts/clear-database.sh --backup-only",
+        "db-restore": "./scripts/restore-database.sh"
+    },
+    "dependencies": {
+        "@kubegram/common-ts": "^1.4.1",
+        "@openauthjs/openauth": "^0.4.3",
+        "drizzle-orm": "^0.45.1",
+        "graphql": "^16.12.0",
+        "hono": "^4.11.7",
+        "lru-cache": "^11.2.5",
+        "postgres": "^3.4.8",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "valibot": "^1.2.0",
+        "winston": "^3.19.0",
+        "ioredis": "^5.4.2"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.0",
+        "@types/react-dom": "^18.2.0",
+        "bun-types": "latest",
+        "drizzle-kit": "^0.31.8"
+    }
+}

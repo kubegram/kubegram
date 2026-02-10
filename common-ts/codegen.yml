@@ -1,0 +1,49 @@
+overwrite: true
+schema: 'src/graphql/schema.graphql'
+documents: 'src/graphql/operations.graphql'
+generates:
+  src/graphql/generated/types.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-resolvers'
+    config:
+      useIndexSignature: true
+      useTypeImports: true
+      contextType: '../context.js#GraphQLContext'
+      scalars:
+        DateTime: 'string'
+        JSON: 'any'
+        ID: 'string'
+  src/graphql/generated/schema.graphql:
+    plugins:
+      - 'schema-ast'
+    config:
+      includeDirectives: true
+  src/graphql/generated/client.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-graphql-request'
+    config:
+      scalars:
+        DateTime: 'string'
+        JSON: 'any'
+        ID: 'string'
+      rawRequest: true
+      useTypeImports: true
+      documentMode: 'string'
+      skipTypename: false
+  src/graphql/generated/subscription-client.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-graphql-request'
+    config:
+      scalars:
+        DateTime: 'string'
+        JSON: 'any'
+        ID: 'string'
+      useTypeImports: true
+      gqlImport: 'graphql-tag#gql'
+      subscriptionClient: '../subscription-client.js#GraphQLSubscriptionClient'
+      rawRequest: true

@@ -1,0 +1,68 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "8665:8665"
+      - "9229:9229"
+    command: >
+      sh -c "
+        echo 'Waiting for Dgraph to be ready...' &&
+        sleep 5 &&
+        echo 'Loading schema...' &&
+        bun scripts/load-schema.ts &&
+        echo 'Schema loaded, starting application...' &&
+        bun run dev:debug
+      "
+    env_file:
+      - .env.docker
+    environment:
+      NODE_ENV: development
+      PORT: 8665
+      ENABLE_CORS: "true"
+      DGRAPH_HOST: dgraph
+      DGRAPH_HTTP_PORT: 8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+    depends_on:
+      redis:
+        condition: service_healthy
+      dgraph:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  dgraph:
+    image: dgraph/standalone:latest
+    ports:
+      - "8080:8080"
+      - "9080:9080"
+    volumes:
+      - dgraph-data:/dgraph
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -X POST -H 'Content-Type: application/json' -d '{\"query\":\"{ health { status } }\"}' http://localhost:8080/admin || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  redis-data:
+  dgraph-data:

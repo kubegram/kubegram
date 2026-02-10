@@ -1,0 +1,64 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        NODE_AUTH_TOKEN: ${NODE_AUTH_TOKEN}
+    ports:
+      - "8090:8090"
+      - "6464:6464"
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo 'Database should be ready, running migrations...' &&
+        bun x drizzle-kit push --force &&
+        echo 'Migrations completed, starting application...' &&
+        bun run dev:debug
+      "
+    env_file:
+      - .env.docker
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kubegram
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:

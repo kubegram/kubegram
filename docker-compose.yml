@@ -1,0 +1,163 @@
+services:
+  # KubeRAG Service - Infrastructure Graph Management
+  kuberag:
+    build:
+      context: ./kuberag
+      dockerfile: Dockerfile
+      target: build
+    ports:
+      - "8665:8665"
+      - "9229:9229"  # Debug port
+    command: >
+      sh -c "
+        echo 'Starting KubeRAG with enhanced schema loading...' &&
+        bun scripts/load-schema.ts &&
+        echo 'Application startup completed, starting development server...' &&
+        bun run dev:debug
+      "
+    env_file:
+      - ./kuberag/.env.docker
+    environment:
+      NODE_ENV: development
+      PORT: 8665
+      ENABLE_CORS: "true"
+      DGRAPH_HOST: dgraph
+      DGRAPH_HTTP_PORT: 8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0  # KubeRAG uses Redis DB 0
+      # Schema loading control
+      SKIP_SCHEMA_LOAD: ${SKIP_SCHEMA_LOAD:-false}
+      SCHEMA_LOAD_INTERVAL: ${SCHEMA_LOAD_INTERVAL:-60}
+      SCHEMA_LOAD_MAX_ATTEMPTS: ${SCHEMA_LOAD_MAX_ATTEMPTS:-0}
+    volumes:
+      - ./kuberag/src:/app/src
+      - ./kuberag/scripts:/app/scripts
+    depends_on:
+      redis:
+        condition: service_healthy
+      dgraph:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - kubegram-network
+
+  # Kubegram Server - Main API Service
+  kubegram-server:
+    build:
+      context: ./kubegram-server
+      dockerfile: Dockerfile
+      args:
+        NODE_AUTH_TOKEN: ${NODE_AUTH_TOKEN}
+    ports:
+      - "8090:8090"
+      - "6465:6464"  # Debug port
+    command: >
+      sh -c "
+        echo 'Installing dependencies...' &&
+        bun install &&
+        echo 'Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo 'Database should be ready, running migrations...' &&
+        bun x drizzle-kit push --force &&
+        echo 'Migrations completed, starting application...' &&
+        bun run dev:debug
+      "
+    env_file:
+      - ./kubegram-server/.env.docker
+    environment:
+      # Override Redis configuration to use shared instance
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 1  # Kubegram Server uses Redis DB 1 to avoid conflicts
+      # Update KubeRAG URL to use internal Docker network
+      KUBERAG_URL: http://kuberag:8665/graphql
+      PORT: 8090
+      APP_URL: http://localhost:8090
+    volumes:
+      - ./kubegram-server/src:/app/src
+      - ./kubegram-server/public:/app/public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kuberag:
+        condition: service_started
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - kubegram-network
+
+  # Shared Redis Instance
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"  # Single Redis port for external access
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - kubegram-network
+
+  # PostgreSQL for Kubegram Server
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: kubegram
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - kubegram-network
+
+  # Dgraph for KubeRAG
+  dgraph:
+    image: dgraph/standalone:latest
+    ports:
+      - "8080:8080"
+      - "9080:9080"
+    volumes:
+      - dgraph-data:/dgraph
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf -X POST -H 'Content-Type: application/json' -d '{\"query\":\"{ health { status } }\"}' http://localhost:8080/admin || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    networks:
+      - kubegram-network
+
+volumes:
+  redis-data:
+  postgres-data:
+  dgraph-data:
+
+networks:
+  kubegram-network:
+    driver: bridge

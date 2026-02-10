@@ -1,0 +1,662 @@
+# Sample GraphQL operations for client generation
+
+query GetMicroservices($companyId: String!) {
+  microservices(companyId: $companyId) {
+    id
+    name
+    namespace
+    category
+    language
+    framework
+    image
+    baseImage
+    ports
+    repository
+    version
+    environmentVariables {
+      name
+      value
+    }
+    secrets {
+      name
+      value
+    }
+    configMaps {
+      name
+      key
+      value
+    }
+    scripts {
+      name
+      command
+    }
+    dependencies
+  }
+}
+
+query GetMicroservice($id: ID!) {
+  microservice(id: $id) {
+    id
+    name
+    namespace
+    category
+    language
+    framework
+    image
+    baseImage
+    ports
+    repository
+    version
+    environmentVariables {
+      name
+      value
+    }
+    secrets {
+      name
+      value
+    }
+    configMaps {
+      name
+      key
+      value
+    }
+    scripts {
+      name
+      command
+    }
+    dependencies
+  }
+}
+
+query GetExternalDependencies($graphId: ID!) {
+  externalDependencies(graphId: $graphId) {
+    id
+    name
+    nodeType
+    dependencyType
+    namespace
+    companyId
+    userId
+  }
+}
+
+query GetGraphs($companyId: String!, $userId: String) {
+  graphs(companyId: $companyId, userId: $userId) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+      edges {
+        connectionType
+        node {
+          id
+          name
+        }
+      }
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+query GetNodes($graphId: ID!) {
+  nodes(graphId: $graphId) {
+    id
+    name
+    nodeType
+    dependencyType
+    namespace
+    companyId
+    userId
+    edges {
+      connectionType
+      node {
+        id
+        name
+      }
+    }
+  }
+}
+
+mutation CreateMicroservice($input: CreateMicroserviceInput!) {
+  createMicroservice(input: $input) {
+    id
+    name
+    namespace
+    category
+    language
+    framework
+    image
+    baseImage
+    ports
+    repository
+    version
+    environmentVariables {
+      name
+      value
+    }
+    secrets {
+      name
+      value
+    }
+    configMaps {
+      name
+      key
+      value
+    }
+    scripts {
+      name
+      command
+    }
+    dependencies
+  }
+}
+
+mutation UpdateMicroservice($input: UpdateMicroserviceInput!) {
+  updateMicroservice(input: $input) {
+    id
+    name
+    namespace
+    category
+    language
+    framework
+    image
+    baseImage
+    ports
+    repository
+    version
+    environmentVariables {
+      name
+      value
+    }
+    secrets {
+      name
+      value
+    }
+    configMaps {
+      name
+      key
+      value
+    }
+    scripts {
+      name
+      command
+    }
+    dependencies
+  }
+}
+
+mutation DeleteMicroservice($id: ID!, $companyId: String!, $userId: String) {
+  deleteMicroservice(id: $id, companyId: $companyId, userId: $userId)
+}
+
+mutation CreateGraph($input: CreateGraphInput!) {
+  createGraph(input: $input) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+query GetConnectionType($graphId: ID!, $sourceType: String!, $targetType: String!) {
+  connectionType(graphId: $graphId, sourceType: $sourceType, targetType: $targetType)
+}
+
+query GenerateCode($jobId: String!) {
+  generatedCode(jobId: $jobId) {
+    graphId
+    originalGraphId
+    namespace
+    totalFiles
+    nodes {
+      id
+      name
+      nodeType
+      config
+      generatedCodeMetadata {
+        fileName
+        path
+      }
+      command {
+        name
+        command
+      }
+    }
+  }
+}
+
+query ValidateConnection($input: ValidateConnectionInput!) {
+  validateConnection(input: $input) {
+    isValid
+    suggestion
+  }
+}
+
+query ValidateGraph($graphId: String!) {
+  validateGraph(graphId: $graphId) {
+    isValid
+    suggestedGraph {
+      id
+      name
+      description
+      graphType
+      createdAt
+      updatedAt
+      userId
+      companyId
+    }
+  }
+}
+
+query GetSuggestion($sourceId: String!, $sourceType: GraphNodeType!) {
+  getSuggestion(sourceId: $sourceId, sourceType: $sourceType) {
+    sourceType
+    sourceId
+    suggestions {
+      targetType
+      targetConnectionType
+    }
+  }
+}
+
+mutation CreateKubernetesCluster($input: CreateKubernetesClusterInput!) {
+  createKubernetesCluster(input: $input) {
+    id
+    name
+    provider
+    region
+    type
+    version
+    metadata
+    spec
+  }
+}
+
+mutation CreateKubernetesGraph($input: CreateKubernetesGraphInput!) {
+  createKubernetesGraph(input: $input) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+mutation DeleteGraph($id: ID!, $companyId: String!, $userId: String) {
+  deleteGraph(id: $id, companyId: $companyId, userId: $userId)
+}
+
+mutation DeleteKubernetesCluster($id: ID!, $companyId: String!, $userId: String) {
+  deleteKubernetesCluster(id: $id, companyId: $companyId, userId: $userId)
+}
+
+mutation DeleteKubernetesGraph($id: ID!, $companyId: String!, $userId: String) {
+  deleteKubernetesGraph(id: $id, companyId: $companyId, userId: $userId)
+}
+
+mutation UpdateGraph($id: ID!, $input: UpdateGraphInput!) {
+  updateGraph(id: $id, input: $input) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+mutation UpdateKubernetesCluster($input: UpdateKubernetesClusterInput!) {
+  updateKubernetesCluster(input: $input) {
+    id
+    name
+    provider
+    region
+    type
+    version
+    metadata
+    spec
+  }
+}
+
+mutation UpdateKubernetesGraph($input: UpdateKubernetesGraphInput!) {
+  updateKubernetesGraph(input: $input) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+mutation DeployInfrastructure($input: DeployInfrastructureInput!) {
+  deployInfrastructure(input: $input) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+mutation InitializeCodeGen($input: GenerateCodeInput!) {
+  initializeCodeGen(input: $input) {
+    jobId
+    step
+    status
+  }
+}
+
+query ExternalDependency($graphId: ID!, $id: ID!) {
+  externalDependency(graphId: $graphId, id: $id) {
+    id
+    name
+    nodeType
+    dependencyType
+    namespace
+    companyId
+    userId
+  }
+}
+
+query Graph($id: ID!, $companyId: String!, $userId: String) {
+  graph(id: $id, companyId: $companyId, userId: $userId) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+query GraphByName($name: String!, $companyId: String!) {
+  graphByName(name: $name, companyId: $companyId) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+query KubernetesCluster($id: ID!) {
+  kubernetesCluster(id: $id) {
+    id
+    name
+    provider
+    region
+    type
+    version
+    metadata
+    spec
+  }
+}
+
+query KubernetesClusters($companyId: String!) {
+  kubernetesClusters(companyId: $companyId) {
+    id
+    name
+    provider
+    region
+    type
+    version
+    metadata
+    spec
+  }
+}
+
+query KubernetesGraph($id: ID!) {
+  kubernetesGraph(id: $id) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+query KubernetesGraphs($companyId: String!) {
+  kubernetesGraphs(companyId: $companyId) {
+    id
+    name
+    description
+    graphType
+    createdAt
+    updatedAt
+    userId
+    companyId
+    nodes {
+      id
+      name
+      nodeType
+      dependencyType
+      namespace
+    }
+    bridges {
+      graph {
+        id
+        name
+      }
+      connectionType
+    }
+  }
+}
+
+query KubernetesResourcesByNamespace($companyId: String!, $namespace: String!) {
+  kubernetesResourcesByNamespace(companyId: $companyId, namespace: $namespace) {
+    id
+    name
+    nodeType
+    dependencyType
+    namespace
+    companyId
+    userId
+  }
+}
+
+query KubernetesResourcesByType($companyId: String!, $type: String!) {
+  kubernetesResourcesByType(companyId: $companyId, type: $type) {
+    id
+    name
+    nodeType
+    dependencyType
+    namespace
+    companyId
+    userId
+  }
+}
+
+query Node($id: ID!) {
+  node(id: $id) {
+    id
+    name
+    nodeType
+    dependencyType
+    namespace
+    companyId
+    userId
+  }
+}
+
+query JobStatus($input: JobStatusInput!) {
+  jobStatus(input: $input) {
+    jobId
+    step
+    status
+  }
+}
+
+mutation InitializePlan($input: InitializePlanInput!) {
+  initializePlan(input: $input) {
+    jobId
+    status
+    step
+    error
+  }
+}
+
+query GetPlan($jobId: String!) {
+  getPlan(jobId: $jobId) {
+    graph {
+      id
+      name
+      nodes {
+        id
+        name
+        nodeType
+      }
+    }
+    context
+  }
+}

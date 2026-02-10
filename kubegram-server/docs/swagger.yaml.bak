@@ -1,0 +1,793 @@
+basePath: /api/public/v1
+definitions:
+  github_com_kubegram_kubegram-server_src_models.Company:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      organizations:
+        description: Relationships
+        items:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+        type: array
+      tokens:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
+  github_com_kubegram_kubegram-server_src_models.Organization:
+    properties:
+      companyID:
+        type: integer
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      teams:
+        items:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+
+  github_com_kubegram_kubegram-server_src_models.Team:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      id:
+        type: integer
+      name:
+        type: string
+      organizationID:
+        type: integer
+      updatedAt:
+        type: string
+      users:
+        items:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.User'
+        type: array
+    type: object
+  github_com_kubegram_kubegram-server_src_models.User:
+    properties:
+      avatar_url:
+        type: string
+      created_at:
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      provider:
+        description: OAuth linkage
+        type: string
+      provider_id:
+        type: string
+      role:
+        description: '"admin" | "manager" | "team_member"'
+        type: string
+      teamID:
+        type: integer
+      updated_at:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+host: localhost:8090
+securityDefinitions:
+  OAuth2:
+    type: oauth2
+    flow: accessCode
+    authorizationUrl: /auth/{provider}/login
+    tokenUrl: /auth/{provider}/callback
+    scopes:
+      admin: Admin access for internal operations
+      read: Read access
+      write: Write access
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: API for Kubegram application
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Kubegram API
+  version: "1.0"
+paths:
+  /api/v1/companies:
+    get:
+      description: Get a list of all companies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Company'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all companies
+      tags:
+      - companies
+    post:
+      x-internal: true
+      security:
+      - OAuth2:
+        - admin
+      consumes:
+      - application/json
+      description: Create a new company
+      parameters:
+      - description: Company object
+        in: body
+        name: company
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Company'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Company'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a company
+      tags:
+      - companies
+  /api/v1/companies/{id}:
+    delete:
+      x-internal: true
+      security:
+      - OAuth2:
+        - admin
+      description: Delete a company by ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a company
+      tags:
+      - companies
+    get:
+      description: Get a company by its ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Company'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a company
+      tags:
+      - companies
+    put:
+      x-internal: true
+      security:
+      - OAuth2:
+        - admin
+      consumes:
+      - application/json
+      description: Update a company by ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Company object
+        in: body
+        name: company
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Company'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Company'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a company
+      tags:
+      - companies
+  /api/v1/organizations:
+    get:
+      description: Get a list of all organizations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all organizations
+      tags:
+      - organizations
+    post:
+      consumes:
+      - application/json
+      description: Create a new organization
+      parameters:
+      - description: Organization object
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a organization
+      tags:
+      - organizations
+  /api/v1/organizations/{id}:
+    delete:
+      description: Delete a organization by ID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a organization
+      tags:
+      - organizations
+    get:
+      description: Get a organization by its ID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a organization
+      tags:
+      - organizations
+    put:
+      consumes:
+      - application/json
+      description: Update a organization by ID
+      parameters:
+      - description: Organization ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Organization object
+        in: body
+        name: organization
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Organization'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a organization
+      tags:
+      - organizations
+  /api/v1/teams:
+    get:
+      description: Get a list of all teams
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all teams
+      tags:
+      - teams
+    post:
+      consumes:
+      - application/json
+      description: Create a new team
+      parameters:
+      - description: Team object
+        in: body
+        name: team
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a team
+      tags:
+      - teams
+  /api/v1/teams/{id}:
+    delete:
+      description: Delete a team by ID
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a team
+      tags:
+      - teams
+    get:
+      description: Get a team by its ID
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get a team
+      tags:
+      - teams
+    put:
+      consumes:
+      - application/json
+      description: Update a team by ID
+      parameters:
+      - description: Team ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Team object
+        in: body
+        name: team
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.Team'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update a team
+      tags:
+      - teams
+  /api/v1/users:
+    get:
+      description: Get a list of all registered users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User object
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/github_com_kubegram_kubegram-server_src_models.User'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create a user
+      tags:
+      - users
+  /auth/{provider}/callback:
+    get:
+      description: Handles the callback from the OAuth provider, exchanges code for
+        token, and redirects to frontend
+      parameters:
+      - description: OAuth provider (github, gitlab, google)
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: Authorization code
+        in: query
+        name: code
+        required: true
+        type: string
+      - description: State parameter
+        in: query
+        name: state
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Redirect to frontend
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: OAuth callback
+      tags:
+      - auth
+  /auth/{provider}/login:
+    get:
+      description: Redirects to the OAuth provider's login page
+      parameters:
+      - description: OAuth provider (github, gitlab, google)
+        in: path
+        name: provider
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Redirect to provider
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Start OAuth flow
+      tags:
+      - auth
+  /auth/{provider}/refresh:
+    post:
+      description: Refreshes the access token using the stored refresh token
+      parameters:
+      - description: OAuth provider (github, gitlab, google)
+        in: path
+        name: provider
+        required: true
+        type: string
+      - description: User ID
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties:
+            type: integer
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Refresh OAuth token
+      tags:
+      - auth
+  /healthz/live:
+    get:
+      description: Returns 200 when the application is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Liveness probe
+      tags:
+      - health
+  /healthz/ready:
+    get:
+      description: Returns 200 when the application can connect to PostgreSQL
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Readiness probe
+      tags:
+      - health
+swagger: "2.0"

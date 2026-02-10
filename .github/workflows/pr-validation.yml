@@ -1,0 +1,67 @@
+name: PR Validation - common-ts
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'common-ts/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: common-ts
+
+    strategy:
+      matrix:
+        node-version: [20, 22]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: .
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Lint code
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:ci-no-coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed - dist directory not found"
+            exit 1
+          fi
+          echo "Build successful - dist directory created"
+
+      - name: Generate GraphQL types
+        run: npm run codegen
+
+      - name: Verify GraphQL generation
+        run: |
+          if [ ! -f "src/graphql/generated/types.ts" ]; then
+            echo "GraphQL codegen failed - types.ts not found"
+            exit 1
+          fi
+          echo "GraphQL codegen successful"
+
+      - name: Run tests after GraphQL generation
+        run: npm run test:ci-no-coverage

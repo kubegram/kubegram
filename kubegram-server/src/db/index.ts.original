@@ -1,0 +1,20 @@
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from './schema';
+
+const connectionString = process.env.DATABASE_URL!;
+
+// Updated configuration to fix strict mode issues
+export const client = postgres(connectionString, { 
+  prepare: false,
+  // Add explicit timeout and connection settings
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
+
+export const db = drizzle(client, { 
+  schema,
+  // Add explicit logger for debugging
+  logger: process.env.NODE_ENV === 'development' ? true : false
+});

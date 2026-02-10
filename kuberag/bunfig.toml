@@ -1,0 +1,20 @@
+[install]
+# Cache node_modules in docker/CI
+cache = true
+
+[run]
+# Set shell for bun run commands
+# shell = "bash"
+
+[test]
+# Use bun's built-in test runner
+# preload = ["./src/test-setup.ts"]
+
+[define]
+# Define build-time constants
+NODE_ENV = "development"
+
+[loaders]
+# Custom loaders for different file types
+".yaml" = "js-yaml"
+".yml" = "js-yaml"
