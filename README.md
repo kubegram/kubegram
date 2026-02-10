@@ -105,4 +105,4 @@ See [docs/usage.md](docs/usage.md) for full configuration, environment variables
 
 ## License
 
-[MIT](LICENSE)
+[Business Source License 1.1](LICENSE) -- Converts to GPL-3.0-or-later on 2030-02-10.
