@@ -1172,5 +1172,3 @@ BUSL-1.1 License - see LICENSE file for details.
 - ✨ SystemReminderEvent and SystemReminderResponseEvent
 - ✨ PubSubProvider abstraction
 - ✨ LocalPubSubProvider implementation
-- ✨ Comprehensive test coverage (95%+)
-- ✨ Full TypeScript documentation
