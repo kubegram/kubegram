@@ -161,6 +161,26 @@ ci-publish-common:
 ci-all-common: ci-install ci-codegen-common ci-typecheck-common ci-lint-common ci-test-common ci-build-common
 	@echo "✅ All common-ts CI checks passed"
 
+# common-events CI steps
+ci-typecheck-common-events:
+	npm run typecheck:common-events
+
+ci-lint-common-events:
+	npm run lint:common-events
+
+ci-test-common-events:
+	npm run test:common-events
+
+ci-build-common-events:
+	npm run build:common-events
+
+ci-publish-common-events:
+	npm publish --workspace @kubegram/common-events
+
+# Run all common-events CI steps
+ci-all-common-events: ci-install ci-typecheck-common-events ci-lint-common-events ci-test-common-events ci-build-common-events
+	@echo "✅ All common-events CI checks passed"
+
 health-check:
 	@echo "🏥 Checking service health..."
 	@curl -s http://localhost:8090/api/public/v1/healthz/live | jq '.' 2>/dev/null || echo "❌ Kubegram Server unhealthy"
