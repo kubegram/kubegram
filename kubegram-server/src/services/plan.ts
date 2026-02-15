@@ -8,6 +8,7 @@ import { db } from '@/db';
 import { generationJobs, projects, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { CodegenError } from '@/errors/codegen'; // Reusing CodegenError for now
+import { cleanGraphInput } from '@/utils/graph-input-cleaner';
 import logger from '@/utils/logger';
 import { withRetry } from '@/utils/retry';
 import type { Context } from 'hono';
@@ -23,8 +24,14 @@ export class PlanService {
     ): Promise<PlanJobStatus> {
         return await withRetry(async () => {
             try {
+                // Clean the graph input to remove non-schema fields like 'arrows'
+                const cleanedInput = {
+                    ...input,
+                    graph: cleanGraphInput(input.graph)
+                };
+
                 const result = await graphqlSdk.InitializePlan({
-                    input
+                    input: cleanedInput
                 });
 
                 if (result.errors?.length) {

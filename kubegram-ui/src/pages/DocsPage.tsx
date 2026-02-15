@@ -28,33 +28,35 @@ const DocsPage: React.FC = () => {
     }, [location.pathname]);
 
     return (
-        <div className="prose dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-headings:font-bold prose-h1:text-4xl prose-h2:text-2xl prose-h2:border-b prose-h2:pb-2 prose-h2:mt-10 prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-code:text-primary prose-code:bg-muted/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border">
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw]}
-                components={{
-                    code({ node, inline, className, children, ...props }: any) {
-                        const match = /language-(\w+)/.exec(className || '');
-                        if (!inline && match && match[1] === 'mermaid') {
-                            return <Mermaid chart={String(children).replace(/\n$/, '')} />;
-                        }
-                        return (
-                            <code className={className} {...props}>
-                                {children}
-                            </code>
-                        );
-                    },
-                    img: ({ src, alt }) => (
-                        <img
-                            src={src}
-                            alt={alt}
-                            className="rounded-xl shadow-lg border border-border my-8 w-full"
-                        />
-                    )
-                }}
-            >
-                {content}
-            </ReactMarkdown>
+        <div>
+            <div className="prose dark:prose-invert max-w-none prose-headings:scroll-mt-20 prose-headings:font-bold prose-h1:text-4xl prose-h2:text-2xl prose-h2:border-b prose-h2:pb-2 prose-h2:mt-10 prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-code:text-primary prose-code:bg-muted/30 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted/50 prose-pre:border prose-pre:border-border">
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                        code({ node, inline, className, children, ...props }: any) {
+                            const match = /language-(\w+)/.exec(className || '');
+                            if (!inline && match && match[1] === 'mermaid') {
+                                return <Mermaid chart={String(children).replace(/\n$/, '')} />;
+                            }
+                            return (
+                                <code className={className} {...props}>
+                                    {children}
+                                </code>
+                            );
+                        },
+                        img: ({ src, alt }) => (
+                            <img
+                                src={src}
+                                alt={alt}
+                                className="rounded-xl shadow-lg border border-border my-8 w-full"
+                            />
+                        )
+                    }}
+                >
+                    {content}
+                </ReactMarkdown>
+            </div>
         </div>
     );
 };

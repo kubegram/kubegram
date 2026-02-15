@@ -54,7 +54,9 @@
     "@opentelemetry/api": "^1.9.0",
     "zod-to-json-schema": "^3.23.3",
     "@openauthjs/openauth": "^0.4.3",
-    "valibot": "^1.2.0"
+    "valibot": "^1.2.0",
+    "ws": "^8.18.0",
+    "@types/ws": "^8.5.13"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",

@@ -9,7 +9,6 @@ const PROJECT_SYNC_KEY_PREFIX = 'x-kubegram-project-sync';
 export const saveActiveProjectToStorage = (project: Project) => {
   console.log('💽 Writing project to localStorage', { id: project.id });
   try {
-    // const porjectFromStorage = loadProjectFromStorage(project.id);
     localStorage.setItem(ACTIVE_PROJECT_KEY, project.id);
 
     // Always save/update the project data
@@ -157,6 +156,25 @@ const projectSlice = createSlice({
       state.projects.push(state.project);
       
       saveActiveProjectToStorage(state.project!);
+    },
+    setActiveProject: (state, action: PayloadAction<string>) => {
+      const project = state.projects.find(p => p.id === action.payload);
+      if (project) {
+        state.project = project;
+        saveActiveProjectToStorage(project);
+      }
+    },
+    updateProject: (state, action: PayloadAction<{ id: string; updates: Partial<Project> }>) => {
+      const { id, updates } = action.payload;
+      if (state.project?.id === id) {
+        state.project = { ...state.project, ...updates };
+        saveActiveProjectToStorage(state.project);
+      }
+      
+      const idx = state.projects.findIndex(p => p.id === id);
+      if (idx >= 0) {
+        state.projects[idx] = { ...state.projects[idx], ...updates };
+      }
     },
     setProject: (state, action: PayloadAction<Project>) => {
       state.project = action.payload;
@@ -323,6 +341,8 @@ const projectSlice = createSlice({
 export const {
   initializeProject,
   createNewProject,
+  setActiveProject,
+  updateProject,
   setProject,
   clearProject,
   addNodeToGraph,

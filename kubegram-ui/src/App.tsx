@@ -24,6 +24,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import OAuthProviderInfo from './pages/OAuthProviderInfo';
 import ReportsPage from './pages/ReportsPage';
 import { CodegenTestPage, PlanTestPage } from './pages/test';
+import JsonCanvasPage from './pages/JsonCanvasPage';
 
 /**
  * LoginModalWrapper Component
@@ -285,6 +286,17 @@ const AppContent: React.FC = () => {
 
           {/* Reports Page - Public */}
           <Route path="/reports" element={<ReportsPage />} />
+
+          {/* JSON Canvas Experiment */}
+          <Route
+            path="/json-canvas"
+            element={
+              <JsonCanvasPage
+                isSidebarCollapsed={isSidebarCollapsed}
+                isHeaderCollapsed={isHeaderCollapsed}
+              />
+            }
+          />
 
           {/* Test Pages - Development */}
           <Route path="/test/codegen" element={<CodegenTestPage />} />

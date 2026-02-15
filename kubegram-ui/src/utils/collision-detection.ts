@@ -6,6 +6,7 @@
  */
 
 import { type CanvasNode } from '../types/canvas';
+import type { NodeSide } from '../types/jsoncanvas';
 
 // ============================================================================
 // Configuration Constants
@@ -64,21 +65,148 @@ export function lineIntersectsNodes(
         }
     }
 
-    return false;
+return false;
 }
 
+// ============================================================================
+// Bounding Box Functions
+// ============================================================================
+
 /**
- * Get expanded bounding box for a node with padding
+ * Get the bounding box of a node with optional padding
  */
-export function getNodeBoundingBox(node: CanvasNode, padding: number = NODE_PADDING) {
+function getNodeBoundingBox(node: CanvasNode, padding: number = 0): {
+    x: number;
+    y: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+} {
     return {
         x: node.x - padding,
         y: node.y - padding,
-        width: node.width + padding * 2,
-        height: node.height + padding * 2,
         right: node.x + node.width + padding,
         bottom: node.y + node.height + padding,
+        width: node.width + padding * 2,
+        height: node.height + padding * 2
     };
+}
+
+// ============================================================================
+// Smart Edge Detection Functions (Hybrid Approach)
+// ============================================================================
+
+/**
+ * Calculate the exact point on a node's edge for a given cardinal side
+ */
+function getConnectionPoint(node: { x: number; y: number; width: number; height: number }, side: NodeSide): { x: number; y: number } {
+  switch (side) {
+    case 'top':    return { x: node.x + node.width / 2, y: node.y };
+    case 'bottom': return { x: node.x + node.width / 2, y: node.y + node.height };
+    case 'left':   return { x: node.x, y: node.y + node.height / 2 };
+    case 'right':  return { x: node.x + node.width, y: node.y + node.height / 2 };
+    default:        return { x: node.x + node.width / 2, y: node.y + node.height / 2 };
+  }
+}
+
+/**
+ * Compute the cardinal side of a node based on a point
+ */
+function computeSide(node: { x: number; y: number; width: number; height: number }, pointX: number, pointY: number): NodeSide {
+  const cx = node.x + node.width / 2;
+  const cy = node.y + node.height / 2;
+  const dx = pointX - cx;
+  const dy = pointY - cy;
+  const nx = Math.abs(dx) / (node.width / 2);
+  const ny = Math.abs(dy) / (node.height / 2);
+  if (nx > ny) return dx > 0 ? 'right' : 'left';
+  return dy > 0 ? 'bottom' : 'top';
+}
+
+/**
+ * Calculate angle-based connection point (preserves existing collision handling precision)
+ */
+export function calculateAngleBasedConnectionPoint(node: CanvasNode, fromX: number, fromY: number): { x: number; y: number } {
+  const nodeCenterX = node.x + node.width / 2;
+  const nodeCenterY = node.y + node.height / 2;
+  
+  // Calculate angle from node center to connecting point
+  const angle = Math.atan2(fromY - nodeCenterY, fromX - nodeCenterX);
+  
+  // Calculate connection point on node's edge
+  return {
+    x: nodeCenterX + Math.cos(angle) * (node.width / 2),
+    y: nodeCenterY + Math.sin(angle) * (node.height / 2),
+  };
+}
+
+/**
+ * Smart connection point detection that combines JSON Canvas UX with angle-based precision
+ * 
+ * Detects clicks near cardinal points (for familiar UX) but uses angle-based calculations
+ * for precise connection points (preserves collision handling and pathfinding).
+ * 
+ * @param x - Mouse X coordinate
+ * @param y - Mouse Y coordinate  
+ * @param node - Canvas node to check
+ * @param options - Configuration options
+ * @returns Detection result with connection point information
+ */
+export function detectSmartConnectionPoint(
+  x: number, 
+  y: number, 
+  node: CanvasNode,
+  options: {
+    threshold?: number;
+    allowShiftOverride?: boolean;
+  } = {}
+): {hit: boolean, side: NodeSide | null, connectionPoint: {x: number, y: number}, isCardinalHit: boolean} {
+  
+  const { threshold = 15, allowShiftOverride = true } = options;
+  
+  // Calculate cardinal side and point for this position
+  const preferredSide = computeSide(node, x, y);
+  const cardinalPoint = getConnectionPoint(node, preferredSide);
+  
+  // Check if click is near this cardinal point
+  const distanceToCardinal = Math.sqrt(
+    (x - cardinalPoint.x)**2 + (y - cardinalPoint.y)**2
+  );
+  
+  // Shift key override for precision positioning
+  const isShiftPressed = allowShiftOverride && (window.event as KeyboardEvent)?.shiftKey;
+  
+  if (isShiftPressed || distanceToCardinal > threshold) {
+    // Use exact mouse position (preserves angle-based precision)
+    return {
+      hit: false,
+      side: null,
+      connectionPoint: calculateAngleBasedConnectionPoint(node, x, y),
+      isCardinalHit: false
+    };
+  }
+  
+  // Use cardinal region with angle-based precision underneath
+  return {
+    hit: true,
+    side: preferredSide,
+    connectionPoint: calculateAngleBasedConnectionPoint(node, x, y),
+    isCardinalHit: true
+  };
+}
+
+/**
+ * Get all four cardinal connection points for a node
+ * Useful for rendering connection indicators
+ */
+export function getCardinalConnectionPoints(node: CanvasNode): Array<{side: NodeSide, x: number, y: number}> {
+  return [
+    { side: 'top', x: node.x + node.width / 2, y: node.y },
+    { side: 'right', x: node.x + node.width, y: node.y + node.height / 2 },
+    { side: 'bottom', x: node.x + node.width / 2, y: node.y + node.height },
+    { side: 'left', x: node.x, y: node.y + node.height / 2 }
+  ];
 }
 
 // ============================================================================

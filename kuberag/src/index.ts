@@ -1,15 +1,17 @@
 /**
  * KubeRAG server entry point
  * Hono app with graphql-yoga middleware, health checks, and CORS
+ * Includes MCP WebSocket server integration
  */
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { createYoga } from 'graphql-yoga';
 import { schema } from './graphql/schema';
-import { serverConfig, dgraphConfig, redisConfig, authConfig } from './config';
+import { serverConfig, dgraphConfig, redisConfig, authConfig, mcpConfig } from './config';
 import { redisClient } from './state/redis';
 import { requireAuth } from './middleware/auth';
+import { MCPWebSocketServer } from './mcp/websocket-server';
 
 const app = new Hono();
 
@@ -18,7 +20,7 @@ if (serverConfig.enableCors) {
   app.use('/*', cors({
     origin: '*',
     allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Upgrade', 'Connection'],
   }));
 }
 
@@ -30,6 +32,7 @@ app.get('/health', (c) => c.json({
   timestamp: new Date().toISOString(),
   dgraph: dgraphConfig.graphqlEndpoint,
   redis: `${redisConfig.host}:${redisConfig.port}`,
+  mcp: mcpConfig.enabled,
 }));
 
 // GraphQL Yoga instance
@@ -50,6 +53,9 @@ app.on(['GET', 'POST', 'OPTIONS'], '/graphql', async (c) => {
   return response;
 });
 
+// MCP WebSocket server (started after main server)
+let mcpServer: MCPWebSocketServer | null = null;
+
 // Startup
 const port = serverConfig.port;
 console.info(`Starting KubeRAG server on port ${port}...`);
@@ -58,14 +64,24 @@ console.info(`Health check: http://localhost:${port}/health`);
 console.info(`Dgraph: ${dgraphConfig.graphqlEndpoint}`);
 console.info(`Redis: ${redisConfig.host}:${redisConfig.port}`);
 console.info(`Auth: ${authConfig.enableAuth ? `enabled (issuer: ${authConfig.issuerUrl})` : 'disabled'}`);
+console.info(`MCP: ${mcpConfig.enabled ? `enabled on port ${mcpConfig.wsPort}` : 'disabled'}`);
 
 // Connect Redis before serving (lazyConnect requires explicit connect)
 await redisClient.connect();
+
+// Start MCP WebSocket server if enabled
+if (mcpConfig.enabled) {
+  mcpServer = new MCPWebSocketServer();
+  await mcpServer.start();
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.info('Shutting down...');
   try {
+    if (mcpServer) {
+      await mcpServer.stop();
+    }
     await redisClient.close();
     console.info('Redis disconnected');
   } catch (error) {
@@ -77,6 +93,9 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.info('Shutting down...');
   try {
+    if (mcpServer) {
+      await mcpServer.stop();
+    }
     await redisClient.close();
     console.info('Redis disconnected');
   } catch (error) {

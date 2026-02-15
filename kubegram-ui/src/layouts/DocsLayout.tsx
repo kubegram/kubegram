@@ -1,24 +1,40 @@
 import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
-import { Book, Menu, X, Search } from 'lucide-react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+const categories = [
+    { id: 'getting-started', title: 'Getting Started', defaultPath: '/docs', paths: ['/docs', '/docs/getting-started', '/docs/key-concepts'] },
+    { id: 'architecture', title: 'Architecture', defaultPath: '/docs/architecture', paths: ['/docs/architecture', '/docs/canvas', '/docs/visual-designer'] },
+    { id: 'ai-orchestration', title: 'AI Orchestration', defaultPath: '/docs/agents_integration', paths: ['/docs/agents_integration', '/docs/use_your_tools', '/docs/mcp-integration', '/docs/code-view', '/docs/compare-view', '/docs/visual-designer'] },
+    { id: 'deployment', title: 'Deployment', defaultPath: '/docs/local-setup', paths: ['/docs/local-setup', '/docs/production-deploy'] },
+    { id: 'reference', title: 'Reference', defaultPath: '/docs/api', paths: ['/docs/api', '/docs/contributing'] },
+];
 
 const docsNav = [
     { title: 'Introduction', path: '/docs' },
     { title: 'Getting Started', path: '/docs/getting-started' },
+    { title: 'Key Concepts', path: '/docs/key-concepts' },
     { title: 'Architecture', path: '/docs/architecture' },
+    { title: 'Canvas', path: '/docs/canvas' },
+    { title: 'Visual Designer', path: '/docs/visual-designer' },
     { title: 'Agent Integration', path: '/docs/agents_integration' },
     { title: 'Use Your Tools', path: '/docs/use_your_tools' },
-    { title: 'Contributing', path: '/docs/contributing' },
+    { title: 'MCP Integration', path: '/docs/mcp-integration' },
+    { title: 'Code View', path: '/docs/code-view' },
+    { title: 'Compare View', path: '/docs/compare-view' },
+    { title: 'Local Setup', path: '/docs/local-setup' },
+    { title: 'Production Deploy', path: '/docs/production-deploy' },
     { title: 'API Reference', path: '/docs/api' },
+    { title: 'Contributing', path: '/docs/contributing' },
 ];
 
-const DocsSidebar = ({ onItemClick }: { onItemClick?: () => void }) => {
+const DocsSidebar = ({ navItems, onItemClick }: { navItems: typeof docsNav; onItemClick?: () => void }) => {
 
     return (
         <nav className="space-y-1 py-4">
-            {docsNav.map((item) => (
+            {navItems.map((item) => (
                 <NavLink
                     key={item.path}
                     to={item.path}
@@ -39,7 +55,21 @@ const DocsSidebar = ({ onItemClick }: { onItemClick?: () => void }) => {
 };
 
 const DocsLayout: React.FC = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = React.useState(() => {
+        const saved = localStorage.getItem('docs-sidebar-open');
+        return saved !== null ? JSON.parse(saved) : true;
+    });
+
+    React.useEffect(() => {
+        localStorage.setItem('docs-sidebar-open', JSON.stringify(isSidebarOpen));
+    }, [isSidebarOpen]);
+
+    const activeCategory = categories.find(c => c.paths.some(p => location.pathname === p))?.id || 'getting-started';
+    const currentCategory = categories.find(c => c.id === activeCategory)!;
+    const filteredDocsNav = docsNav.filter(doc => currentCategory.paths.includes(doc.path));
 
     // FastAPI Purple Theme overrides
     const themeOverrides = {
@@ -81,18 +111,19 @@ const DocsLayout: React.FC = () => {
             {/* Mobile Sidebar Overlay */}
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 z-40 bg-background/95 md:hidden pt-20 px-6 overflow-y-auto">
-                    <DocsSidebar onItemClick={() => setIsMobileMenuOpen(false)} />
+                    <DocsSidebar navItems={filteredDocsNav} onItemClick={() => setIsMobileMenuOpen(false)} />
                 </div>
             )}
 
             {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-72 flex-col border-r border-border h-screen sticky top-0 bg-background z-30">
+            <aside className={`hidden md:flex flex-col border-r border-border h-screen sticky top-0 bg-background z-30 transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-0 overflow-hidden'}`}>
                 <div className="p-6 border-b border-border/40">
                     <div className="flex items-center gap-2 font-bold text-xl">
-                        {/* Logo placeholder */}
-                        <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
-                            <Book className="h-5 w-5" />
-                        </div>
+                        <img 
+                            src="/favicon.svg" 
+                            alt="Kubegram Logo" 
+                            className="h-8 w-auto" 
+                        />
                         <span className="tracking-tight">Kubegram</span>
                     </div>
                     <div className="mt-4 relative">
@@ -100,8 +131,28 @@ const DocsLayout: React.FC = () => {
                         <Input placeholder="Search" className="pl-8 h-9 bg-muted/50 border-transparent focus:bg-background transition-all" />
                     </div>
                 </div>
+
+                {/* Category Tabs */}
+                <div className="px-3 py-3 border-b border-border/40">
+                    <div className="flex flex-wrap gap-1">
+                        {categories.map((category) => (
+                            <button
+                                key={category.id}
+                                onClick={() => navigate(category.defaultPath)}
+                                className={`px-2 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                                    activeCategory === category.id
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                                }`}
+                            >
+                                {category.title}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="flex-1 overflow-y-auto py-4">
-                    <DocsSidebar />
+                    <DocsSidebar navItems={filteredDocsNav} />
                 </div>
                 <div className="p-4 border-t border-border/40 text-xs text-muted-foreground">
                     Version 2.0.0
@@ -111,6 +162,16 @@ const DocsLayout: React.FC = () => {
             {/* Main Content */}
             <main className="flex-1 min-w-0 bg-background" style={{ backgroundImage: 'none' }}>
                 <div className="container max-w-4xl mx-auto px-6 py-10 md:py-16">
+                    <div className="flex items-center justify-end mb-4">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="h-8 w-8"
+                        >
+                            {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </Button>
+                    </div>
                     <Outlet />
 
                     {/* Footer Navigation (Next/Prev) can be added here later */}

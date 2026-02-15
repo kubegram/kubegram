@@ -39,6 +39,11 @@ const envSchema = z.object({
   // Auth (OpenAuth token verification via kubegram-server)
   OPENAUTH_ISSUER_URL: z.string().default('http://localhost:8090'),
   ENABLE_AUTH: z.string().transform(val => val.toLowerCase() === 'true').default('false'),
+
+  // MCP WebSocket Configuration
+  ENABLE_MCP: z.string().transform(val => val.toLowerCase() === 'true').default('true'),
+  MCP_WS_PORT: z.string().transform(Number).default('3001'),
+  MCP_LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 
 // Validate and parse environment variables
@@ -100,6 +105,12 @@ export const authConfig = {
   enableAuth: config.ENABLE_AUTH,
 } as const;
 
+export const mcpConfig = {
+  enabled: config.ENABLE_MCP,
+  wsPort: config.MCP_WS_PORT,
+  logLevel: config.MCP_LOG_LEVEL,
+} as const;
+
 // Type exports for use in other modules
 export type Config = typeof config;
 export type DgraphConfig = typeof dgraphConfig;
@@ -108,3 +119,4 @@ export type ServerConfig = typeof serverConfig;
 export type LLMConfig = typeof llmConfig;
 export type EmbeddingsConfig = typeof embeddingsConfig;
 export type AuthConfig = typeof authConfig;
+export type MCPConfig = typeof mcpConfig;

@@ -24,7 +24,7 @@
         "typecheck": "bunx tsc --noEmit"
     },
     "dependencies": {
-        "@kubegram/common-ts": "^1.4.1",
+        "@kubegram/common-ts": "1.4.2",
         "@openauthjs/openauth": "^0.4.3",
         "drizzle-orm": "^0.45.1",
         "graphql": "^16.12.0",

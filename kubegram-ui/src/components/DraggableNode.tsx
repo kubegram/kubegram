@@ -4,6 +4,10 @@ import useImage from 'use-image';
 import Konva from 'konva';
 import { useCanvasCoordinates } from '@/hooks/canvas/useCanvasCoordinates';
 import InfoTooltip from './InfoTooltip';
+import SelectionBadgeComponent from './SelectionBadge';
+import ConnectionDot from './ConnectionDot';
+import type { NodeSide } from '@/types/jsoncanvas';
+import type { CanvasNode } from '@/types/canvas';
 
 /**
  * DraggableNode Component
@@ -24,15 +28,18 @@ interface DraggableNodeProps {
   isArrowMode?: boolean;
   isSelected?: boolean;
   isSnapTarget?: boolean;
+  isMultiSelected?: boolean;
+  selectedCount?: number;
   color?: string;
   onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragStart: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
   onResize?: (width: number, height: number) => void;
   onClick?: (nodeId: string, x: number, y: number) => void;
-  onSelect?: (isSelected: boolean) => void;
+  onSelect?: (nodeId: string, isSelected: boolean, isCtrlKey: boolean, isShiftKey: boolean) => void;
   onRightClick?: (nodeId: string, x: number, y: number) => void;
   onDblClick?: (nodeId: string) => void;
+  showSelectionHandles?: boolean;
 }
 
 const DraggableNode: React.FC<DraggableNodeProps> = memo(
@@ -40,6 +47,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
     id,
     iconSrc,
     label,
+    nodeType,
     x,
     y,
     width = 80,
@@ -48,6 +56,8 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
     isArrowMode = false,
     isSelected = false,
     isSnapTarget = false,
+    isMultiSelected = false,
+    selectedCount = 0,
     onDragEnd,
     onDragStart,
     onDragMove,
@@ -56,6 +66,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
     onSelect,
     onRightClick,
     onDblClick,
+    showSelectionHandles = true,
   }) => {
     const [image] = useImage(iconSrc);
     const nodeRef = useRef<Konva.Group>(null);
@@ -63,13 +74,56 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
     const [currentWidth, setCurrentWidth] = useState(width);
     const [currentHeight, setCurrentHeight] = useState(height);
     const [showInfo, setShowInfo] = useState(false);
+    
+    // State for connection point interaction
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [hoveredConnection, setHoveredConnection] = useState<{ side: NodeSide; isHighlighted: boolean } | null>(null);
 
     const dragMovePendingRef = useRef<Konva.KonvaEventObject<DragEvent> | null>(null);
     const dragMoveRafRef = useRef<number | null>(null);
 
-    const { convertScreenToCanvasCoordinates } = useCanvasCoordinates();
+const { convertScreenToCanvasCoordinates } = useCanvasCoordinates();
 
-    // Handle resize
+    // Create a properly typed CanvasNode for ConnectionDot
+    const canvasNode: CanvasNode = {
+      id,
+      type: nodeType as string, // Use the existing nodeType prop
+      nodeType: nodeType as any, // GraphQL field
+      label,
+      iconSrc,
+      x,
+      y,
+      width: currentWidth,
+      height: currentHeight,
+      companyId: '', // Required field, will be filled by parent
+      name: label, // Required field
+      userId: '', // Required field  
+    };
+
+    // Mouse tracking for connection points
+    const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
+      const { x, y } = convertScreenToCanvasCoordinates(e);
+      setMousePos({ x, y });
+    }, [convertScreenToCanvasCoordinates]);
+
+    // Connection point click handler
+    const handleConnectionClick = useCallback((side: NodeSide, x: number, y: number) => {
+      console.log('🔗 Connection point clicked:', { id, side, x, y });
+      if (onClick) {
+        onClick(id, x, y);
+      }
+    }, [id, onClick]);
+
+    // Connection point hover handler
+    const handleConnectionHover = useCallback((side: NodeSide | null) => {
+      setHoveredConnection(side ? { side, isHighlighted: true } : null);
+    }, []);
+
+    const handleResizeStart = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
+      e.cancelBubble = true; // Prevent event bubbling
+      setIsResizing(true);
+    }, []);
+
     const handleResize = useCallback(
       (e: Konva.KonvaEventObject<DragEvent>) => {
         e.cancelBubble = true; // Prevent event bubbling
@@ -87,11 +141,6 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
     const handleResizeEnd = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
       e.cancelBubble = true; // Prevent event bubbling
       setIsResizing(false);
-    }, []);
-
-    const handleResizeStart = useCallback((e: Konva.KonvaEventObject<DragEvent>) => {
-      e.cancelBubble = true; // Prevent event bubbling
-      setIsResizing(true);
     }, []);
 
     const handleDragMoveRaf = useCallback(
@@ -145,16 +194,20 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
         // Prevent event bubbling to canvas click handler
         e.cancelBubble = true;
 
-        if (isArrowMode && onClick) {
-          // ARROW MODE: Convert screen coordinates to canvas coordinates
+        // Allow selection with Shift+Click even in arrow mode
+        const isShiftClick = e.evt.shiftKey;
+        const isCtrlClick = e.evt.ctrlKey || e.evt.metaKey;
+
+        if (isArrowMode && onClick && !isShiftClick) {
+          // ARROW MODE (without Shift): Convert screen coordinates to canvas coordinates
           const { x, y } = convertScreenToCanvasCoordinates(e);
 
           console.log('🚀 Arrow mode - calling parent onClick with:', { id, x, y });
           onClick(id, x, y); // This calls handleNodeClick in KonvaCanvas
         } else if (onSelect) {
-          // SELECTION MODE: Toggle selection state
-          console.log('📝 Selection mode - toggling selection for node:', id);
-          onSelect(!isSelected);
+          // SELECTION MODE: Handle selection with modifier keys
+          console.log('📝 Selection mode - toggling selection for node:', id, { isCtrlClick, isShiftClick, isArrowMode });
+          onSelect(id, !isSelected, isCtrlClick, isShiftClick);
         } else {
           console.log('❌ No handler available for node click');
         }
@@ -197,8 +250,8 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
           width={currentWidth}
           height={currentHeight}
           fill="rgba(200, 200, 200, 0.15)"
-          stroke={isSelected ? '#FF0000' : isSnapTarget ? '#00FF00' : isArrowMode ? '#a7a7a7' : '#1A1A1A'}
-          strokeWidth={isSelected ? 4 : isSnapTarget ? 4 : isArrowMode ? 3 : 2}
+          stroke={isSnapTarget ? '#00FF00' : isArrowMode ? '#a7a7a7' : '#1A1A1A'}
+          strokeWidth={isSnapTarget ? 4 : isArrowMode ? 3 : 2}
           shadowColor={isSnapTarget ? '#00FF00' : isArrowMode ? '#a7a7a7' : 'transparent'}
           shadowBlur={isSnapTarget ? 20 : isArrowMode ? 12 : 0}
           shadowOpacity={isSnapTarget ? 0.8 : isArrowMode ? 0.4 : 0}
@@ -212,9 +265,64 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
             }
           }}
           onContextMenu={handleNodeRightClick}
+          onMouseMove={handleMouseMove}
           listening={true}
           cursor={isArrowMode ? 'crosshair' : 'default'}
         />
+
+        {/* Connection Dots for Arrow Mode */}
+        {isArrowMode && (
+          <>
+            <ConnectionDot
+              nodeId={id}
+              node={canvasNode}
+              side="top"
+              isArrowMode={isArrowMode}
+              mouseX={mousePos.x}
+              mouseY={mousePos.y}
+              isHovered={hoveredConnection?.side === 'top'}
+              isHighlighted={hoveredConnection?.side === 'top'}
+              onClick={handleConnectionClick}
+              onHover={handleConnectionHover}
+            />
+            <ConnectionDot
+              nodeId={id}
+              node={canvasNode}
+              side="right"
+              isArrowMode={isArrowMode}
+              mouseX={mousePos.x}
+              mouseY={mousePos.y}
+              isHovered={hoveredConnection?.side === 'right'}
+              isHighlighted={hoveredConnection?.side === 'right'}
+              onClick={handleConnectionClick}
+              onHover={handleConnectionHover}
+            />
+            <ConnectionDot
+              nodeId={id}
+              node={canvasNode}
+              side="bottom"
+              isArrowMode={isArrowMode}
+              mouseX={mousePos.x}
+              mouseY={mousePos.y}
+              isHovered={hoveredConnection?.side === 'bottom'}
+              isHighlighted={hoveredConnection?.side === 'bottom'}
+              onClick={handleConnectionClick}
+              onHover={handleConnectionHover}
+            />
+            <ConnectionDot
+              nodeId={id}
+              node={canvasNode}
+              side="left"
+              isArrowMode={isArrowMode}
+              mouseX={mousePos.x}
+              mouseY={mousePos.y}
+              isHovered={hoveredConnection?.side === 'left'}
+              isHighlighted={hoveredConnection?.side === 'left'}
+              onClick={handleConnectionClick}
+              onHover={handleConnectionHover}
+            />
+          </>
+        )}
 
         {/* Regular Node Icon */}
         {image && (
@@ -236,7 +344,7 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
           align="center"
           fontSize={12}
           fontFamily="Inter, sans-serif"
-          fill={isSelected ? '#FF0000' : '#1A1A1A'}
+          fill="#1A1A1A"
           fontStyle="bold"
           listening={false}
         />
@@ -335,6 +443,72 @@ const DraggableNode: React.FC<DraggableNodeProps> = memo(
             'Width': currentWidth,
             'Height': currentHeight,
           }}
+        />
+
+        {/* Corner Selection Handles */}
+        {showSelectionHandles && isSelected && (
+          <>
+            {/* Top-left handle */}
+            <Circle
+              x={0}
+              y={0}
+              radius={4}
+              fill="#3B82F6"
+              stroke="#FFFFFF"
+              strokeWidth={1}
+              shadowColor="black"
+              shadowBlur={3}
+              shadowOpacity={0.3}
+            />
+            {/* Top-right handle */}
+            <Circle
+              x={currentWidth}
+              y={0}
+              radius={4}
+              fill="#3B82F6"
+              stroke="#FFFFFF"
+              strokeWidth={1}
+              shadowColor="black"
+              shadowBlur={3}
+              shadowOpacity={0.3}
+            />
+            {/* Bottom-left handle */}
+            <Circle
+              x={0}
+              y={currentHeight}
+              radius={4}
+              fill="#3B82F6"
+              stroke="#FFFFFF"
+              strokeWidth={1}
+              shadowColor="black"
+              shadowBlur={3}
+              shadowOpacity={0.3}
+            />
+            {/* Bottom-right handle */}
+            <Circle
+              x={currentWidth}
+              y={currentHeight}
+              radius={4}
+              fill="#3B82F6"
+              stroke="#FFFFFF"
+              strokeWidth={1}
+              shadowColor="black"
+              shadowBlur={3}
+              shadowOpacity={0.3}
+            />
+          </>
+        )}
+
+        {/* Multi-Selection Badge */}
+        <SelectionBadgeComponent
+          badge={{
+            count: selectedCount,
+            position: { x: currentWidth - 5, y: -5 },
+            visible: isMultiSelected && selectedCount > 1,
+            animated: true,
+          }}
+          size={16}
+          backgroundColor="#1E40AF"
         />
       </Group>
     );
