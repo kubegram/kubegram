@@ -183,6 +183,7 @@ console.log(`Job started: ${result.jobId}`);
 import { MCPService } from '@kubegram/kubegram-core';
 
 const mcp = new MCPService(core);
+
 await mcp.start(3001);
 ```
 
