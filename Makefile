@@ -181,6 +181,26 @@ ci-publish-common-events:
 ci-all-common-events: ci-install ci-typecheck-common-events ci-lint-common-events ci-test-common-events ci-build-common-events
 	@echo "✅ All common-events CI checks passed"
 
+# kubegram-core CI steps
+ci-typecheck-kubegram-core:
+	npm run typecheck:kubegram-core
+
+ci-lint-kubegram-core:
+	npm run lint:kubegram-core
+
+ci-test-kubegram-core:
+	npm run test:kubegram-core
+
+ci-build-kubegram-core:
+	npm run build:kubegram-core
+
+ci-publish-kubegram-core:
+	npm publish --workspace @kubegram/kubegram-core
+
+# Run all kubegram-core CI steps
+ci-all-kubegram-core: ci-install ci-typecheck-kubegram-core ci-lint-kubegram-core ci-test-kubegram-core ci-build-kubegram-core
+	@echo "✅ All kubegram-core CI checks passed"
+
 health-check:
 	@echo "🏥 Checking service health..."
 	@curl -s http://localhost:8090/api/public/v1/healthz/live | jq '.' 2>/dev/null || echo "❌ Kubegram Server unhealthy"
