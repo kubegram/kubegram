@@ -36,6 +36,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@kubegram/kubegram-core": "*",
     "hono": "^4.6.7",
     "graphql-yoga": "^5.9.1",
     "@pothos/core": "^4.3.1",

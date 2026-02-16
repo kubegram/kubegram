@@ -1,0 +1,141 @@
+replicaCount: 1
+
+image:
+  repository: kubegram-operator
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080 # Default HTTP MCP port if enabled
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# MCP Configuration
+mcp:
+  http:
+    enabled: true
+    port: 8080
+  proxies:
+    argo:
+      enabled: true
+      command: "npx -y @modelcontextprotocol/server-filesystem /projects"
+      # Automatically point to the internal service if enabled
+      url: ""
+    k8s:
+      enabled: true
+      command: "uvx kubernetes-mcp-server"
+      # Automatically point to the internal service if enabled
+      url: ""
+
+# Configuration for the embedded Argo CD MCP Server
+argoMcpServer:
+  enabled: true
+  image:
+    repository: radiantone/argocd-mcp
+    tag: latest
+    pullPolicy: IfNotPresent
+  # Token to access Argo CD. Must be provided by user or set via secret.
+  token: ""
+  podSecurityContext: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    runAsNonRoot: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Configuration for the embedded K8s MCP Server
+k8sMcpServer:
+  enabled: true
+  image:
+    repository: quay.io/containers/kubernetes_mcp_server
+    tag: latest
+    pullPolicy: IfNotPresent
+  podSecurityContext: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    runAsNonRoot: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# LLM integration settings
+llm:
+  websocketUrl: "ws://host.docker.internal:8665"
+
+# Environment Variables
+env:
+  - name: UV_CACHE_DIR
+    value: /tmp/.uv-cache
+  - name: npm_config_cache
+    value: /tmp/.npm-cache
+
+
+# Debug Configuration
+debug:
+  enabled: false
+  port: 40000
+
+# Argo CD Configuration (Dependency)
+argo-cd:
+  enabled: false # Default to false so it's not installed unless requested
+  # You can override Argo CD values here
+  # server:
+  #   service:
+  #     type: NodePort
+

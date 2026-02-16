@@ -1,5 +1,9 @@
 /**
  * Code generation service
+ * 
+ * @deprecated Import from @kubegram/kubegram-core instead
+ * This module will be removed in kuberag v2.0.0
+ * 
  * Port of app/services/codegen_service.py
  * Handles job submission, caching, pub/sub orchestration, and background workflow execution
  */

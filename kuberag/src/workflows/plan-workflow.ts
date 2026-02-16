@@ -1,5 +1,9 @@
 /**
  * Planning Agent Workflow
+ * 
+ * @deprecated Import from @kubegram/kubegram-core instead
+ * This module will be removed in kuberag v2.0.0
+ * 
  * Generates an infrastructure graph from a user request.
  */
 

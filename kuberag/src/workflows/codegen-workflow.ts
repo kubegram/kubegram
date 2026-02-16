@@ -1,5 +1,9 @@
 /**
  * Code generation workflow implementation
+ * 
+ * @deprecated Import from @kubegram/kubegram-core instead
+ * This module will be removed in kuberag v2.0.0
+ * 
  * Extends BaseWorkflow with 4 codegen-specific steps + retry loop
  * Port of app/workflows/codegen_workflow.py
  */

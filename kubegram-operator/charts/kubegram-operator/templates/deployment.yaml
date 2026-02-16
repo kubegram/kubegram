@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubegram-operator.fullname" . }}
+  labels:
+    {{- include "kubegram-operator.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kubegram-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kubegram-operator.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kubegram-operator.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.debug.enabled }}
+          command: ["/usr/local/bin/dlv"]
+          args:
+            - "exec"
+            - "/manager"
+            - "--headless"
+            - "--listen=:{{ .Values.debug.port }}"
+            - "--api-version=2"
+            - "--accept-multiclient"
+            - "--continue"
+            - "--"
+            - "--health-probe-bind-address=:8081"
+            - "--metrics-bind-address=127.0.0.1:8082"
+            - "--leader-elect"
+            {{- if .Values.mcp.http.enabled }}
+            - "--mcp-http-addr=:{{ .Values.mcp.http.port }}"
+            {{- end }}
+            {{- if .Values.mcp.proxies.argo.enabled }}
+            - "--argo-mcp-cmd={{ .Values.mcp.proxies.argo.command }}"
+            - "--argo-mcp-url={{ .Values.mcp.proxies.argo.url | default (printf "http://%s-argocd-mcp:8080/sse" (include "kubegram-operator.fullname" .)) }}"
+            {{- end }}
+            {{- if .Values.mcp.proxies.k8s.enabled }}
+            - "--k8s-mcp-cmd={{ .Values.mcp.proxies.k8s.command }}"
+            - "--k8s-mcp-url={{ .Values.mcp.proxies.k8s.url | default (printf "http://%s-k8s-mcp:8080/sse" (include "kubegram-operator.fullname" .)) }}"
+            {{- end }}
+          {{- else }}
+          command:
+            - /manager
+          args:
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=127.0.0.1:8082
+            - --leader-elect
+            {{- if .Values.mcp.http.enabled }}
+            - --mcp-http-addr=:{{ .Values.mcp.http.port }}
+            {{- end }}
+            {{- if .Values.mcp.proxies.argo.enabled }}
+            - "--argo-mcp-cmd={{ .Values.mcp.proxies.argo.command }}"
+            - "--argo-mcp-url={{ .Values.mcp.proxies.argo.url | default (printf "http://%s-argocd-mcp:8080/sse" (include "kubegram-operator.fullname" .)) }}"
+            {{- end }}
+            {{- if .Values.mcp.proxies.k8s.enabled }}
+            - "--k8s-mcp-cmd={{ .Values.mcp.proxies.k8s.command }}"
+            - "--k8s-mcp-url={{ .Values.mcp.proxies.k8s.url | default (printf "http://%s-k8s-mcp:8080/sse" (include "kubegram-operator.fullname" .)) }}"
+            {{- end }}
+          {{- end }}
+          env:
+            - name: LLM_HOST
+              value: {{ .Values.llm.websocketUrl | quote }}
+            {{- with .Values.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          ports:
+            {{- if .Values.debug.enabled }}
+            - name: debug
+              containerPort: {{ .Values.debug.port }}
+              protocol: TCP
+            {{- end }}
+            {{- if .Values.mcp.http.enabled }}
+            - name: http
+              containerPort: {{ .Values.mcp.http.port }}
+              protocol: TCP
+            {{- end }}
+            - name: health
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

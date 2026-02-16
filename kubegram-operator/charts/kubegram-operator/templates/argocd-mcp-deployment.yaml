@@ -1,0 +1,68 @@
+{{- if .Values.argoMcpServer.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubegram-operator.fullname" . }}-argocd-mcp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubegram-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: argocd-mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "kubegram-operator.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: argocd-mcp-server
+  template:
+    metadata:
+      labels:
+        {{- include "kubegram-operator.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: argocd-mcp-server
+    spec:
+      serviceAccountName: {{ include "kubegram-operator.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.argoMcpServer.podSecurityContext | nindent 8 }}
+      containers:
+        - name: argocd-mcp-server
+          securityContext:
+            {{- toYaml .Values.argoMcpServer.securityContext | nindent 12 }}
+          image: "{{ .Values.argoMcpServer.image.repository }}:{{ .Values.argoMcpServer.image.tag }}"
+          imagePullPolicy: {{ .Values.argoMcpServer.image.pullPolicy }}
+          env:
+            - name: ARGOCD_API_URL
+              value: "http://{{ include "kubegram-operator.fullname" . }}-argocd-server"
+            - name: ARGOCD_TOKEN
+              value: {{ .Values.argoMcpServer.token | quote }}
+            - name: ARGOCD_VERIFY_SSL
+              value: "false"
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: http
+          readinessProbe:
+            tcpSocket:
+              port: http
+          resources:
+            {{- toYaml .Values.argoMcpServer.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubegram-operator.fullname" . }}-argocd-mcp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubegram-operator.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "kubegram-operator.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: argocd-mcp-server
+{{- end }}

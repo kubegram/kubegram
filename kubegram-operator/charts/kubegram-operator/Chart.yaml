@@ -1,0 +1,12 @@
+apiVersion: v2
+name: kubegram-operator
+description: A Helm chart for Kubegram Operator with MCP Server capabilities
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: argo-cd
+    version: 7.7.14 # Use a stable version, check if newer exists or stick to a known working one
+    repository: https://argoproj.github.io/argo-helm
+

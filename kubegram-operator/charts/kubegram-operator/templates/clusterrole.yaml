@@ -1,0 +1,18 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubegram-operator.fullname" . }}
+  labels:
+    {{- include "kubegram-operator.labels" . | nindent 4 }}
+rules:
+  # Permissions for the operator to function as a controller
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "persistentvolumeclaims", "events", "configmaps", "secrets"]
+    verbs: ["*"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "daemonsets", "replicasets", "statefulsets"]
+    verbs: ["*"]
+  # Permissions for the 'kubectl' MCP tool (ClusterAdmin-like for now)
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]

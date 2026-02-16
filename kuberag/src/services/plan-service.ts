@@ -1,5 +1,9 @@
 /**
  * Plan service
+ * 
+ * @deprecated Import from @kubegram/kubegram-core instead
+ * This module will be removed in kuberag v2.0.0
+ * 
  * Handles job submission, caching, pub/sub orchestration, and background workflow execution for planning
  */
 
