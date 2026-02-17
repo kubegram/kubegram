@@ -18,11 +18,23 @@ export interface GraphStorage<TGraph, TMicroservice> {
 
   createGraph(graph: Omit<TGraph, 'id'>): Promise<string>;
 
-  getGraph(id: string, companyId?: string, userId?: string): Promise<TGraph | null>;
+  getGraph(
+    id: string,
+    companyId?: string,
+    userId?: string
+  ): Promise<TGraph | null>;
 
-  getGraphs(companyId: string, userId?: string, limit?: number): Promise<TGraph[]>;
+  getGraphs(
+    companyId: string,
+    userId?: string,
+    limit?: number
+  ): Promise<TGraph[]>;
 
-  getGraphByName(name: string, companyId: string, userId?: string): Promise<TGraph | null>;
+  getGraphByName(
+    name: string,
+    companyId: string,
+    userId?: string
+  ): Promise<TGraph | null>;
 
   updateGraph(id: string, updates: Partial<TGraph>): Promise<TGraph | null>;
 
@@ -30,7 +42,7 @@ export interface GraphStorage<TGraph, TMicroservice> {
 
   upsertGraph(
     graph: Omit<TGraph, 'id'>,
-    identifier: { name?: string; id?: string },
+    identifier: { name?: string; id?: string }
   ): Promise<string>;
 
   // ── Microservice CRUD ───────────────────────────────────────────────
@@ -41,7 +53,10 @@ export interface GraphStorage<TGraph, TMicroservice> {
 
   getMicroservices(companyId: string, limit?: number): Promise<TMicroservice[]>;
 
-  updateMicroservice(id: string, updates: Partial<TMicroservice>): Promise<TMicroservice | null>;
+  updateMicroservice(
+    id: string,
+    updates: Partial<TMicroservice>
+  ): Promise<TMicroservice | null>;
 
   deleteMicroservice(id: string): Promise<boolean>;
 
@@ -50,7 +65,7 @@ export interface GraphStorage<TGraph, TMicroservice> {
   searchSimilarGraphsByEmbedding(
     embedding: number[],
     topK?: number,
-    companyId?: string,
+    companyId?: string
   ): Promise<TGraph[]>;
 
   // ── Lifecycle ───────────────────────────────────────────────────────

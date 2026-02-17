@@ -9,10 +9,15 @@
 
 import { searchTopK } from './vector-search';
 import type { GraphStorage, GraphStoreStats } from './graph-storage';
+import crypto from 'crypto';
 
 // ── Re-exports ────────────────────────────────────────────────────────
 export { type GraphStorage, type GraphStoreStats } from './graph-storage';
-export { cosineSimilarity, searchTopK, type SimilarityResult } from './vector-search';
+export {
+  cosineSimilarity,
+  searchTopK,
+  type SimilarityResult,
+} from './vector-search';
 
 // ── Options ───────────────────────────────────────────────────────────
 
@@ -49,19 +54,20 @@ export interface InMemoryGraphStoreOptions {
 
 const defaultIdGenerator = (): string => crypto.randomUUID();
 
-function getField<T>(obj: T, field: string): unknown {
+export function getField<T>(obj: T, field: string): unknown {
   return (obj as Record<string, unknown>)[field];
 }
 
-function setField<T>(obj: T, field: string, value: unknown): void {
+export function setField<T>(obj: T, field: string, value: unknown): void {
   (obj as Record<string, unknown>)[field] = value;
 }
 
 // ── Implementation ────────────────────────────────────────────────────
 
-export class InMemoryGraphStore<TGraph, TMicroservice>
-  implements GraphStorage<TGraph, TMicroservice>
-{
+export class InMemoryGraphStore<TGraph, TMicroservice> implements GraphStorage<
+  TGraph,
+  TMicroservice
+> {
   // Primary storage
   private graphs = new Map<string, TGraph>();
   private microservices = new Map<string, TMicroservice>();
@@ -147,7 +153,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   async getGraph(
     id: string,
     companyId?: string,
-    userId?: string,
+    userId?: string
   ): Promise<TGraph | null> {
     const graph = this.graphs.get(id) ?? null;
     if (!graph) return null;
@@ -166,7 +172,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   async getGraphs(
     companyId: string,
     userId?: string,
-    limit?: number,
+    limit?: number
   ): Promise<TGraph[]> {
     const ids = this.graphsByCompany.get(companyId);
     if (!ids) return [];
@@ -189,7 +195,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   async getGraphByName(
     name: string,
     companyId: string,
-    userId?: string,
+    userId?: string
   ): Promise<TGraph | null> {
     const key = `${companyId}:${name}`;
     const id = this.graphsByName.get(key);
@@ -200,7 +206,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
 
   async updateGraph(
     id: string,
-    updates: Partial<TGraph>,
+    updates: Partial<TGraph>
   ): Promise<TGraph | null> {
     const existing = this.graphs.get(id);
     if (!existing) return null;
@@ -229,7 +235,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
 
   async upsertGraph(
     graph: Omit<TGraph, 'id'>,
-    identifier: { name?: string; id?: string },
+    identifier: { name?: string; id?: string }
   ): Promise<string> {
     let existing: TGraph | null = null;
 
@@ -237,20 +243,23 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
       existing = await this.getGraph(
         identifier.id,
         getField(graph, this.companyIdField) as string | undefined,
-        getField(graph, this.userIdField) as string | undefined,
+        getField(graph, this.userIdField) as string | undefined
       );
     } else if (identifier.name) {
       const companyId = getField(graph, this.companyIdField) as string;
       existing = await this.getGraphByName(
         identifier.name,
         companyId,
-        getField(graph, this.userIdField) as string | undefined,
+        getField(graph, this.userIdField) as string | undefined
       );
     }
 
     if (existing) {
       const existingId = getField(existing, 'id') as string;
-      const updated = await this.updateGraph(existingId, graph as Partial<TGraph>);
+      const updated = await this.updateGraph(
+        existingId,
+        graph as Partial<TGraph>
+      );
       return updated ? (getField(updated, 'id') as string) : existingId;
     }
 
@@ -260,7 +269,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   // ── Microservice CRUD ─────────────────────────────────────────────
 
   async createMicroservice(
-    microservice: Omit<TMicroservice, 'id'>,
+    microservice: Omit<TMicroservice, 'id'>
   ): Promise<string> {
     const id = this.idGenerator();
     const stored = { ...microservice, id } as TMicroservice;
@@ -281,7 +290,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
 
   async getMicroservices(
     companyId: string,
-    limit?: number,
+    limit?: number
   ): Promise<TMicroservice[]> {
     const ids = this.msByCompany.get(companyId);
     if (!ids) return [];
@@ -301,7 +310,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
 
   async updateMicroservice(
     id: string,
-    updates: Partial<TMicroservice>,
+    updates: Partial<TMicroservice>
   ): Promise<TMicroservice | null> {
     const existing = this.microservices.get(id);
     if (!existing) return null;
@@ -332,7 +341,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   async searchSimilarGraphsByEmbedding(
     embedding: number[],
     topK: number = 5,
-    companyId?: string,
+    companyId?: string
   ): Promise<TGraph[]> {
     // Determine candidate set
     let candidates: TGraph[];
@@ -358,7 +367,7 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
           ? (emb as number[])
           : undefined;
       },
-      topK,
+      topK
     );
 
     return results.map((r) => r.item);
@@ -367,7 +376,9 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   // ── Internal: Graph indexing ──────────────────────────────────────
 
   private indexGraph(id: string, graph: TGraph): void {
-    const companyId = getField(graph, this.companyIdField) as string | undefined;
+    const companyId = getField(graph, this.companyIdField) as
+      | string
+      | undefined;
     const userId = getField(graph, this.userIdField) as string | undefined;
     const name = getField(graph, this.nameField) as string | undefined;
 
@@ -395,7 +406,9 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   }
 
   private deindexGraph(id: string, graph: TGraph): void {
-    const companyId = getField(graph, this.companyIdField) as string | undefined;
+    const companyId = getField(graph, this.companyIdField) as
+      | string
+      | undefined;
     const userId = getField(graph, this.userIdField) as string | undefined;
     const name = getField(graph, this.nameField) as string | undefined;
 
@@ -435,7 +448,10 @@ export class InMemoryGraphStore<TGraph, TMicroservice>
   // ── Internal: LRU eviction ────────────────────────────────────────
 
   private evictGraphIfNeeded(): void {
-    while (this.graphs.size >= this.maxGraphs && this.graphAccessOrder.length > 0) {
+    while (
+      this.graphs.size >= this.maxGraphs &&
+      this.graphAccessOrder.length > 0
+    ) {
       const lruId = this.graphAccessOrder.shift()!;
       const graph = this.graphs.get(lruId);
       if (graph) {

@@ -52,7 +52,7 @@ export function searchTopK<T>(
   items: T[],
   queryEmbedding: number[],
   getEmbedding: (item: T) => number[] | undefined,
-  topK: number,
+  topK: number
 ): SimilarityResult<T>[] {
   if (queryEmbedding.length === 0 || topK <= 0) {
     return [];
