@@ -6,11 +6,22 @@ import {
   afterEach,
   jest,
 } from '@jest/globals';
-import { DomainEvent, type DomainEventJSON } from '@/domain-events/index';
+import { DomainEvent, type DomainEventJSON } from '../../../domain-events/index';
 import {
   EventRegistry,
   type EventDeserializer,
-} from '@/domain-events/event-registry';
+} from '../../../domain-events/event-registry';
+
+class TestEvent extends DomainEvent {
+  constructor(
+    type: string,
+    aggregateId?: string,
+    metadata?: Record<string, unknown>,
+    id?: string
+  ) {
+    super(type, aggregateId, metadata, id);
+  }
+}
 
 describe('EventRegistry', () => {
   let registry: EventRegistry;
@@ -46,7 +57,7 @@ describe('EventRegistry', () => {
 
   describe('register', () => {
     it('should register event deserializer', () => {
-      const deserializer: EventDeserializer = jest.fn();
+      const deserializer: EventDeserializer = jest.fn(() => new TestEvent('test.event'));
 
       registry.register('test.event', deserializer);
 
@@ -114,9 +125,10 @@ describe('EventRegistry', () => {
         constructor(
           type: string,
           aggregateId?: string,
-          metadata?: Record<string, unknown>
+          metadata?: Record<string, unknown>,
+          id?: string
         ) {
-          super(type, aggregateId, metadata);
+          super(type, aggregateId, metadata, id);
         }
       };
 
@@ -133,30 +145,29 @@ describe('EventRegistry', () => {
       };
     });
 
-    // TODO: Fix test - ID preservation issue with deserializer
-    // it('should deserialize registered event type', () => {
-    //   const deserializer: EventDeserializer = (json: DomainEventJSON) => {
-    //     return new TestEvent(
-    //       json.type,
-    //       json.aggregateId,
-    //       json.metadata,
-    //       json.id
-    //     );
-    //   };
+    it('should deserialize registered event type', () => {
+      const deserializer: EventDeserializer = (json: DomainEventJSON) => {
+        return new TestEvent(
+          json.type,
+          json.aggregateId,
+          json.metadata,
+          json.id
+        );
+      };
 
-    //   registry.register('test.event', deserializer);
+      registry.register('test.event', deserializer);
 
-    //   const result = registry.deserialize(testJson);
+      const result = registry.deserialize(testJson);
 
-    //   expect(result).toBeInstanceOf(TestEvent);
-    //   expect(result.id).toBe('test-id-123');
-    //   expect(result.type).toBe('test.event');
-    //   expect(result.aggregateId).toBe('test-aggregate-456');
-    //   expect(result.metadata).toEqual({
-    //     source: 'test-factory',
-    //     priority: 'high',
-    //   });
-    // });
+      expect(result).toBeInstanceOf(TestEvent);
+      expect(result.id).toBe('test-id-123');
+      expect(result.type).toBe('test.event');
+      expect(result.aggregateId).toBe('test-aggregate-456');
+      expect(result.metadata).toEqual({
+        source: 'test-factory',
+        priority: 'high',
+      });
+    });
 
     it('should call registered deserializer', () => {
       const deserializer: EventDeserializer = jest.fn(
@@ -279,27 +290,32 @@ describe('EventRegistry', () => {
       }
     }
 
-    // TODO: Fix test - testData not being passed correctly
-    // it('should work with actual domain event classes', () => {
-    //   const deserializer: EventDeserializer = (json: DomainEventJSON) => {
-    //     return new TestEvent((json.metadata as any)?.testData || 'default');
-    //   };
+    it('should work with actual domain event classes', () => {
+      const deserializer: EventDeserializer = (json: DomainEventJSON) => {
+        return new TestEvent(
+          json.type,
+          undefined,
+          json.metadata,
+          json.id,
+          (json.metadata as any)?.testData || 'default'
+        );
+      };
 
-    //   registry.register('test.event', deserializer);
+      registry.register('test.event', deserializer);
 
-    //   const json: DomainEventJSON = {
-    //     id: 'integration-test',
-    //     type: 'test.event',
-    //     occurredOn: '2024-01-01T00:00:00.000Z',
-    //     version: 1,
-    //     metadata: { testData: 'integration value' },
-    //   } as any;
+      const json: DomainEventJSON = {
+        id: 'integration-test',
+        type: 'test.event',
+        occurredOn: '2024-01-01T00:00:00.000Z',
+        version: 1,
+        metadata: { testData: 'integration value' },
+      } as any;
 
-    //   const result = registry.deserialize(json);
+      const result = registry.deserialize(json);
 
-    //   expect(result).toBeInstanceOf(TestEvent);
-    //   expect((result as any).testData).toBe('integration value');
-    // });
+      expect(result).toBeInstanceOf(TestEvent);
+      expect((result as any).testData).toBe('integration value');
+    });
 
     it('should handle complex metadata', () => {
       class ComplexEvent extends DomainEvent {

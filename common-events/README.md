@@ -12,6 +12,7 @@ This library offers a complete event-driven architecture solution with TypeScrip
 - 💾 **Event Caching**: Performance-optimized event storage with Redis support
 - ⏸️ **Event Suspension**: Request-response patterns with timeout handling
 - 🔔 **Reminder Manager**: Automated reminder workflows with response handling
+- 📊 **Graph Store**: In-memory graph storage with vector similarity search for RAG
 - 🔧 **Production Ready**: Full TypeScript support, comprehensive testing, and type safety
 
 ## Features
@@ -24,6 +25,8 @@ This library offers a complete event-driven architecture solution with TypeScrip
 - **Async Support**: Promise-based event handling
 - **Event Suspension**: Request-response correlation with timeout management
 - **Reminder Workflows**: Automated reminder and response handling
+- **In-Memory Graph Store**: Graph and microservice CRUD with LRU eviction and cosine vector search
+- **Vector Similarity Search**: Built-in cosine similarity and topK search for RAG embeddings
 - **Redis Integration**: Production-grade storage with indexing and TTL
 - **Custom Providers**: Extensible pub/sub provider architecture
 - **Performance Optimized**: Built on eventemitter3 for maximum performance
@@ -230,6 +233,73 @@ console.log(
   'in',
   result.waitTime,
   'ms'
+);
+```
+
+### In-Memory Graph Store
+
+```typescript
+import {
+  InMemoryGraphStore,
+  cosineSimilarity,
+  searchTopK,
+} from '@kubegram/common-events';
+
+// Define your graph and microservice types
+interface MyGraph {
+  id: string;
+  name: string;
+  companyId: string;
+  userId: string;
+  contextEmbedding?: number[];
+  nodes: Array<{ id: string; name: string; nodeType: string }>;
+}
+
+interface MyMicroservice {
+  id: string;
+  name: string;
+  companyId: string;
+  language: string;
+}
+
+// Create store with optional config
+const store = new InMemoryGraphStore<MyGraph, MyMicroservice>({
+  maxGraphs: 5000,
+  maxMicroservices: 5000,
+});
+await store.connect();
+
+// Create a graph
+const graphId = await store.createGraph({
+  name: 'web-app-stack',
+  companyId: 'acme-corp',
+  userId: 'user-123',
+  contextEmbedding: [0.8, 0.2, 0.5],
+  nodes: [
+    { id: 'n1', name: 'api-service', nodeType: 'DEPLOYMENT' },
+    { id: 'n2', name: 'postgres', nodeType: 'DATABASE' },
+  ],
+});
+
+// Retrieve by ID, name, or company
+const graph = await store.getGraph(graphId);
+const byName = await store.getGraphByName('web-app-stack', 'acme-corp');
+const companyGraphs = await store.getGraphs('acme-corp');
+
+// Vector similarity search for RAG
+const similar = await store.searchSimilarGraphsByEmbedding(
+  [0.9, 0.1, 0.4], // query embedding
+  3,                 // topK
+  'acme-corp',       // optional company filter
+);
+
+// Standalone vector utilities
+const similarity = cosineSimilarity([1, 0, 0], [0.9, 0.1, 0]);
+const topResults = searchTopK(
+  myItems,
+  queryEmbedding,
+  (item) => item.embedding,
+  5,
 );
 ```
 
@@ -740,6 +810,78 @@ class ReminderManager {
 }
 ```
 
+#### InMemoryGraphStore<TGraph, TMicroservice>
+
+In-memory graph storage with secondary indexes, LRU eviction, and cosine vector search.
+
+```typescript
+interface InMemoryGraphStoreOptions {
+  maxGraphs?: number;          // Default: 10000
+  maxMicroservices?: number;   // Default: 10000
+  idGenerator?: () => string;  // Default: crypto.randomUUID
+  embeddingField?: string;     // Default: 'contextEmbedding'
+  companyIdField?: string;     // Default: 'companyId'
+  userIdField?: string;        // Default: 'userId'
+  nameField?: string;          // Default: 'name'
+}
+
+interface GraphStoreStats {
+  totalGraphs: number;
+  totalMicroservices: number;
+  connected: boolean;
+}
+
+class InMemoryGraphStore<TGraph, TMicroservice> implements GraphStorage<TGraph, TMicroservice> {
+  constructor(options?: InMemoryGraphStoreOptions);
+
+  // Graph CRUD
+  async createGraph(graph: Omit<TGraph, 'id'>): Promise<string>;
+  async getGraph(id: string, companyId?: string, userId?: string): Promise<TGraph | null>;
+  async getGraphs(companyId: string, userId?: string, limit?: number): Promise<TGraph[]>;
+  async getGraphByName(name: string, companyId: string, userId?: string): Promise<TGraph | null>;
+  async updateGraph(id: string, updates: Partial<TGraph>): Promise<TGraph | null>;
+  async deleteGraph(id: string): Promise<boolean>;
+  async upsertGraph(graph: Omit<TGraph, 'id'>, identifier: { name?: string; id?: string }): Promise<string>;
+
+  // Microservice CRUD
+  async createMicroservice(microservice: Omit<TMicroservice, 'id'>): Promise<string>;
+  async getMicroservice(id: string): Promise<TMicroservice | null>;
+  async getMicroservices(companyId: string, limit?: number): Promise<TMicroservice[]>;
+  async updateMicroservice(id: string, updates: Partial<TMicroservice>): Promise<TMicroservice | null>;
+  async deleteMicroservice(id: string): Promise<boolean>;
+
+  // Vector search
+  async searchSimilarGraphsByEmbedding(embedding: number[], topK?: number, companyId?: string): Promise<TGraph[]>;
+
+  // Lifecycle
+  async connect(): Promise<void>;
+  async disconnect(): Promise<void>;
+  isConnected(): boolean;
+  async clear(): Promise<void>;
+  getStats(): GraphStoreStats;
+}
+```
+
+#### Vector Search Utilities
+
+Standalone functions for cosine similarity and topK search.
+
+```typescript
+function cosineSimilarity(a: number[], b: number[]): number;
+
+interface SimilarityResult<T> {
+  item: T;
+  similarity: number;
+}
+
+function searchTopK<T>(
+  items: T[],
+  queryEmbedding: number[],
+  getEmbedding: (item: T) => number[] | undefined,
+  topK: number,
+): SimilarityResult<T>[];
+```
+
 ## Error Handling Patterns
 
 ### Event Processing with Error Recovery
@@ -1131,6 +1273,13 @@ npm run check-all
 │  │   + Size limits              │  │   + Response handling           │  │
 │  │   + Redis persistence        │  │   + Timeout management         │  │
 │  └─────────────────────────────────┘  └─────────────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────┐  ┌─────────────────────────────────────┐  │
+│  │    InMemoryGraphStore         │  │      Vector Search               │  │
+│  │   + Graph/Microservice CRUD   │  │   + Cosine similarity           │  │
+│  │   + Secondary indexes        │  │   + TopK search                 │  │
+│  │   + LRU eviction             │  │   + RAG embedding support       │  │
+│  └─────────────────────────────────┘  └─────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1172,3 +1321,6 @@ BUSL-1.1 License - see LICENSE file for details.
 - ✨ SystemReminderEvent and SystemReminderResponseEvent
 - ✨ PubSubProvider abstraction
 - ✨ LocalPubSubProvider implementation
+- ✨ InMemoryGraphStore with graph/microservice CRUD and LRU eviction
+- ✨ GraphStorage interface for pluggable graph backends
+- ✨ Vector similarity search (cosine similarity + topK)

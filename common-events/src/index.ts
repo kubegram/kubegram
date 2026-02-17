@@ -80,3 +80,14 @@ export {
   type ReminderOptions,
   type ReminderHandlerOptions,
 } from './reminder/index';
+
+// Graph Store
+export {
+  InMemoryGraphStore,
+  type InMemoryGraphStoreOptions,
+  type GraphStorage,
+  type GraphStoreStats,
+  cosineSimilarity,
+  searchTopK,
+  type SimilarityResult,
+} from './graph-store/index';
