@@ -1,0 +1,96 @@
+name: Release kubegram-auth
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kubegram-auth/**'
+
+jobs:
+  release:
+    runs-on ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@kubegram'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Type check
+        working-directory: kubegram-auth
+        run: npm run type-check
+
+      - name: Lint code
+        working-directory: kubegram-auth
+        run: npm run lint
+
+      - name: Build
+        working-directory: kubegram-auth
+        run: npm run build
+
+      - name: Verify build output
+        working-directory: kubegram-auth
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build failed - dist directory not found"
+            exit 1
+          fi
+          echo "Build successful - dist directory created"
+
+      - name: Check if version changed
+        id: version-check
+        working-directory: kubegram-auth
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          if npm view @kubegram/kubegram-auth@$CURRENT_VERSION version > /dev/null 2>&1; then
+            echo "Version $CURRENT_VERSION already exists on npm"
+            echo "should-publish=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version $CURRENT_VERSION is new, will publish"
+            echo "should-publish=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Publish to GitHub Packages
+        if: steps.version-check.outputs.should-publish == 'true'
+        working-directory: kubegram-auth
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.version-check.outputs.should-publish == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: kubegram-auth/v${{ steps.version-check.outputs.current-version }}
+          release_name: kubegram-auth v${{ steps.version-check.outputs.current-version }}
+          body: |
+            ## @kubegram/kubegram-auth v${{ steps.version-check.outputs.current-version }}
+
+            ### Installation
+            ```bash
+            npm install @kubegram/kubegram-auth@${{ steps.version-check.outputs.current-version }}
+            ```
+          draft: false
+          prerelease: false
+
+      - name: Skip release notification
+        if: steps.version-check.outputs.should-publish == 'false'
+        run: |
+          echo "Skipping release - version ${{ steps.version-check.outputs.current-version }} already exists"
