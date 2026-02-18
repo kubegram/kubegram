@@ -12,6 +12,7 @@ export type {
   Headers,
   Subjects,
   SessionManagerOptions,
+  SessionManagerCallbacks,
   SessionStorage,
   AuthContextResult,
 } from './types.js';
