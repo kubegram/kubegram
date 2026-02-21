@@ -1,0 +1,53 @@
+# Business Source License 1.1
+
+## License Grant
+
+Licensor hereby grants you the right to copy, modify, create derivative works, redistribute, and make non-production use of the Licensed Work. The Licensor grants you this right subject to the following conditions:
+
+## Usage Limitations
+
+You may make production use of the Licensed Work, provided such use does not include any of the following:
+
+1. **Commercial Use**: Using the Licensed Work for any commercial purpose, including but not limited to:
+   - Selling, licensing, or distributing the Licensed Work or any derivative works for a fee
+   - Using the Licensed Work as part of a product or service that is sold or otherwise provided for commercial gain
+   - Using the Licensed Work in any business operation or revenue-generating activity
+
+2. **Hosted Service Offerings**: Offering the Licensed Work, or any derivative thereof, as a hosted or managed service where third parties can access the functionality of the Licensed Work, including but not limited to:
+   - Software-as-a-Service (SaaS) offerings
+   - Platform-as-a-Service (PaaS) offerings
+   - Managed service provider offerings
+   - Any service where the Licensed Work's functionality is made available to third parties over a network
+
+## Change Date
+
+Four (4) years from the date of release of this version of the Licensed Work.
+
+## Change License
+
+GNU General Public License v3.0 or later (GPL-3.0-or-later)
+
+## Notice
+
+On the Change Date, the terms of this Business Source License will automatically convert to the Change License, and the Licensed Work will be made available under the terms of the Change License.
+
+## Definitions
+
+- **Licensed Work**: The software, documentation, and associated materials provided under this license.
+- **Licensor**: The individual or entity that owns the copyright to the Licensed Work and is offering it under this license.
+- **Production Use**: Any use of the Licensed Work in a live, operational environment where it provides functionality to end users or supports business operations.
+- **Non-Production Use**: Use of the Licensed Work for development, testing, evaluation, research, or educational purposes that does not constitute Production Use.
+
+## Disclaimer of Warranty
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
+
+---
+
+**Parameters:**
+
+- **Licensor**: [Kubegram, LLC]
+- **Licensed Work**: [Kubegram] [0.1.0]
+- **Release Date**: [2026-02-10]
+- **Change Date**: [2030-02-10]
+- **Change License**: GPL-3.0-or-later

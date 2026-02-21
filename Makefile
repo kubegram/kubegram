@@ -201,6 +201,30 @@ ci-publish-kubegram-core:
 ci-all-kubegram-core: ci-install ci-typecheck-kubegram-core ci-lint-kubegram-core ci-test-kubegram-core ci-build-kubegram-core
 	@echo "✅ All kubegram-core CI checks passed"
 
+# kubegram-auth CI steps
+ci-typecheck-kubegram-auth:
+	cd kubegram-auth && npm run type-check
+
+ci-lint-kubegram-auth:
+	cd kubegram-auth && npm run lint
+
+ci-build-kubegram-auth:
+	cd kubegram-auth && npm run build
+
+ci-publish-kubegram-auth:
+	cd kubegram-auth && npm publish
+
+# Run all kubegram-auth CI steps
+ci-all-kubegram-auth: ci-install ci-typecheck-kubegram-auth ci-lint-kubegram-auth ci-build-kubegram-auth
+	@echo "✅ All kubegram-auth CI checks passed"
+
+## CLI build targets
+build-cli:
+	cd kubegram-cli && make build
+
+release-cli:
+	cd kubegram-cli && make cross-build package
+
 health-check:
 	@echo "🏥 Checking service health..."
 	@curl -s http://localhost:8090/api/public/v1/healthz/live | jq '.' 2>/dev/null || echo "❌ Kubegram Server unhealthy"
