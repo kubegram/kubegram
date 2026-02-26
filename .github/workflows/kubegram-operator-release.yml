@@ -1,0 +1,126 @@
+name: Release kubegram-operator
+
+on:
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/kubegram-operator
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    if: startsWith(github.event.release.tag_name, 'kubegram-operator/v')
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#kubegram-operator/v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.tag }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: kubegram-operator
+          file: kubegram-operator/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  publish-helm-chart:
+    name: Package and Publish Helm Chart
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#kubegram-operator/v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Packaging Helm chart version: $VERSION"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Add ArgoCD Helm repository
+        run: helm repo add argo https://argoproj.github.io/argo-helm
+
+      - name: Update Chart.yaml version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s/^version: .*/version: $VERSION/" kubegram-operator/charts/kubegram-operator/Chart.yaml
+          sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" kubegram-operator/charts/kubegram-operator/Chart.yaml
+          echo "Updated Chart.yaml:"
+          cat kubegram-operator/charts/kubegram-operator/Chart.yaml
+
+      - name: Update Helm chart dependencies
+        run: helm dependency update kubegram-operator/charts/kubegram-operator
+
+      - name: Package Helm chart
+        run: |
+          helm package kubegram-operator/charts/kubegram-operator \
+            --version ${{ steps.version.outputs.version }} \
+            --app-version ${{ steps.version.outputs.version }}
+
+      - name: Log in to GitHub Container Registry for Helm
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} \
+            --username ${{ github.actor }} \
+            --password-stdin
+
+      - name: Push Helm chart to OCI registry
+        run: |
+          helm push kubegram-operator-${{ steps.version.outputs.version }}.tgz \
+            oci://${{ env.REGISTRY }}/${{ github.repository_owner }}/charts
+
+      - name: Upload chart artifact to release
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            kubegram-operator-${{ steps.version.outputs.version }}.tgz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
