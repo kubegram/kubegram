@@ -1,0 +1,98 @@
+version: 2
+
+project_name: kubegram
+
+# Strip the monorepo tag prefix so kubegram-cli/v1.2.3 → version 1.2.3
+git:
+  tag_prefix: "kubegram-cli/"
+
+before:
+  hooks:
+    - go mod tidy
+    - go vet ./...
+
+builds:
+  - id: kubegram
+    binary: kubegram
+    # dir is relative to the repo root (where goreleaser is invoked from)
+    dir: kubegram-cli
+    main: ./cmd/kubegram/
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - >-
+        -X github.com/kubegram/kubegram-cli/internal/cli.Version={{ .Version }}
+        -X github.com/kubegram/kubegram-cli/internal/cli.Commit={{ .ShortCommit }}
+        -X github.com/kubegram/kubegram-cli/internal/cli.BuildDate={{ .Date }}
+        -s -w
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: kubegram-archive
+    builds:
+      - kubegram
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE*
+      - README*
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-SNAPSHOT-{{ .ShortCommit }}"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: kubegram
+    name: kubegram
+  draft: false
+  prerelease: auto
+
+brews:
+  - name: kubegram
+    ids:
+      - kubegram-archive
+    repository:
+      owner: kubegram
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+      branch: main
+      pull_request:
+        enabled: false
+    directory: Formula
+    homepage: "https://www.kubegram.com"
+    description: "AI-driven visual Kubernetes infrastructure CLI"
+    license: "Apache-2.0"
+    test: |
+      system "#{bin}/kubegram", "version"
+    install: |
+      bin.install "kubegram"
