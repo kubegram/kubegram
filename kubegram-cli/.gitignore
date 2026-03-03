@@ -1,0 +1,27 @@
+# Build outputs (make build → bin/kubegram)
+bin/
+
+# Cross-build + goreleaser outputs (make cross-build, make package, goreleaser)
+dist/
+
+# Go test & build cache
+*.test
+*.out
+
+# Compiled binaries (if built in-place)
+*.exe
+
+# Archives produced by make package / goreleaser
+*.tar.gz
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
