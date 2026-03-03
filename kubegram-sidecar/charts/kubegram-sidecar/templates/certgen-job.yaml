@@ -1,0 +1,163 @@
+{{- if not .Values.tls.certManager -}}
+# certgen-job: Helm pre-install/pre-upgrade hook that generates a self-signed
+# TLS certificate for the webhook server and patches the CA bundle into the
+# MutatingWebhookConfiguration.
+#
+# To use cert-manager instead, set tls.certManager=true in values.yaml.
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kubegram-sidecar.fullname" . }}-certgen
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubegram-sidecar.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubegram-sidecar.fullname" . }}-certgen
+  labels:
+    {{- include "kubegram-sidecar.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create", "get", "update"]
+  - apiGroups: ["admissionregistration.k8s.io"]
+    resources: ["mutatingwebhookconfigurations"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kubegram-sidecar.fullname" . }}-certgen
+  labels:
+    {{- include "kubegram-sidecar.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-10"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kubegram-sidecar.fullname" . }}-certgen
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kubegram-sidecar.fullname" . }}-certgen
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "kubegram-sidecar.fullname" . }}-certgen
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kubegram-sidecar.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  ttlSecondsAfterFinished: 60
+  template:
+    metadata:
+      labels:
+        {{- include "kubegram-sidecar.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: certgen
+    spec:
+      serviceAccountName: {{ include "kubegram-sidecar.fullname" . }}-certgen
+      restartPolicy: OnFailure
+      containers:
+        - name: certgen
+          image: alpine/openssl:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+
+              SVC="{{ include "kubegram-sidecar.fullname" . }}-webhook"
+              NS="{{ .Release.Namespace }}"
+              SECRET="{{ include "kubegram-sidecar.tlsSecret" . }}"
+              WEBHOOK="{{ include "kubegram-sidecar.fullname" . }}"
+
+              echo "Generating self-signed CA + server cert for ${SVC}.${NS}.svc"
+
+              # Generate CA key and certificate
+              openssl genrsa -out /tmp/ca.key 4096
+              openssl req -x509 -new -nodes -key /tmp/ca.key -sha256 -days 3650 \
+                -out /tmp/ca.crt \
+                -subj "/CN=kubegram-sidecar-ca/O=kubegram"
+
+              # Generate server key and CSR
+              openssl genrsa -out /tmp/tls.key 4096
+              openssl req -new -key /tmp/tls.key \
+                -out /tmp/tls.csr \
+                -subj "/CN=${SVC}.${NS}.svc/O=kubegram"
+
+              # Sign the server cert with the CA
+              cat > /tmp/san.ext <<EOF
+              subjectAltName = DNS:${SVC},DNS:${SVC}.${NS},DNS:${SVC}.${NS}.svc,DNS:${SVC}.${NS}.svc.cluster.local
+              EOF
+              openssl x509 -req -in /tmp/tls.csr -CA /tmp/ca.crt -CAkey /tmp/ca.key \
+                -CAcreateserial -out /tmp/tls.crt -days 3650 -sha256 \
+                -extfile /tmp/san.ext
+
+              # Store cert + key in a Kubernetes Secret
+              apk add --no-cache curl jq >/dev/null 2>&1
+              TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              APISERVER=https://kubernetes.default.svc
+              CACERT=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+              TLS_CRT=$(base64 -w0 /tmp/tls.crt)
+              TLS_KEY=$(base64 -w0 /tmp/tls.key)
+              CA_BUNDLE=$(base64 -w0 /tmp/ca.crt)
+
+              SECRET_JSON=$(cat <<ENDJSON
+              {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": { "name": "${SECRET}", "namespace": "${NS}" },
+                "type": "kubernetes.io/tls",
+                "data": { "tls.crt": "${TLS_CRT}", "tls.key": "${TLS_KEY}" }
+              }
+              ENDJSON
+              )
+
+              # Create or update the Secret
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+                --cacert "${CACERT}" -H "Authorization: Bearer ${TOKEN}" \
+                -H "Content-Type: application/json" \
+                "${APISERVER}/api/v1/namespaces/${NS}/secrets/${SECRET}")
+
+              if [ "${HTTP_CODE}" = "404" ]; then
+                curl -s --cacert "${CACERT}" -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -X POST "${APISERVER}/api/v1/namespaces/${NS}/secrets" \
+                  -d "${SECRET_JSON}"
+              else
+                curl -s --cacert "${CACERT}" -H "Authorization: Bearer ${TOKEN}" \
+                  -H "Content-Type: application/json" \
+                  -X PUT "${APISERVER}/api/v1/namespaces/${NS}/secrets/${SECRET}" \
+                  -d "${SECRET_JSON}"
+              fi
+
+              # Patch the CA bundle into the MutatingWebhookConfiguration
+              PATCH=$(printf '{"webhooks":[{"name":"sidecar.kubegram.io","clientConfig":{"caBundle":"%s"}}]}' "${CA_BUNDLE}")
+              curl -s --cacert "${CACERT}" -H "Authorization: Bearer ${TOKEN}" \
+                -H "Content-Type: application/merge-patch+json" \
+                -X PATCH \
+                "${APISERVER}/apis/admissionregistration.k8s.io/v1/mutatingwebhookconfigurations/${WEBHOOK}" \
+                -d "${PATCH}"
+
+              echo "Certificate generation complete."
+{{- end }}

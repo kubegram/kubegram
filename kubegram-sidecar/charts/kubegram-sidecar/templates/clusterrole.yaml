@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kubegram-sidecar.fullname" . }}
+  labels:
+    {{- include "kubegram-sidecar.labels" . | nindent 4 }}
+rules:
+  # Read pods to validate injection eligibility
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Read the TLS secret
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]

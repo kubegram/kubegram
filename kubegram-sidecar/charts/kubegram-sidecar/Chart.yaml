@@ -1,0 +1,18 @@
+apiVersion: v2
+name: kubegram-sidecar
+description: eBPF traffic observer sidecar for Kubernetes services and ingresses
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - kubegram
+  - ebpf
+  - traffic
+  - observability
+  - sidecar
+home: https://kubegram.com
+sources:
+  - https://github.com/kubegram/kubegram
+maintainers:
+  - name: Kubegram Team
+    url: https://github.com/kubegram

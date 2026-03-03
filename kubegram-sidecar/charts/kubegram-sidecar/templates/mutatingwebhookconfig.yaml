@@ -1,0 +1,33 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "kubegram-sidecar.fullname" . }}
+  labels:
+    {{- include "kubegram-sidecar.labels" . | nindent 4 }}
+  annotations:
+    # The certgen Job patches this annotation with the base64-encoded CA bundle
+    # after generating the self-signed certificate.
+    kubegram.io/inject-ca-bundle: "true"
+webhooks:
+  - name: sidecar.kubegram.io
+    admissionReviewVersions: ["v1"]
+    sideEffects: None
+    failurePolicy: {{ .Values.webhook.failurePolicy }}
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE"]
+        resources: ["pods"]
+        scope: "Namespaced"
+    clientConfig:
+      service:
+        name: {{ include "kubegram-sidecar.fullname" . }}-webhook
+        namespace: {{ .Release.Namespace }}
+        path: /mutate
+        port: {{ .Values.service.port }}
+      # caBundle is patched by the certgen Job; leave empty here.
+      caBundle: ""
+    {{- with .Values.webhook.namespaceSelector }}
+    namespaceSelector:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}

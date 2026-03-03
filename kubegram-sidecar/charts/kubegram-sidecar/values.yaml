@@ -1,0 +1,67 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/kubegram/kubegram-sidecar
+  pullPolicy: IfNotPresent
+  tag: ""  # Defaults to chart appVersion
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+
+service:
+  type: ClusterIP
+  port: 443
+  targetPort: 8443
+
+# Webhook server configuration
+webhook:
+  # Address for the TLS webhook server inside the container
+  addr: ":8443"
+  # Namespace selector for the MutatingWebhookConfiguration.
+  # Empty means all namespaces are watched.
+  namespaceSelector: {}
+  # Failure policy: Ignore (allow pod creation even if webhook is down)
+  # or Fail (block pod creation on webhook error)
+  failurePolicy: Ignore
+
+# Sidecar container behaviour (applied to injected pods)
+sidecar:
+  # Network interface to attach eBPF TC hooks to inside injected pods
+  iface: eth0
+  # How often to push aggregated stats to kubegram-server (Go duration string)
+  reportInterval: 15s
+  kubegram:
+    # Base URL of kubegram-server. Leave empty to disable push reporting.
+    serverUrl: ""
+    # Name of a Kubernetes Secret whose "token" key holds the API bearer token.
+    # Leave empty to skip authentication.
+    apiTokenSecret: ""
+
+# TLS configuration for the webhook server
+tls:
+  # Set to true to use cert-manager Certificate CRD instead of the built-in certgen Job.
+  certManager: false
+  # Name of the Secret that stores the TLS cert + key.
+  # The certgen Job (or cert-manager) will create/update this Secret.
+  secretName: kubegram-sidecar-tls
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
