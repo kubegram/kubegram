@@ -1,0 +1,73 @@
+name: Release kubegram-cli
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'kubegram-cli/**'
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # push git tag + GoReleaser uploads release assets
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history required for GoReleaser changelog generation
+
+      - name: Set up Go 1.24
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+          cache: true
+          cache-dependency-path: kubegram-cli/go.sum
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(cat kubegram-cli/VERSION | tr -d '[:space:]')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=kubegram-cli/v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Check if version already released
+        id: version-check
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          if gh release view "$TAG" --repo kubegram/kubegram > /dev/null 2>&1; then
+            echo "Version $TAG already released, skipping"
+            echo "should-release=false" >> $GITHUB_OUTPUT
+          else
+            echo "Version $TAG is new, will release"
+            echo "should-release=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push git tag
+        if: steps.version-check.outputs.should-release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
+
+      - name: Run GoReleaser
+        if: steps.version-check.outputs.should-release == 'true'
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "~> v2"
+          args: release --config kubegram-cli/.goreleaser.yaml --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          # GoReleaser strips "kubegram-cli/" prefix via git.tag_prefix → version 1.0.0
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.tag }}
+
+      - name: Skip release notification
+        if: steps.version-check.outputs.should-release == 'false'
+        run: echo "Skipping — ${{ steps.version.outputs.tag }} already released"

@@ -1,39 +1,68 @@
-name: Deploy kubegram-ui
+name: Deploy kubegram-ui to S3 + CloudFront
 
 on:
   push:
     branches:
       - main
-      - master
     paths:
       - 'kubegram-ui/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      # --- Build the UI ---
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install UI dependencies
+        working-directory: kubegram-ui
+        run: bun install
+
+      - name: Build UI
+        working-directory: kubegram-ui
+        run: bun run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+
+      # --- Deploy with Pulumi ---
+      - name: Setup Node.js (required by Pulumi CLI)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        working-directory: kubegram-ui
-        run: npm ci
+      - name: Install Pulumi CLI
+        run: curl -fsSL https://get.pulumi.com | sh
 
-      - name: Build
-        working-directory: kubegram-ui
-        run: npm run build
+      - name: Install IaC dependencies
+        working-directory: kubegram-ui/iac
+        run: bun install
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./kubegram-ui/dist
-          cname: www.kubegram.com
+      - name: Pulumi up (provision infra + sync files to S3)
+        working-directory: kubegram-ui/iac
+        run: ~/.pulumi/bin/pulumi up --yes --stack production
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          PULUMI_BACKEND_URL: s3://${{ secrets.PULUMI_STATE_BUCKET }}?region=us-east-1
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+
+      # --- Invalidate CloudFront cache so users see the new build immediately ---
+      - name: Invalidate CloudFront cache
+        working-directory: kubegram-ui/iac
+        run: |
+          DIST_ID=$(~/.pulumi/bin/pulumi stack output distributionId --stack production)
+          aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          PULUMI_BACKEND_URL: s3://${{ secrets.PULUMI_STATE_BUCKET }}?region=us-east-1
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
