@@ -26,6 +26,7 @@ export interface LLMProviderOptions {
   googleApiKey?: string;
   deepseekApiKey?: string;
   ollamaBaseURL?: string;
+  openrouterApiKey?: string;
 }
 
 export class LLMProviderFactory {
@@ -60,6 +61,9 @@ export class LLMProviderFactory {
         break;
       case ModelProvider.gemma:
         instance = this.createOllamaProvider(config);
+        break;
+      case ModelProvider.openrouter:
+        instance = this.createOpenRouterProvider(config);
         break;
       default:
         throw new Error(`Unsupported provider: ${provider}`);
@@ -114,6 +118,22 @@ export class LLMProviderFactory {
     return createOpenAI({ apiKey: 'not-required', baseURL });
   }
 
+  private static createOpenRouterProvider(config?: ProviderConfig) {
+    const apiKey = config?.apiKey || this.options.openrouterApiKey;
+    if (!apiKey) {
+      throw new Error('OPENROUTER_API_KEY is required for OpenRouter provider');
+    }
+    console.info('Initializing OpenRouter provider');
+    return createOpenAI({
+      apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      headers: {
+        'HTTP-Referer': 'https://kubegram.com',
+        'X-Title': 'Kubegram',
+      },
+    });
+  }
+
   static getDefaultModel(provider: ModelProvider): ModelName {
     return DEFAULT_MODEL[provider];
   }
@@ -121,6 +141,10 @@ export class LLMProviderFactory {
   static resolveModelName(provider: ModelProvider, modelName?: string): ModelName {
     if (!modelName) {
       return this.getDefaultModel(provider);
+    }
+    // OpenRouter uses dynamic model IDs (e.g. "openai/gpt-4o") — skip whitelist validation
+    if (provider === ModelProvider.openrouter) {
+      return modelName as ModelName;
     }
     const valid = VALID_MODELS[provider];
     if (valid.includes(modelName as ModelName)) {
@@ -148,6 +172,7 @@ export class LLMProviderFactory {
       case ModelProvider.google: return Boolean(this.options.googleApiKey);
       case ModelProvider.deepseek: return Boolean(this.options.deepseekApiKey);
       case ModelProvider.gemma: return true;
+      case ModelProvider.openrouter: return Boolean(this.options.openrouterApiKey);
       default: return false;
     }
   }
@@ -160,7 +185,7 @@ export class LLMProviderFactory {
 
   static getRecommendedProvider(): ModelProvider {
     const available = this.getAvailableProviders();
-    const priority = [ModelProvider.claude, ModelProvider.openai, ModelProvider.google, ModelProvider.deepseek, ModelProvider.gemma];
+    const priority = [ModelProvider.claude, ModelProvider.openai, ModelProvider.google, ModelProvider.deepseek, ModelProvider.openrouter, ModelProvider.gemma];
     for (const provider of priority) {
       if (available.includes(provider)) {
         return provider;
@@ -168,4 +193,20 @@ export class LLMProviderFactory {
     }
     throw new Error('No LLM providers are available. Check your API keys.');
   }
+}
+
+/**
+ * Convenience function that mirrors kuberag's createLLMProvider API.
+ * Returns a language model instance ready for generateText().
+ */
+export function createLLMProvider(provider: ModelProvider, modelName?: ModelName | string): LanguageModel {
+  return LLMProviderFactory.getLanguageModel(provider, modelName);
+}
+
+export function getAvailableProviders(): ModelProvider[] {
+  return LLMProviderFactory.getAvailableProviders();
+}
+
+export function getRecommendedProvider(): ModelProvider {
+  return LLMProviderFactory.getRecommendedProvider();
 }

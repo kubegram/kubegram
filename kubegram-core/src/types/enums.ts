@@ -168,6 +168,7 @@ export enum ModelProvider {
   deepseek = 'deepseek',
   openai = 'openai',
   google = 'google',
+  openrouter = 'openrouter',
 }
 
 export enum ModelName {
@@ -181,6 +182,7 @@ export enum ModelName {
   DEEPSEEK_CHAT = 'deepseek-chat',
   DEEPSEEK_REASONER = 'deepseek-reasoner',
   GEMMA_9B = 'gemma2:9b-instruct',
+  OPENROUTER_DEFAULT = 'openai/gpt-4o-mini',
 }
 
 export const VALID_MODELS: Record<ModelProvider, ModelName[]> = {
@@ -189,6 +191,7 @@ export const VALID_MODELS: Record<ModelProvider, ModelName[]> = {
   [ModelProvider.google]: [ModelName.GEMINI_FLASH, ModelName.GEMINI_PRO],
   [ModelProvider.deepseek]: [ModelName.DEEPSEEK_CHAT, ModelName.DEEPSEEK_REASONER],
   [ModelProvider.gemma]: [ModelName.GEMMA_9B],
+  [ModelProvider.openrouter]: [], // OpenRouter model IDs are dynamic (e.g. "openai/gpt-4o") — validation is bypassed
 };
 
 export const DEFAULT_MODEL: Record<ModelProvider, ModelName> = {
@@ -197,6 +200,7 @@ export const DEFAULT_MODEL: Record<ModelProvider, ModelName> = {
   [ModelProvider.google]: ModelName.GEMINI_FLASH,
   [ModelProvider.deepseek]: ModelName.DEEPSEEK_CHAT,
   [ModelProvider.gemma]: ModelName.GEMMA_9B,
+  [ModelProvider.openrouter]: ModelName.OPENROUTER_DEFAULT,
 };
 
 export type GraphNodeTypeType = keyof typeof GraphNodeType;

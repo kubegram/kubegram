@@ -1,6 +1,6 @@
 {
   "name": "@kubegram/kubegram-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
     "access": "public"
@@ -65,7 +65,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@kubegram/common-events": "^1.0.0",
+    "@kubegram/common-events": "^1.1.0",
     "ai": "^4.1.0",
     "@ai-sdk/anthropic": "^0.0.45",
     "@ai-sdk/openai": "^0.0.49",

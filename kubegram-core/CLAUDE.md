@@ -128,6 +128,7 @@ OPENAI_API_KEY=
 GOOGLE_API_KEY=
 DEEPSEEK_API_KEY=
 OLLAMA_BASE_URL=
+OPENROUTER_API_KEY=   # OpenRouter (100+ models via openrouter.ai)
 
 # Embeddings
 VOYAGE_API_KEY=

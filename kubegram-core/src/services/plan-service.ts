@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { EventBus } from '@kubegram/common-events';
 import { GraphInput } from '../types/graph.js';
 import { ModelProvider, ModelName } from '../types/enums.js';
-import { PlanWorkflowResult } from '../workflows/types.js';
+import { PlanWorkflowResult } from '../types/state.js';
 
 export interface PlanJobStatus {
     jobId: string;
@@ -54,7 +54,7 @@ export class PlanService {
         options: PlanJobSubmissionOptions
     ): Promise<{ jobId: string }> {
         const jobId = uuidv4();
-        
+
         await this.eventBus.publish({
             id: uuidv4(),
             type: 'plan.started',
@@ -75,7 +75,7 @@ export class PlanService {
         options: PlanJobSubmissionOptions
     ): Promise<PlanJobStatus> {
         const jobId = uuidv4();
-        
+
         await this.eventBus.publish({
             id: uuidv4(),
             type: 'plan.started',
