@@ -27,6 +27,11 @@ jobs:
       - name: Install dependencies
         run: make ci-install
 
+      - name: Build workspace dependencies
+        run: make ci-build-common-events
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+
       - name: Type check
         run: make ci-typecheck-kubegram-core
 
