@@ -256,7 +256,7 @@ npm run type-check
 npm run lint
 ```
 
-## Related Packages:
+## Related Packages
 
 - [@kubegram/common-ts](https://github.com/kubegram/kubegram/tree/main/common-ts) - GraphQL SDK
 - [@kubegram/common-events](https://github.com/kubegram/kubegram/tree/main/common-events) - Event library
