@@ -10,6 +10,9 @@
     "kubegram-ui",
     "kubegram-github-app"
   ],
+  "overrides": {
+    "immutable": "^3.8.3"
+  },
   "scripts": {
     "build:all": "npm --workspaces run build --if-present",
     "test:all": "npm --workspaces run test --if-present",
