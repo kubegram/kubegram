@@ -38,6 +38,15 @@ export interface PlanServiceConfig {
     redisClient?: unknown;
 }
 
+/**
+ * High-level façade for infrastructure planning jobs.
+ *
+ * Follows the same fire-and-event pattern as CodegenService: publishes
+ * `plan.started` and returns a jobId. The PlanWorkflow must be triggered
+ * downstream by kuberag. In-memory `activeJobs` and `jobResults` maps act as
+ * a lightweight in-process status tracker until Redis-backed persistence is
+ * wired via PlanWorkflow.
+ */
 export class PlanService {
     private eventBus: EventBus;
     private config: PlanServiceConfig;

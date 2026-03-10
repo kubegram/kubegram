@@ -78,6 +78,11 @@ export class RedisCheckpointer<T = unknown> {
                 currentStep: metadata?.currentStep,
             };
 
+            // Three keys are written atomically via pipeline (same 24-hour TTL):
+            //  statePrefix:    full state blob — read by load() for workflow resumption.
+            //  metadataPrefix: same blob plus metadata — read by loadWithMetadata() for
+            //                  richer inspection without re-serialising the full state.
+            //  statusPrefix:   lightweight status record — read by getStatus() for polling.
             const pipeline = this.redis.pipeline();
             pipeline.set(this.statePrefix + threadId, JSON.stringify(stateData), 'EX', 86400);
             pipeline.set(this.metadataPrefix + threadId, JSON.stringify(stateData), 'EX', 86400);
@@ -223,6 +228,9 @@ export class RedisCheckpointer<T = unknown> {
 
     /**
      * Remove expired checkpoints older than maxAge seconds (default: 7 days).
+     *
+     * Iterates all tracked thread IDs via SMEMBERS — O(n) on active thread count.
+     * Suitable for periodic maintenance tasks; do not call on hot paths.
      */
     async cleanup(maxAge: number = 604800): Promise<number> {
         try {

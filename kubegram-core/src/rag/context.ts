@@ -1,6 +1,17 @@
 /**
- * RAG context builder
- * Copied from kuberag
+ * @stub RAG context builder — not implemented in kubegram-core.
+ *
+ * The concrete implementation lives in kuberag, which requires Dgraph vector
+ * search for finding similar graphs. This class is exported for type compatibility
+ * only — its methods return empty results.
+ *
+ * To inject RAG context into CodegenWorkflow, implement the RAGContextService
+ * interface defined in workflows/codegen-workflow.ts and pass it as an option:
+ *
+ *   new CodegenWorkflow(redis, eventBus, { ragContextService: myRagImpl });
+ *
+ * kubegram-core degrades gracefully when no ragContextService is provided
+ * (proceeds with empty RAG context).
  */
 
 export interface RagContextOptions {

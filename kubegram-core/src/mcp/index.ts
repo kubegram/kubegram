@@ -1,6 +1,14 @@
 /**
- * MCP (Model Context Protocol) service for kubegram-core
- * Supports lazy-loading - starts only when first WebSocket connects
+ * @stub MCPService — lazy-start Model Context Protocol server.
+ *
+ * The full MCP server implementation (tools, WebSocket transport, kubectl proxy)
+ * lives in kubegram-operator (Go). This TypeScript stub exists to reserve the
+ * interface contract and support future kubegram-core-native MCP tooling.
+ *
+ * Current behavior:
+ *  - `start()` logs a config message but does NOT bind a port.
+ *  - `onConnection()` sets `isRunning=true` but does NOT initialize a real server.
+ *  - `stop()` resets `isRunning` and logs.
  */
 
 export interface MCPConfig {

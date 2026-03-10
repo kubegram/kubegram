@@ -22,6 +22,9 @@ export enum WorkflowStep {
     LLM_CALL = 'llmCall',
     BUILD_KUBERNETES_GRAPH = 'buildKubernetesGraph',
     VALIDATE_CONFIGURATIONS = 'validateConfigurations',
+    // Terminal sentinel values. They appear in the handlers Record<WorkflowStep, …>
+    // to satisfy exhaustive typing, but their handlers are identity functions —
+    // they are never actually executed by BaseWorkflow.executeStep().
     COMPLETED = 'completed',
     FAILED = 'failed',
 }
@@ -43,6 +46,7 @@ export enum PlanWorkflowStep {
     GENERATE_GRAPH = 'generateGraph',
     VALIDATE_GRAPH = 'validateGraph',
     SAVE_GRAPH = 'saveGraph',
+    // Terminal sentinel values — same convention as WorkflowStep above.
     COMPLETED = 'completed',
     FAILED = 'failed',
 }
@@ -204,6 +208,7 @@ export enum ValidationWorkflowStep {
     TRIGGER_TESTS = 'triggerTests',
     COLLECT_RESULTS = 'collectResults',
     ANALYZE_RESULTS = 'analyzeResults',
+    // Terminal sentinel values — same convention as WorkflowStep above.
     COMPLETED = 'completed',
     FAILED = 'failed',
 }
@@ -373,6 +378,8 @@ export function createInitialCodegenState(
         stepHistory: [],
         currentStep: WorkflowStep.GET_OR_CREATE_GRAPH,
         status: WorkflowStatus.PENDING,
+        // existingDbGraph is pre-fetched by kuberag before calling this function.
+        // kubegram-core never calls Dgraph itself — null means "all nodes are new".
         dbGraph: options.existingDbGraph ?? null,
         neededNodes: [],
         similarGraphs: [],

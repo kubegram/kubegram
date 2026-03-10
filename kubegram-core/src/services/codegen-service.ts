@@ -50,6 +50,19 @@ export interface CodegenServiceConfig {
   redisClient?: unknown;
 }
 
+/**
+ * High-level façade for code generation jobs.
+ *
+ * This service is a thin orchestration layer — it generates a jobId, publishes
+ * a `codegen.started` DomainEvent, and returns immediately. The actual workflow
+ * execution (CodegenWorkflow) must be triggered by the caller (typically kuberag)
+ * after receiving that event. Methods like `generateCode` and `getGeneratedCode`
+ * are intentional no-ops or stubs until that wiring is complete.
+ *
+ * Injection points:
+ *  - `eventBus`: @kubegram/common-events EventBus instance.
+ *  - `config.redisClient`: ioredis client (reserved; not yet used).
+ */
 export class CodegenService {
   private eventBus: EventBus;
   private config: CodegenServiceConfig;

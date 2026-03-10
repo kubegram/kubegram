@@ -119,6 +119,9 @@ export class DatabasePromptGenerator implements PromptGenerator {
     const envVars = this.extractEnvVars(db?.environmentVariables || spec.env || {});
     const resources = spec.resources || {};
 
+    // If the node has a dependencyType, it represents an externally-managed database
+    // (e.g. RDS, Cloud SQL). Generate only ConfigMap + Secret for connection config,
+    // NOT a StatefulSet — the database itself is not deployed to the cluster.
     const isExternal = !!node.dependencyType;
 
     if (isExternal) {
@@ -263,6 +266,8 @@ export class CachePromptGenerator implements PromptGenerator {
     const clusterMode = cache?.clusterMode || spec.cluster_mode || false;
     const persistenceEnabled = cache?.persistenceEnabled || spec.persistence_enabled || false;
 
+    // External node = managed outside cluster (e.g. ElastiCache, Memorystore).
+    // Generate only ConfigMap + Secret for connection config, NOT Deployment.
     const isExternal = !!node.dependencyType;
 
     if (isExternal) {
@@ -423,6 +428,8 @@ export class ProxyPromptGenerator implements PromptGenerator {
     const rateLimitEnabled = proxy?.rateLimitEnabled || spec.rateLimitEnabled || false;
     const resources = spec.resources || {};
 
+    // External node = managed outside cluster. Generate only ConfigMap + Secret,
+    // NOT Deployment, Service, or Ingress.
     const isExternal = !!node.dependencyType;
 
     if (isExternal) {
@@ -538,6 +545,8 @@ export class LoadBalancerPromptGenerator implements PromptGenerator {
     const healthCheckPath = lb?.healthCheckPath || spec.healthCheckPath || '/health';
     const resources = spec.resources || {};
 
+    // External node = managed outside cluster (e.g. AWS ALB, Cloud Load Balancer).
+    // Generate only Service (ExternalName) + ConfigMap, NOT Deployment.
     const isExternal = !!node.dependencyType;
 
     if (isExternal) {
@@ -799,6 +808,16 @@ Provide complete, production-ready Kubernetes YAML manifests.
   }
 }
 
+/**
+ * Registry of per-node-type prompt generators.
+ *
+ * Dispatches to a specialized generator based on GraphNodeType. Falls back to
+ * GenericPromptGenerator for types not in the registry (e.g. NAMESPACE, NODE,
+ * ROLE). Add new generators by adding an entry to the `generators` Map.
+ *
+ * All generators produce Markdown-formatted prompts that are embedded into the
+ * user-turn message of the LLM call in CodegenWorkflow.llmCall().
+ */
 export class PromptGeneratorFactory {
   private static generators: Map<GraphNodeType, PromptGenerator> = new Map([
     [GraphNodeType.MICROSERVICE, new MicroservicePromptGenerator()],

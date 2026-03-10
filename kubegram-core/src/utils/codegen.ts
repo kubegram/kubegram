@@ -1,6 +1,5 @@
 /**
- * Code generation utilities
- * Ported from kuberag/src/utils/codegen.ts
+ * Code generation utilities.
  * Pure functions — no Dgraph or external service dependencies.
  */
 
@@ -42,7 +41,22 @@ export interface NodeExtractionOptions {
 // CodegenUtils class
 // ---------------------------------------------------------------------------
 
+/**
+ * Pure utility functions for graph manipulation and code generation.
+ * No external service dependencies — safe to call in any context.
+ *
+ * Key operations:
+ *  - `computeGraphHash`: deterministic SHA-256 fingerprint of a graph for
+ *    cache keying and change detection.
+ *  - `buildGraphEdges`: applies `ConnectionRule[]` to infer edges between
+ *    nodes by type pair (see DEFAULT_CONNECTION_RULES for the full rule set).
+ *  - `getNeededInfrastructure`: diffs desired vs. existing graph to return
+ *    only nodes that are new or have changed configuration.
+ */
 export class CodegenUtils {
+    // Rules are applied by _inferConnections() via an O(sources × targets) scan.
+    // Order does not matter — duplicate edges are deduplicated by existence check.
+    // Add new rules here when new node-type relationships need automatic wiring.
     private static readonly DEFAULT_CONNECTION_RULES: ConnectionRule[] = [
         {
             sourceType: GraphNodeType.SERVICE,
@@ -115,6 +129,9 @@ export class CodegenUtils {
         }
 
         if (includeNodes && graph.nodes) {
+            // Sort by ID before hashing so that node order in the array doesn't affect
+            // the fingerprint. This makes the hash stable across different serialization
+            // orderings of the same graph.
             const sorted = [...graph.nodes].sort((a, b) => a.id.localeCompare(b.id));
             for (const node of sorted) {
                 parts.push(`${node.id}:${node.nodeType}:${node.name}`);
@@ -179,6 +196,9 @@ export class CodegenUtils {
     }
 
     private static _createDefaultEdges(nodes: GraphNode[]): void {
+        // Group nodes by 'base name' (stripping common suffixes like -service,
+        // -deployment) to find nodes that logically belong to the same application
+        // unit. Services and Deployments in the same name group are then connected.
         const groups = new Map<string, GraphNode[]>();
         for (const node of nodes) {
             const base = this._getBaseName(node.name);

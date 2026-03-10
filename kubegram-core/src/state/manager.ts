@@ -1,6 +1,12 @@
 /**
- * State management placeholder
- * To be implemented with @kubegram/common-events integration
+ * @stub StateManager — placeholder awaiting implementation.
+ *
+ * Intended to provide a higher-level key/value abstraction over Redis,
+ * backed by @kubegram/common-events EventCache with TTL management and
+ * cache invalidation. Currently all workflow state is managed directly by
+ * RedisCheckpointer. This class will wrap that when implemented.
+ *
+ * Do not use this class — use RedisCheckpointer directly instead.
  */
 
 export interface StateConfig {

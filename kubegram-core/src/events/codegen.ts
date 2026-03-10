@@ -1,3 +1,16 @@
+/**
+ * Typed domain events for the code generation workflow.
+ *
+ * These classes are plain data carriers — they are NOT wired to WorkflowPubSub
+ * or EventBus automatically. Callers must construct and publish them explicitly:
+ *
+ *   await eventBus.publish(new CodegenStartedEvent(jobId, userId, graphId, graphData, options));
+ *
+ * For the internal workflow event fan-out (step_started, step_completed, etc.)
+ * see WorkflowPubSub in state/pubsub.ts — those use WorkflowEvent, not these classes.
+ */
+
+/** Fired when a codegen job is accepted and enters the queue. */
 export class CodegenStartedEvent {
   constructor(
     public readonly jobId: string,
@@ -8,6 +21,7 @@ export class CodegenStartedEvent {
   ) {}
 }
 
+/** Fired by the workflow at each step boundary to report incremental progress. */
 export class CodegenProgressEvent {
   constructor(
     public readonly jobId: string,
@@ -17,6 +31,7 @@ export class CodegenProgressEvent {
   ) {}
 }
 
+/** Fired when all manifests have been generated and validated successfully. */
 export class CodegenCompletedEvent {
   constructor(
     public readonly jobId: string,
@@ -26,6 +41,10 @@ export class CodegenCompletedEvent {
   ) {}
 }
 
+/**
+ * Fired when the workflow fails at any step.
+ * `retryable` signals to the caller whether automatic retry is safe.
+ */
 export class CodegenFailedEvent {
   constructor(
     public readonly jobId: string,

@@ -23,6 +23,10 @@ export class WorkflowPubSub {
      * (e.g. "codegen:abc123.completed") or wildcard by prefix.
      */
     async publish(channel: string, event: WorkflowEvent): Promise<void> {
+        // Event type follows the convention "{channel}.{eventType}", e.g.:
+        //   "codegen:abc-123.completed"
+        // Subscribers can match on exact type or use prefix-based routing depending
+        // on the EventBus implementation from @kubegram/common-events.
         await this.eventBus.publish({
             id: uuidv4(),
             type: `${channel}.${event.type}`,
@@ -35,6 +39,8 @@ export class WorkflowPubSub {
                 error: event.error,
                 ...event.metadata,
             },
+            // Cast required because WorkflowEvent maps to a subset of DomainEvent fields.
+            // The EventBus accepts any DomainEvent-compatible shape at runtime.
         } as any);
     }
 }

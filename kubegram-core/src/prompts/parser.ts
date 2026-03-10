@@ -51,6 +51,7 @@ export class LLMOutputParser {
 
     const cleanedContent = this.cleanMarkdownCodeBlocks(content);
 
+    // Strategy 1: direct JSON parse + Zod validation (fast path, most common)
     try {
       const parsed = JSON.parse(cleanedContent);
       const validated = ManifestsResponseSchema.parse(parsed);
@@ -59,6 +60,7 @@ export class LLMOutputParser {
       // Fall through to next strategy
     }
 
+    // Strategy 2: extract JSON from a ```json … ``` fenced block
     const jsonMatch = cleanedContent.match(/```json\n([\s\S]*?)\n```/);
     if (jsonMatch) {
       try {
@@ -70,6 +72,9 @@ export class LLMOutputParser {
       }
     }
 
+    // Strategy 3: re-prompt the LLM using structured output (generateObject).
+    // Only attempted when a model is provided — adds latency but recovers from
+    // ambiguous or narrative LLM responses.
     if (model) {
       try {
         const { generateObject } = await import('ai');
@@ -84,6 +89,8 @@ export class LLMOutputParser {
       }
     }
 
+    // Strategy 4: treat raw text as YAML documents separated by ---
+    // Last resort; results lack metadata (assumptions, decisions, entity_id).
     const yamlDocs = cleanedContent.split(/^---$/m).filter(s => s.trim());
     if (yamlDocs.length > 0) {
       return yamlDocs.map((content, i) => ({

@@ -1,3 +1,18 @@
+/**
+ * Public API surface of @kubegram/kubegram-core.
+ *
+ * Import from this barrel rather than from internal sub-paths so that
+ * internal refactors don't break callers.
+ *
+ * Production-ready exports: workflows (codegen, plan, validation), LLM layer
+ * (providers, router), prompts (system, node-generators, parser), checkpointer,
+ * pubsub, codegen utils, and all type definitions.
+ *
+ * Stub exports (return empty results / throw): rag/embeddings, rag/context,
+ * state/manager, mcp/index, services/entity-service. See each file's JSDoc
+ * for the concrete implementation location.
+ */
+
 export * from './events/codegen.js';
 export * from './events/plan.js';
 export * from './services/codegen-service.js';

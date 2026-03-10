@@ -122,6 +122,10 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
     // --- Overridden hooks ---
 
     protected shouldContinue(state: CodegenState): boolean {
+        // Short-circuit conditions (in order of priority):
+        //  1. Any 'error'-severity validation error — stop immediately, do not retry.
+        //  2. VALIDATE_CONFIGURATIONS is the terminal operational step — never loop back.
+        //  3. Step depth guard (max 10) — prevents infinite recursion on runaway graphs.
         if (state.validationErrors.some(e => e.severity === 'error')) return false;
         if (state.currentStep === WorkflowStep.VALIDATE_CONFIGURATIONS) return false;
         if (state.stepHistory.length >= 10) return false;
@@ -220,10 +224,12 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
 
         const userPrompt = this.buildUserPrompt(state);
 
-        // LLM call — use router with failover if configured, else direct provider
+        // Prefer the router when configured (provides failover across providers).
+        // Fall back to a direct createLLMProvider() call for single-provider setups
+        // or when callers haven't injected a router (e.g. unit tests).
         const { text } = this.router
             ? await this.router.generateText(
-                { system: systemPrompt, prompt: userPrompt, temperature: 0, maxTokens: 4000 },
+                { system: systemPrompt, prompt: userPrompt, temperature: 0 },
                 'codegen',
               )
             : await generateText({
@@ -231,7 +237,6 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
                 system: systemPrompt,
                 prompt: userPrompt,
                 temperature: 0,
-                maxTokens: 4000,
               });
 
         // Parse output
@@ -364,13 +369,15 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
 
     private async sanitizeContext(context: string[]): Promise<string[]> {
         try {
+            // Use a fast, cheap model (Haiku) for sanitization rather than the configured
+            // codegen provider. Sanitization is a best-effort safeguard, not a content
+            // transformation — graceful fallback to the original context on any error.
             const provider = createLLMProvider(ModelProvider.claude, 'claude-3-haiku-20240307');
             const { text } = await generateText({
                 model: provider,
                 system: `You are a content sanitization assistant. Remove PII, malicious content, and inappropriate material from user-provided context messages. Keep core technical requirements intact. Return a JSON array of sanitized strings.`,
                 prompt: `Sanitize the following context messages and return as JSON array:\n${JSON.stringify(context, null, 2)}`,
                 temperature: 0,
-                maxTokens: 1000,
             });
 
             const sanitized = JSON.parse(text.trim());

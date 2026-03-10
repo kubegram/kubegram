@@ -139,7 +139,10 @@ export class LLMRouter {
     state.consecutiveFailures += 1;
     state.lastFailureAt = new Date();
 
-    // Exponential backoff: 1 min, 2 min, 4 min ... up to 1 hour
+    // Exponential backoff starting at 60s on the 3rd consecutive failure:
+    //   failures=3 → 60s, failures=4 → 120s, failures=5 → 240s … capped at 3600s (1h).
+    // The first two failures do NOT trigger cooldown — they allow immediate retries,
+    // avoiding false positives from transient network blips.
     if (state.consecutiveFailures >= 3) {
       const cooldownSeconds = Math.min(
         60 * Math.pow(2, state.consecutiveFailures - 3),
@@ -174,7 +177,9 @@ export class LLMRouter {
     const state = this.healthState.get(provider);
     if (!state) return true;
     if (state.cooldownUntil && state.cooldownUntil > new Date()) return false;
-    // Cooldown expired — allow retry (health resets on next success)
+    // Cooldown period has elapsed. Mutate state in-place to mark the provider
+    // healthy again so the next call can attempt it. Full health reset happens
+    // on markSuccess() (called after a successful generateText call).
     if (state.cooldownUntil && state.cooldownUntil <= new Date()) {
       state.isHealthy = true;
       state.cooldownUntil = undefined;
@@ -199,6 +204,10 @@ export class LLMRouter {
     const now = Date.now();
     const record = this.requestCounts.get(provider);
 
+    // Rate-limit window is a simple 60-second tumbling window. When the window
+    // expires (resetAt <= now), it is reset rather than slid, so a burst at the
+    // boundary can briefly exceed the nominal per-minute rate. This is acceptable
+    // given typical LLM call volumes.
     if (!record || record.resetAt <= now) {
       this.requestCounts.set(provider, { count: 1, resetAt: now + 60_000 });
     } else {

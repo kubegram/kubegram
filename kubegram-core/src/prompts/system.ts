@@ -329,6 +329,10 @@ Return your response as a JSON object with a 'manifests' array, where each manif
       planningContext: [] as string[],
     };
     
+    // Messages are classified by keyword prefix rather than semantic analysis
+    // to avoid a second LLM call. The three buckets map to distinct sections
+    // of the system prompt: systemMessages (correction context), planningContext
+    // (architectural intent), and userRequirements (feature requirements).
     for (const message of context) {
       const lowerMessage = message.toLowerCase();
       

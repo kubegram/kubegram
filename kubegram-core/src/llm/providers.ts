@@ -1,6 +1,5 @@
 /**
- * LLM provider factory using Vercel AI SDK
- * Copied from kuberag - requires config adaptation
+ * LLM provider factory using Vercel AI SDK.
  */
 
 import { type LanguageModelV1 } from 'ai';
@@ -29,7 +28,20 @@ export interface LLMProviderOptions {
   openrouterApiKey?: string;
 }
 
+/**
+ * Factory for Vercel AI SDK provider instances, keyed by ModelProvider enum.
+ *
+ * Provider SDK clients are cached per ModelProvider key — they are stateless
+ * once constructed, so singleton semantics are safe. Call
+ * `LLMProviderFactory.configure(options)` once at startup with API keys before
+ * any `createLLMProvider()` call; without this, provider creation will throw on
+ * the first LLM request.
+ *
+ * For simple use cases, prefer the `createLLMProvider()` convenience export.
+ */
 export class LLMProviderFactory {
+  // Provider SDK clients are stateless once constructed, so caching is safe.
+  // The cache is global to the class (static) — intentional for singleton semantics.
   private static instances: Map<ModelProvider, any> = new Map();
   private static options: LLMProviderOptions = {};
 
@@ -106,6 +118,9 @@ export class LLMProviderFactory {
       console.warn('DEEPSEEK_API_KEY not found - DeepSeek provider may not work');
     }
     console.info('Initializing DeepSeek provider');
+    // DeepSeek's API is compatible with the OpenAI SDK but requires a different
+    // base URL. A placeholder key is used when none is configured so the provider
+    // can be instantiated — actual calls will fail with a 401 at runtime.
     return createOpenAI({
       apiKey: apiKey || 'dummy-key',
       baseURL: config?.baseURL || 'https://api.deepseek.com/v1',
@@ -142,7 +157,8 @@ export class LLMProviderFactory {
     if (!modelName) {
       return this.getDefaultModel(provider);
     }
-    // OpenRouter uses dynamic model IDs (e.g. "openai/gpt-4o") — skip whitelist validation
+    // OpenRouter accepts arbitrary vendor-namespaced IDs (e.g. "openai/gpt-4o")
+    // that are not in our VALID_MODELS whitelist. Skip validation for this provider.
     if (provider === ModelProvider.openrouter) {
       return modelName as ModelName;
     }

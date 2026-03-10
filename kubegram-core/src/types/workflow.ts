@@ -1,6 +1,18 @@
 /**
- * Generic workflow framework types
- * Copied from kuberag
+ * Generic workflow framework types shared by BaseWorkflow and all concrete
+ * workflow implementations.
+ *
+ * `BaseWorkflowState<Step, Status>` is the required state shape — all concrete
+ * states (CodegenState, PlanState, ValidationState) must extend it. The state is
+ * persisted to Redis between steps via RedisCheckpointer.
+ *
+ * `StepHandler<State>` is the unit of work per step — it receives the current
+ * state and returns the updated state. Step handlers must be pure with respect
+ * to external side effects (checkpoint + publish happen in BaseWorkflow.execute).
+ *
+ * `WorkflowContext` carries request-scoped identity (threadId, jobId, userId,
+ * companyId) without being part of the persisted state. It is passed into
+ * BaseWorkflow.execute() and available to all step handlers via closure.
  */
 
 export enum BaseWorkflowStatus {
