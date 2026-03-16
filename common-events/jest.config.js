@@ -1,32 +1,24 @@
+/** @type {import('jest').Config} */
 export default {
   preset: 'ts-jest/presets/default-esm',
-  testEnvironment: 'node',
-
-  // Extensions to treat as ESM
   extensionsToTreatAsEsm: ['.ts'],
-
-  // Module name mapping
   moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-
-  // Transform settings
   transform: {
-    '^.+\.tsx?$': ['ts-jest', { useESM: true }],
+    '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
   },
-
-  // Test patterns
+  testEnvironment: 'node',
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.ts',
-    '<rootDir>/src/**/__tests__/**/*.test.js',
+    '<rootDir>/src/**/graph-store/__tests__/**/*.test.ts',
   ],
-
-  // Coverage
-  collectCoverageFrom: ['src/__tests__'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/__tests__/**',
+    '!src/**/*.test.ts',
+  ],
   coverageDirectory: 'coverage',
-
-  // Misc
-  verbose: true,
-  testTimeout: 10000,
-  rootDir: '.',
+  coverageReporters: ['text', 'lcov', 'html'],
 };
