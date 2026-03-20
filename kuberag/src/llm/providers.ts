@@ -63,7 +63,11 @@ export class LLMProviderFactory {
       case ModelProvider.gemma:
         instance = this.createOllamaProvider(config);
         break;
-      
+
+      case ModelProvider.openrouter:
+        instance = this.createOpenRouterProvider(config);
+        break;
+
       default:
         throw new Error(`Unsupported provider: ${provider}`);
     }
@@ -149,12 +153,35 @@ export class LLMProviderFactory {
    */
   private static createOllamaProvider(config?: ProviderConfig) {
     const baseURL = config?.baseURL || llmConfig.ollama.baseURL;
-    
+
     console.info(`Initializing Ollama provider at ${baseURL}`);
-    
+
     return createOpenAI({
       apiKey: 'not-required', // Ollama doesn't need API key
       baseURL,
+    });
+  }
+
+  /**
+   * Create OpenRouter provider (OpenAI-compatible API aggregator)
+   * Supports 100+ models via a single API key using "provider/model" format
+   */
+  private static createOpenRouterProvider(config?: ProviderConfig) {
+    const apiKey = config?.apiKey || llmConfig.openrouter.apiKey;
+
+    if (!apiKey) {
+      throw new Error('OPENROUTER_API_KEY is required for OpenRouter provider');
+    }
+
+    console.info('Initializing OpenRouter provider');
+
+    return createOpenAI({
+      apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      headers: {
+        'HTTP-Referer': 'https://kubegram.com',
+        'X-Title': 'Kubegram',
+      },
     });
   }
 
@@ -172,6 +199,11 @@ export class LLMProviderFactory {
   static resolveModelName(provider: ModelProvider, modelName?: string): ModelName {
     if (!modelName) {
       return this.getDefaultModel(provider);
+    }
+
+    // OpenRouter uses dynamic model IDs (e.g. "openai/gpt-4o") — skip whitelist validation
+    if (provider === ModelProvider.openrouter) {
+      return modelName as ModelName;
     }
 
     const valid = VALID_MODELS[provider];
@@ -219,7 +251,10 @@ export class LLMProviderFactory {
       
       case ModelProvider.gemma:
         return true; // Ollama is always available if running
-      
+
+      case ModelProvider.openrouter:
+        return Boolean(llmConfig.openrouter.apiKey);
+
       default:
         return false;
     }
@@ -240,12 +275,13 @@ export class LLMProviderFactory {
   static getRecommendedProvider(): ModelProvider {
     const available = this.getAvailableProviders();
     
-    // Priority order: Claude > OpenAI > Google > DeepSeek > Gemma
+    // Priority order: Claude > OpenAI > Google > DeepSeek > OpenRouter > Gemma
     const priority = [
       ModelProvider.claude,
       ModelProvider.openai,
       ModelProvider.google,
       ModelProvider.deepseek,
+      ModelProvider.openrouter,
       ModelProvider.gemma,
     ];
 
@@ -289,3 +325,4 @@ export const openaiProvider = () => createLLMProvider(ModelProvider.openai);
 export const googleProvider = () => createLLMProvider(ModelProvider.google);
 export const deepseekProvider = () => createLLMProvider(ModelProvider.deepseek);
 export const gemmaProvider = () => createLLMProvider(ModelProvider.gemma);
+export const openrouterProvider = (model?: string) => createLLMProvider(ModelProvider.openrouter, model);

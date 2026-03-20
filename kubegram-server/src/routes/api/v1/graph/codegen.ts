@@ -51,6 +51,83 @@ type Variables = {
 const codegenRoutes = new Hono<{ Variables: Variables }>();
 
 /**
+ * GET /api/public/v1/graph/codegen
+ * List jobs for a project (or all jobs if no projectId provided)
+ */
+codegenRoutes.get('/', async (c) => {
+  try {
+    const auth = c.get('auth');
+    const projectId = c.req.query('projectId');
+    const limit = parseInt(c.req.query('limit') ?? '20');
+    const offset = parseInt(c.req.query('offset') ?? '0');
+
+    // Get user's accessible projects
+    const userProjects = await GraphPermissions.getUserAccessibleProjects(parseInt(auth.user.id));
+    const projectIds = userProjects.map(p => p.id);
+
+    if (userProjects.length === 0) {
+      return c.json({ jobs: [], total: 0 });
+    }
+
+    let jobs;
+
+    if (projectId) {
+      // Verify user has access to this specific project
+      const hasAccess = userProjects.some(p => p.id === parseInt(projectId));
+      if (!hasAccess) {
+        return c.json({ error: 'Access denied to this project' }, 403);
+      }
+
+      // Get jobs for specific project
+      const jobRows = await db.select({
+        id: generationJobs.id,
+        uuid: generationJobs.uuid,
+        graphId: generationJobs.graphId,
+        projectId: generationJobs.projectId,
+        status: generationJobs.status,
+        progress: generationJobs.progress,
+        createdAt: generationJobs.createdAt,
+        completedAt: generationJobs.completedAt,
+        startedAt: generationJobs.startedAt,
+      })
+        .from(generationJobs)
+        .where(eq(generationJobs.projectId, parseInt(projectId)))
+        .orderBy(desc(generationJobs.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      jobs = jobRows;
+    } else {
+      // Get all jobs for user's projects
+      const jobRows = await db.select({
+        id: generationJobs.id,
+        uuid: generationJobs.uuid,
+        graphId: generationJobs.graphId,
+        projectId: generationJobs.projectId,
+        status: generationJobs.status,
+        progress: generationJobs.progress,
+        createdAt: generationJobs.createdAt,
+        completedAt: generationJobs.completedAt,
+        startedAt: generationJobs.startedAt,
+      })
+        .from(generationJobs)
+        .where(inArray(generationJobs.projectId, projectIds))
+        .orderBy(desc(generationJobs.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      jobs = jobRows;
+    }
+
+    return c.json({ jobs, total: jobs.length });
+
+  } catch (error) {
+    logger.error('List codegen jobs error', { error });
+    return c.json({ error: 'Failed to list jobs' }, 500);
+  }
+});
+
+/**
  * POST /api/public/v1/graph/codegen
  * Initialize code generation for a graph
  */
@@ -189,6 +266,14 @@ codegenRoutes.get('/:jobId/status', async (c) => {
     if (canonicalStatus === JOB_STATUS.COMPLETED) {
       const results = await codegenService.getJobResults(c, jobId, parseInt(auth.user.id));
       responseData.generatedCode = results;
+
+      // Fire-and-forget: create a GitHub PR if the project has GitHub config and no PR yet
+      const job = await codegenService.getJobByJobId(jobId, parseInt(auth.user.id));
+      if (job?.project?.githubInstallationId && !job.githubPrUrl) {
+        codegenService.triggerGitHubPR(job, results).catch((err: unknown) =>
+          logger.error('GitHub PR creation failed', { jobId, err }),
+        );
+      }
     }
 
     const response = v.parse(JobStatusResponseSchema, responseData);

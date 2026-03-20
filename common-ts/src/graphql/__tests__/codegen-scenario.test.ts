@@ -10,7 +10,7 @@
  * This test tests the above workflow.
  */
 
-// import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+// import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import axios from 'axios';
 import { GraphType, GraphNodeType } from '../generated/types.js';
 import type { GraphInput, NodeInput } from '../generated/types.js';

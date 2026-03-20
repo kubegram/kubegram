@@ -1,0 +1,108 @@
+[
+  {
+    "title": "AI Orchestration",
+    "path": "/docs/AI-orchestration",
+    "children": [
+      {
+        "title": "AI Orchestration Concepts",
+        "path": "/docs/AI-orchestration/concepts",
+        "isDirectory": false
+      },
+      {
+        "title": "AI Provider Configuration",
+        "path": "/docs/AI-orchestration/configuration",
+        "isDirectory": false
+      }
+    ],
+    "isDirectory": true
+  },
+  {
+    "title": "Deployment",
+    "path": "/docs/deployment",
+    "children": [
+      {
+        "title": "Kubegram GitHub Application",
+        "path": "/docs/deployment/using-the-kubegram-application",
+        "isDirectory": false,
+        "order": 3
+      },
+      {
+        "title": "Deployment Guide",
+        "path": "/docs/deployment/deployment",
+        "isDirectory": false
+      },
+      {
+        "title": "High Availability Deployment",
+        "path": "/docs/deployment/ha-deployment",
+        "isDirectory": false
+      }
+    ],
+    "isDirectory": true
+  },
+  {
+    "title": "Getting Started",
+    "path": "/docs/getting-started",
+    "children": [
+      {
+        "title": "What is Kubegram?",
+        "path": "/docs/getting-started/introduction",
+        "isDirectory": false,
+        "order": 1
+      },
+      {
+        "title": "Architecture",
+        "path": "/docs/getting-started/architecture",
+        "isDirectory": false,
+        "order": 2
+      },
+      {
+        "title": "Local Development Setup",
+        "path": "/docs/getting-started/setup",
+        "isDirectory": false,
+        "order": 2
+      }
+    ],
+    "isDirectory": true
+  },
+  {
+    "title": "Integrations",
+    "path": "/docs/integrations",
+    "children": [
+      {
+        "title": "AI Agent Integration via MCP",
+        "path": "/docs/integrations/mcp-integration",
+        "isDirectory": false,
+        "order": 2
+      },
+      {
+        "title": "Use Your Tools with Kubegram",
+        "path": "/docs/integrations/use-your-tools",
+        "isDirectory": false,
+        "order": 6
+      }
+    ],
+    "isDirectory": true
+  },
+  {
+    "title": "Visual Designer",
+    "path": "/docs/visual-designer",
+    "children": [
+      {
+        "title": "Code View",
+        "path": "/docs/visual-designer/code_view",
+        "isDirectory": false
+      },
+      {
+        "title": "Compare View",
+        "path": "/docs/visual-designer/compare_view",
+        "isDirectory": false
+      },
+      {
+        "title": "Visual Designer Guide",
+        "path": "/docs/visual-designer/canvas-guide",
+        "isDirectory": false
+      }
+    ],
+    "isDirectory": true
+  }
+]

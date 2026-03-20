@@ -1,5 +1,5 @@
 {
-    "name": "kubegram-server-v2",
+    "name": "kubegram-server",
     "version": "1.0.0",
     "description": "Bun server with SSR and API routes for Kubegram",
     "type": "module",
@@ -24,25 +24,37 @@
         "typecheck": "bunx tsc --noEmit"
     },
     "dependencies": {
-        "@kubegram/common-ts": "1.4.2",
+        "@ai-sdk/anthropic": "^3.0.58",
+        "@ai-sdk/google": "^3.0.43",
+        "@ai-sdk/openai": "^3.0.41",
+        "@kubegram/common-ts": "^1.4.2",
+        "@kubegram/kubegram-auth": "*",
+        "@modelcontextprotocol/sdk": "^1.26.0",
         "@openauthjs/openauth": "^0.4.3",
+        "ai": "^6.0.116",
         "drizzle-orm": "^0.45.1",
+        "fetch-to-node": "^2.1.0",
         "graphql": "^16.12.0",
         "hono": "^4.11.7",
+        "ioredis": "^5.4.2",
         "lru-cache": "^11.2.5",
         "postgres": "^3.4.8",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "valibot": "^1.2.0",
         "winston": "^3.19.0",
-        "ioredis": "^5.4.2"
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@types/react": "^19.0.8",
         "@types/react-dom": "^19.0.3",
+        "@typescript-eslint/eslint-plugin": "^8.0.0",
+        "@typescript-eslint/parser": "^8.0.0",
+        "@vitest/coverage-v8": "^4.0.0",
         "bun-types": "latest",
-        "drizzle-kit": "^0.31.8",
+        "drizzle-kit": "^0.12.8",
+        "eslint": "^9.19.0",
         "typescript": "^5.7.3",
-        "eslint": "^9.19.0"
+        "vitest": "^4.0.0"
     }
 }

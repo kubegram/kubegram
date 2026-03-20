@@ -1,7 +1,4 @@
-import { issuer } from "@openauthjs/openauth";
-import { GithubProvider } from "@openauthjs/openauth/provider/github";
-import { GoogleProvider } from "@openauthjs/openauth/provider/google";
-import { MemoryStorage } from "@openauthjs/openauth/storage/memory";
+import { createAuthApp, GithubProvider, GoogleProvider, createMemoryStorage, createLruRedisStorage } from '@kubegram/kubegram-auth';
 import config from '../config/env';
 import { db } from '@/db';
 import { users, companies, organizations, teams } from '@/db/schema';
@@ -9,13 +6,10 @@ import { eq } from 'drizzle-orm';
 import * as v from 'valibot';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
-import { RedisLruStorage } from './redis-storage';
 import { redisClient } from '../state/redis';
 
-// Helper function to ensure user has a team and create placeholder resources if needed
 async function ensureUserHasTeam(userId: number, userName: string): Promise<{ teamId: number, organizationId: number, companyId: string }> {
   try {
-    // Check if user already has a team
     const existingUsers = await db.select()
       .from(users)
       .where(eq(users.id, userId))
@@ -27,7 +21,6 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
 
     const user = existingUsers[0];
 
-    // If user already has a team, return existing hierarchy
     if (user.teamId) {
       const teamResult = await db.select()
         .from(teams)
@@ -77,11 +70,9 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
       };
     }
 
-    // User doesn't have a team, create placeholder hierarchy
     const uuid = randomUUID();
     const sanitizedUserName = userName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 
-    // Create company
     const newCompanyResult = await db.insert(companies)
       .values({
         name: `company-${sanitizedUserName}-${uuid}`
@@ -91,7 +82,6 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const companyId = newCompanyResult[0].id;
     logger.info('Created placeholder company', { companyId, userId });
 
-    // Create organization
     const newOrgResult = await db.insert(organizations)
       .values({
         name: `org-${sanitizedUserName}-${uuid}`,
@@ -102,7 +92,6 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const organizationId = newOrgResult[0].id;
     logger.info('Created placeholder organization', { organizationId, companyId, userId });
 
-    // Create team
     const newTeamResult = await db.insert(teams)
       .values({
         name: `team-${sanitizedUserName}-${uuid}`,
@@ -113,7 +102,6 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const teamId = newTeamResult[0].id;
     logger.info('Created placeholder team', { teamId, organizationId, userId });
 
-    // Update user with the new team ID
     await db.update(users)
       .set({
         teamId: teamId,
@@ -134,7 +122,13 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
   }
 }
 
-// Initialize providers from environment variables
+const subjects = {
+  user: v.object({
+    id: v.string(),
+    provider: v.string(),
+  })
+};
+
 const providers: Record<string, any> = {};
 
 if (config.githubClientId && config.githubClientSecret) {
@@ -155,29 +149,24 @@ if (config.googleClientId && config.googleClientSecret) {
   logger.info('Loaded google provider from environment');
 }
 
-// Storage: in-memory (dev) or write-through LRU+Redis (HA mode)
+const redis = redisClient.getClient();
 const storage = config.enableHA
-  ? RedisLruStorage({ redis: redisClient.getClient() })
-  : MemoryStorage();
+  ? createLruRedisStorage({ redis: redis as any })
+  : createMemoryStorage();
 
 logger.info('OpenAuth storage backend', { mode: config.enableHA ? 'redis+lru' : 'memory' });
 
-const app = issuer({
-  subjects: {
-    user: v.object({
-      id: v.string(),
-      provider: v.string(),
-    })
-  },
+const app = createAuthApp({
+  subjects,
   providers,
-  storage,
+  storage: storage as any,
   select: async (options, req) => {
     const React = await import('react');
     const { renderToStaticMarkup } = await import('react-dom/server');
     const { ProviderSelect } = await import('./ui');
 
     const url = new URL(req.url);
-    const basePath = url.pathname.replace(/\/authorize$/, ''); // e.g. /oauth
+    const basePath = url.pathname.replace(/\/authorize$/, '');
 
     const configuredProviders = Object.keys(providers).map(p => {
       const name = p.charAt(0).toUpperCase() + p.slice(1);
@@ -213,13 +202,11 @@ const app = issuer({
     logger.debug('OAuth success', { provider: value.provider, value: JSON.stringify(value, null, 2) });
 
     try {
-      // Extract user information from the OAuth provider
       let email = '';
       let name = '';
       let avatarUrl = '';
       let providerId = '';
 
-      // Type guard for OAuth responses with tokenset
       const hasTokenset = (v: any): v is { provider: string; tokenset: { access: string } } => {
         return 'tokenset' in v && 'access' in v.tokenset;
       };
@@ -229,7 +216,6 @@ const app = issuer({
       }
 
       if (value.provider === 'google') {
-        // Google provides user info in the tokenset
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
           headers: {
             'Authorization': `Bearer ${value.tokenset.access}`
@@ -241,7 +227,6 @@ const app = issuer({
         avatarUrl = userInfo.picture || '';
         providerId = userInfo.id;
       } else if (value.provider === 'github') {
-        // GitHub provides user info in the tokenset
         const userInfoResponse = await fetch('https://api.github.com/user', {
           headers: {
             'Authorization': `Bearer ${value.tokenset.access}`,
@@ -250,7 +235,6 @@ const app = issuer({
         });
         const userInfo = await userInfoResponse.json();
 
-        // Get email from GitHub (might need separate call if not public)
         const emailResponse = await fetch('https://api.github.com/user/emails', {
           headers: {
             'Authorization': `Bearer ${value.tokenset.access}`,
@@ -270,7 +254,6 @@ const app = issuer({
         throw new Error('Could not get email from OAuth provider');
       }
 
-      // Check if user exists by email
       const existingUsers = await db.select()
         .from(users)
         .where(eq(users.email, email))
@@ -279,7 +262,6 @@ const app = issuer({
       let userId: number;
 
       if (existingUsers.length > 0) {
-        // User exists, update their info
         const user = existingUsers[0];
         userId = user.id;
 
@@ -293,7 +275,6 @@ const app = issuer({
           })
           .where(eq(users.id, userId));
 
-        // Ensure user has a team (create placeholder if needed)
         try {
           await ensureUserHasTeam(userId, name);
         } catch (teamError) {
@@ -303,7 +284,6 @@ const app = issuer({
 
         logger.info('Updated existing user', { email, userId });
       } else {
-        // Create new user first (without team initially)
         const newUserResult = await db.insert(users)
           .values({
             name,
@@ -318,7 +298,6 @@ const app = issuer({
         userId = newUserResult[0].id;
         logger.info('Created new user', { email, userId });
 
-        // Ensure user has a team (create placeholder hierarchy)
         try {
           await ensureUserHasTeam(userId, name);
         } catch (teamError) {
@@ -327,7 +306,6 @@ const app = issuer({
         }
       }
 
-      // Get user's hierarchy information for response headers
       let userHierarchy;
       try {
         userHierarchy = await ensureUserHasTeam(userId, name);
@@ -336,7 +314,6 @@ const app = issuer({
         throw hierarchyError;
       }
 
-      // Create the user subject (returns a Response with auth cookies/tokens)
       logger.debug('Creating subject', { userId, providerId, provider: value.provider });
 
       const response = await ctx.subject('user', {
@@ -344,7 +321,6 @@ const app = issuer({
         provider: value.provider
       });
 
-      // Add custom hierarchy headers to the response
       response.headers.set('X-Kubegram-Company-Id', userHierarchy.companyId);
       response.headers.set('X-Kubegram-Organization-Id', userHierarchy.organizationId.toString());
       response.headers.set('X-Kubegram-Team-Id', userHierarchy.teamId.toString());
@@ -361,7 +337,6 @@ const app = issuer({
   },
 });
 
-// Export UserSubject interface as expected by middleware
 export interface UserSubject {
   id: string;
   email: string;
@@ -372,7 +347,3 @@ export interface UserSubject {
 }
 
 export default app;
-
-
-
-

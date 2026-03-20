@@ -78,6 +78,13 @@ spec:
           env:
             - name: LLM_HOST
               value: {{ .Values.llm.websocketUrl | quote }}
+            - name: KUBEGRAM_SERVER_URL
+              value: {{ .Values.kubegram.serverUrl | quote }}
+            - name: KUBEGRAM_SERVER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: kubegram-operator-secret
+                  key: server-token
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

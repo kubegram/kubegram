@@ -15,6 +15,11 @@ import App from './App.tsx';
 // Add dark class to document element for dark theme
 document.documentElement.classList.add('dark');
 
+// Preview mode: inject mock adapter and seed localStorage before React mounts
+if (import.meta.env.VITE_PREVIEW_MODE === 'true') {
+  await import('./preview/previewSetup');
+}
+
 console.log('🎬 Application starting...');
 console.log('🔍 Root element found:', !!document.getElementById('root'));
 

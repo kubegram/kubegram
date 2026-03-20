@@ -22,6 +22,7 @@ const initialState: CanvasActivity = {
   isDrawingArrow: false,
   tempArrowEnd: null,
   arrowSnapTarget: null,
+  selectedArrowType: 'SOLID',
 
   // Selection and interaction
   selectedItems: { nodes: [], arrows: [] },
@@ -63,6 +64,9 @@ const activitySlice = createSlice({
     },
     setCurvedArrowMode: (state, action: PayloadAction<boolean>) => {
       state.isCurvedArrowMode = action.payload;
+    },
+    setSelectedArrowType: (state, action: PayloadAction<'SOLID' | 'DASHED' | 'DOTTED' | 'THICK' | 'RED'>) => {
+      state.selectedArrowType = action.payload;
     },
 
     // Arrow Drawing State
@@ -175,6 +179,7 @@ export const {
   setArrowMode,
   setSquareArrowMode,
   setCurvedArrowMode,
+  setSelectedArrowType,
   setArrowStart,
   setDrawingArrow,
   setTempArrowEnd,

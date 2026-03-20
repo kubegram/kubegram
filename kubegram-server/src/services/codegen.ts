@@ -23,6 +23,7 @@ import { eq, and, or } from 'drizzle-orm';
 import { CodegenError } from '@/errors/codegen';
 import logger from '@/utils/logger';
 import { withRetry } from '@/utils/retry';
+import config from '@/config/env';
 import type { WebSocketContext } from '@/routes/api/v1/graph/types';
 import type { Context } from 'hono';
 
@@ -39,7 +40,16 @@ export class CodegenService {
    * @returns Promise<Project> - Created/updated project
    */
   async storeProjectMetadata(
-    projectInfo: { id?: string; name?: string; description?: string },
+    projectInfo: {
+      id?: string;
+      name?: string;
+      description?: string;
+      githubInstallationId?: number;
+      githubOwner?: string;
+      githubRepo?: string;
+      githubBaseBranch?: string;
+      argocdAppName?: string;
+    },
     graphData: any,
     userId: number,
     teamId: number
@@ -53,13 +63,21 @@ export class CodegenService {
         console.log('Updating existing project with ID:', projectId);
         
         const result = await db.transaction(async (tx) => {
+          // Build update payload; only include GitHub fields if provided
+          const updateSet: Record<string, unknown> = {
+            name: projectInfo.name || `Graph Project ${Date.now()}`,
+            teamId: teamId,
+            updatedAt: new Date(),
+          };
+          if (projectInfo.githubInstallationId !== undefined) updateSet.githubInstallationId = projectInfo.githubInstallationId;
+          if (projectInfo.githubOwner !== undefined) updateSet.githubOwner = projectInfo.githubOwner;
+          if (projectInfo.githubRepo !== undefined) updateSet.githubRepo = projectInfo.githubRepo;
+          if (projectInfo.githubBaseBranch !== undefined) updateSet.githubBaseBranch = projectInfo.githubBaseBranch;
+          if (projectInfo.argocdAppName !== undefined) updateSet.argocdAppName = projectInfo.argocdAppName;
+
           // Update project basic info - .returning() gives us the full row including graphMeta
           const [project] = await tx.update(projects)
-            .set({
-              name: projectInfo.name || `Graph Project ${Date.now()}`,
-              teamId: teamId,
-              updatedAt: new Date()
-            })
+            .set(updateSet as any)
             .where(eq(projects.id, projectId))
             .returning();
 
@@ -122,7 +140,12 @@ export class CodegenService {
           graphId: graphId,
           graphMeta: JSON.stringify(projectMeta),
           teamId: teamId,
-          createdBy: userId
+          createdBy: userId,
+          ...(projectInfo.githubInstallationId !== undefined && { githubInstallationId: projectInfo.githubInstallationId }),
+          ...(projectInfo.githubOwner !== undefined && { githubOwner: projectInfo.githubOwner }),
+          ...(projectInfo.githubRepo !== undefined && { githubRepo: projectInfo.githubRepo }),
+          ...(projectInfo.githubBaseBranch !== undefined && { githubBaseBranch: projectInfo.githubBaseBranch }),
+          ...(projectInfo.argocdAppName !== undefined && { argocdAppName: projectInfo.argocdAppName }),
         }).returning();
 
         return project;
@@ -218,7 +241,7 @@ export class CodegenService {
         });
 
         if (result.errors?.length) {
-          throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`);
+          throw new Error(`GraphQL errors: ${result.errors.map((e: Error) => e.message).join(', ')}`);
         }
 
         if (!result.data?.initializeCodeGen) {
@@ -440,8 +463,68 @@ export class CodegenService {
   }
 
   /**
+   * Fire-and-forget: call the GitHub App to open a PR with generated manifests.
+   * Updates the job's githubPrUrl in the DB on success (duplicate guard).
+   *
+   * @param job - Job record (must include job.project with GitHub fields)
+   * @param results - Generated code results from the RAG system
+   */
+  async triggerGitHubPR(job: any, results: any): Promise<void> {
+    const project = job.project;
+    if (!project?.githubInstallationId || !project?.githubOwner || !project?.githubRepo) return;
+
+    // Extract files from results; each node may contain generated YAML
+    const files: Array<{ path: string; content: string }> = [];
+    if (results?.nodes) {
+      for (const node of results.nodes) {
+        if (node.generatedCode) {
+          const fileName = `${(node.name || node.id || 'resource').toLowerCase().replace(/[^a-z0-9-]/g, '-')}.yaml`;
+          files.push({ path: `k8s/${fileName}`, content: node.generatedCode });
+        }
+      }
+    }
+
+    if (files.length === 0) {
+      logger.warn('No generated files to include in PR', { jobId: job.uuid });
+      return;
+    }
+
+    const payload = {
+      installationId: project.githubInstallationId,
+      owner: project.githubOwner,
+      repo: project.githubRepo,
+      baseBranch: project.githubBaseBranch || 'main',
+      prTitle: `feat: update Kubernetes manifests (job ${job.uuid.slice(0, 8)})`,
+      prBody: `Generated by Kubegram codegen job \`${job.uuid}\`.\n\nReview and merge to apply changes to the cluster.`,
+      files,
+    };
+
+    const res = await fetch(`${config.githubAppUrl}/api/kubegram/deploy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Kubegram-Secret': config.kubegramInternalSecret,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`GitHub App returned ${res.status}`);
+    }
+
+    const { prUrl } = await res.json() as { prUrl: string };
+
+    // Store the PR URL to prevent duplicate creation on subsequent status polls
+    await db.update(generationJobs)
+      .set({ githubPrUrl: prUrl, updatedAt: new Date() })
+      .where(eq(generationJobs.uuid, job.uuid));
+
+    logger.info('GitHub PR created for job', { jobId: job.uuid, prUrl });
+  }
+
+  /**
    * Cleanup WebSocket subscription
-   * 
+   *
    * @param jobId - Job ID to cleanup
    */
   async cleanupSubscription(jobId: string) {

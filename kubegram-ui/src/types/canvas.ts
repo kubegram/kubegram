@@ -1,9 +1,8 @@
-import { GraphQL, type Edge, type Maybe } from "@/lib/graphql-client";
+import { GraphQL, type Maybe } from "@/lib/graphql-client";
 /**
- * Canvas node interface
+ * Canvas node interface - extends GraphNode with canvas-specific properties
  */
 export interface CanvasNode extends GraphQL.GraphNode {
-  id: string;
   type: string;
   label: string;
   iconSrc: string;
@@ -11,9 +10,22 @@ export interface CanvasNode extends GraphQL.GraphNode {
   y: number;
   width: number;
   height: number;
-  edges?: Maybe<Array<Maybe<Edge>>>;
   color?: string;
+  configData?: ConfigData;
+  secretData?: SecretData;
 }
+
+export interface ConfigData {
+  [key: string]: string;
+}
+
+export interface SecretData {
+  data: { [key: string]: string };
+  format: 'opaque' | 'dockerconfigjson'; // Simplified for now
+
+}
+
+export type ArrowType = 'SOLID' | 'DASHED' | 'DOTTED' | 'THICK' | 'RED';
 
 /**
  * Canvas arrow interface
@@ -27,14 +39,16 @@ export interface CanvasArrow extends GraphQL.Edge {
   endX: number;
   endY: number;
   node: CanvasNode;
+  connectionType: GraphQL.ConnectionType;
+  arrowType?: ArrowType;
 }
 
 /**
  * Canvas graph interface
  * A marker interface for the canvas graph
  */
-export interface CanvasGraph extends GraphQL.Graph {
-  nodes: Maybe<Array<Maybe<CanvasNode>>>;
+export interface CanvasGraph extends Omit<GraphQL.Graph, 'nodes'> {
+  nodes?: Maybe<Array<Maybe<CanvasNode>>>;
   arrows?: Maybe<Array<Maybe<CanvasArrow>>>;
 }
 

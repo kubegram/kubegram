@@ -136,26 +136,26 @@ rebuild-kubegram:
 
 # Clean install dependencies
 ci-install:
-	npm ci
+	bun install --frozen-lockfile
 
 # common-ts CI steps
 ci-typecheck-common:
-	npm run typecheck:common-ts
+	bun run typecheck:common-ts
 
 ci-lint-common:
-	npm run lint:common-ts
+	bun run lint:common-ts
 
 ci-test-common:
-	npm run test:common-ts
+	bun run test:common-ts
 
 ci-build-common:
-	npm run build:common-ts
+	bun run build:common-ts
 
 ci-codegen-common:
-	npm run codegen:common-ts
+	bun run codegen:common-ts
 
 ci-publish-common:
-	npm publish --workspace @kubegram/common-ts
+	cd common-ts && bun publish
 
 # Run all common-ts CI steps
 ci-all-common: ci-install ci-codegen-common ci-typecheck-common ci-lint-common ci-test-common ci-build-common
@@ -163,19 +163,19 @@ ci-all-common: ci-install ci-codegen-common ci-typecheck-common ci-lint-common c
 
 # common-events CI steps
 ci-typecheck-common-events:
-	npm run typecheck:common-events
+	bun run typecheck:common-events
 
 ci-lint-common-events:
-	npm run lint:common-events
+	bun run lint:common-events
 
 ci-test-common-events:
-	npm run test:common-events
+	bun run test:common-events
 
 ci-build-common-events:
-	npm run build:common-events
+	bun run build:common-events
 
 ci-publish-common-events:
-	npm publish --workspace @kubegram/common-events
+	cd common-events && bun publish
 
 # Run all common-events CI steps
 ci-all-common-events: ci-install ci-typecheck-common-events ci-lint-common-events ci-test-common-events ci-build-common-events
@@ -183,19 +183,19 @@ ci-all-common-events: ci-install ci-typecheck-common-events ci-lint-common-event
 
 # kubegram-core CI steps
 ci-typecheck-kubegram-core:
-	npm run typecheck:kubegram-core
+	bun run typecheck:kubegram-core
 
 ci-lint-kubegram-core:
-	npm run lint:kubegram-core
+	bun run lint:kubegram-core
 
 ci-test-kubegram-core:
-	npm run test:kubegram-core
+	bun run test:kubegram-core
 
 ci-build-kubegram-core:
-	npm run build:kubegram-core
+	bun run build:kubegram-core
 
 ci-publish-kubegram-core:
-	npm publish --workspace @kubegram/kubegram-core
+	cd kubegram-core && bun publish
 
 # Run all kubegram-core CI steps
 ci-all-kubegram-core: ci-install ci-typecheck-kubegram-core ci-lint-kubegram-core ci-test-kubegram-core ci-build-kubegram-core
@@ -203,16 +203,16 @@ ci-all-kubegram-core: ci-install ci-typecheck-kubegram-core ci-lint-kubegram-cor
 
 # kubegram-auth CI steps
 ci-typecheck-kubegram-auth:
-	cd kubegram-auth && npm run type-check
+	cd kubegram-auth && bun run type-check
 
 ci-lint-kubegram-auth:
-	cd kubegram-auth && npm run lint
+	cd kubegram-auth && bun run lint
 
 ci-build-kubegram-auth:
-	cd kubegram-auth && npm run build
+	cd kubegram-auth && bun run build
 
 ci-publish-kubegram-auth:
-	cd kubegram-auth && npm publish
+	cd kubegram-auth && bun publish
 
 # Run all kubegram-auth CI steps
 ci-all-kubegram-auth: ci-install ci-typecheck-kubegram-auth ci-lint-kubegram-auth ci-build-kubegram-auth

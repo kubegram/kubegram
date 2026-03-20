@@ -205,7 +205,7 @@ const LandingPage: React.FC = () => {
                             <div className="flex flex-col items-center max-w-6xl mx-auto pt-32">
                                 <div className="bg-black/90 border-2 border-primary rounded-3xl p-8 flex flex-col items-center text-center relative shadow-2xl shadow-primary/20 w-full max-w-md transform hover:scale-105 transition-all duration-300">
                                     <div className="absolute -top-3 bg-primary text-black text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">Coming soon</div>
-                                    <div className="text-2xl font-bold mb-6 text-primary animate-pulse">Going open source in a week</div>
+                                    <div className="text-2xl font-bold mb-6 text-primary animate-pulse">Hosted Version Coming Soon</div>
                                     <p className="text-sm text-gray-400 mb-8 leading-relaxed">Join our community and get ready for the launch. Read our comprehensive documentation while you wait.</p>
                                     <Button className="w-full text-lg py-6 rounded-xl hover:shadow-[0_0_20px_-5px_rgba(147,51,234,0.5)] transition-all duration-300" onClick={() => navigate('/docs')}>Read Docs</Button>
                                 </div>

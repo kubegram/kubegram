@@ -1,0 +1,4 @@
+config:
+  aws:region: us-east-1
+  kubegram-ui:distPath: ../dist
+encryptionsalt: v1:y3UTfxho8Yk=:v1:npclivca3R1MoNYL:EEKdSOmY160kLOuie+IzbO7hmnSHlg==

@@ -21,7 +21,8 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   GOOGLE_API_KEY: z.string().optional(),
   DEEPSEEK_API_KEY: z.string().optional(),
-  
+  OPENROUTER_API_KEY: z.string().optional(),
+
   // Ollama Configuration
   OLLAMA_BASE_URL: z.string().optional(),
   
@@ -90,6 +91,10 @@ export const llmConfig = {
   },
   ollama: {
     baseURL: config.OLLAMA_BASE_URL || 'http://localhost:11434',
+  },
+  openrouter: {
+    apiKey: config.OPENROUTER_API_KEY,
+    baseURL: 'https://openrouter.ai/api/v1',
   },
 } as const;
 

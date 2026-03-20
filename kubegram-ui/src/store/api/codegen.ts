@@ -303,6 +303,45 @@ export const fetchCodegenResults = async (
 };
 
 /**
+ * Job list item from the API
+ */
+export interface CodegenJobListItem {
+  id: number;
+  uuid: string;
+  graphId: string;
+  projectId: number;
+  status: string;
+  progress: number;
+  createdAt: string;
+  completedAt?: string;
+  startedAt?: string;
+}
+
+/**
+ * Response from list jobs endpoint
+ */
+export interface CodegenJobListResponse {
+  jobs: CodegenJobListItem[];
+  total: number;
+}
+
+/**
+ * List code generation jobs for a project
+ */
+export const listCodegenJobs = async (
+  projectId: string,
+  limit: number = 20,
+  offset: number = 0,
+  token?: string
+): Promise<CodegenJobListResponse> => {
+  const response = await apiClient.get<CodegenJobListResponse>(
+    `/api/v1/public/graph/codegen?projectId=${projectId}&limit=${limit}&offset=${offset}`,
+    token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined
+  );
+  return response.data;
+};
+
+/**
  * Transform API results to storage format: {graphId: {nodeId: generatedCode[]}}
  */
 export const transformResultsToStorageFormat = (results: CodegenResults): StoredCodegenData => {

@@ -8,7 +8,14 @@ import {
   ChevronUp,
   Search,
   RotateCcw,
+  Minus,
+  MoreHorizontal,
+  MoveRight,
+  ShieldAlert,
+  ArrowBigRight,
 } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { setSelectedArrowType } from '@/store/slices/canvas/activitySlice';
 import React, { memo, useCallback, useState } from 'react';
 
 /**
@@ -21,6 +28,8 @@ interface KonvaToolbarProps {
   onToggleCollapse?: () => void;
   onRestore?: () => void;
   canRestore?: boolean;
+  onToggleAISuggestions?: () => void;
+  isAISuggestionsEnabled?: boolean;
 }
 
 /**
@@ -37,9 +46,14 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
     onToggleCollapse,
     onRestore,
     canRestore = false,
+    onToggleAISuggestions,
+    isAISuggestionsEnabled = true,
   }) => {
     const [showAllIcons, setShowAllIcons] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const dispatch = useAppDispatch();
+    const selectedArrowType = useAppSelector((state) => state.canvas.activity.selectedArrowType);
 
     const handleToggleArrowMode = useCallback(() => {
       if (onToggleArrowMode) {
@@ -150,6 +164,57 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
               <ArrowRight className="w-10 h-10" />
             </Button>
 
+            {/* Arrow Style Selection - Only show when in Arrow Mode */}
+            {isArrowMode && (
+              <div className="flex items-center gap-1 border-l border-r border-gray-600 px-2 mx-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => dispatch(setSelectedArrowType('SOLID'))}
+                  className={`h-8 w-8 p-0 hover:bg-gray-700 ${selectedArrowType === 'SOLID' ? 'bg-purple-500/30 text-purple-300' : 'text-gray-300'}`}
+                  title="Solid Arrow"
+                >
+                  <MoveRight className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => dispatch(setSelectedArrowType('DASHED'))}
+                  className={`h-8 w-8 p-0 hover:bg-gray-700 ${selectedArrowType === 'DASHED' ? 'bg-purple-500/30 text-purple-300' : 'text-gray-300'}`}
+                  title="Dashed Arrow"
+                >
+                  <Minus className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => dispatch(setSelectedArrowType('DOTTED'))}
+                  className={`h-8 w-8 p-0 hover:bg-gray-700 ${selectedArrowType === 'DOTTED' ? 'bg-purple-500/30 text-purple-300' : 'text-gray-300'}`}
+                  title="Dotted Arrow"
+                >
+                  <MoreHorizontal className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => dispatch(setSelectedArrowType('THICK'))}
+                  className={`h-8 w-8 p-0 hover:bg-gray-700 ${selectedArrowType === 'THICK' ? 'bg-purple-500/30 text-purple-300' : 'text-gray-300'}`}
+                  title="Thick Arrow (Data Flow)"
+                >
+                  <ArrowBigRight className="w-5 h-5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => dispatch(setSelectedArrowType('RED'))}
+                  className={`h-8 w-8 p-0 hover:bg-gray-700 ${selectedArrowType === 'RED' ? 'bg-red-500/30 text-red-400' : 'text-gray-300'}`}
+                  title="Red Arrow (Security Boundary)"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+
             {/* Service Icons */}
             <div className="flex items-center gap-2">
               {visibleIcons.map((icon) => (
@@ -193,6 +258,21 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
                 title={showAllIcons ? 'Show Less' : 'Show More'}
               >
                 {showAllIcons ? <ChevronLeft className="w-12 h-12" /> : <ChevronRight className="w-8 h-8" />}
+              </Button>
+            )}
+
+            {/* AI Suggestions Toggle */}
+            {onToggleAISuggestions && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleAISuggestions}
+                className={`h-8 w-8 p-0 hover:bg-gray-700 ${isAISuggestionsEnabled ? 'text-yellow-400 bg-yellow-400/10' : 'text-gray-500'}`}
+                title={isAISuggestionsEnabled ? 'Disable AI Suggestions' : 'Enable AI Suggestions'}
+              >
+                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
               </Button>
             )}
           </>

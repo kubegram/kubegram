@@ -97,7 +97,7 @@ interface KonvaCanvasProps {
  * - useGroupSelection: Group selection and movement
  * - useFrameCreation: Frame creation logic
  */
-const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
+const KonvaCanvas = React.forwardRef<KonvaCanvasRef, KonvaCanvasProps>(
   (
     {
       isArrowMode: propIsArrowMode = false,
@@ -112,13 +112,12 @@ const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
       isGenerating,
       error,
       currentGraph,
-      // onClearCode, // TODO: Use this prop
       enableSync = true,
     },
     ref,
   ) => {
     const dispatch = useAppDispatch();
-    const stageRef = useRef<Konva.Stage>(null!);
+    const stageRef = useRef<Konva.Stage | null>(null);
     const { scrollContainerRef } = useCanvasScroll({ stageRef });
 
     // Planning hook
@@ -183,7 +182,9 @@ const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
     }, [scrollContainerRef, startAutoScroll, stopAutoScroll]);
 
     // Forward ref to parent component
-    React.useImperativeHandle(ref, () => stageRef.current!);
+    React.useImperativeHandle(ref, () => ({
+      getStage: () => stageRef.current,
+    }), []);
 
     // Get state from Redux store
     const dimensions = useAppSelector((state) => state.canvas.configs.dimensions);
@@ -220,14 +221,6 @@ const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
     const isLocalMode = !!initialGraphData;
     const nodes = isLocalMode ? localNodes : reduxNodes;
     const arrows = isLocalMode ? localArrows : reduxArrows;
-
-    console.log('🎨 KonvaCanvas Data Source:', {
-      isLocalMode,
-      initialGraphDataProvided: !!initialGraphData,
-      localNodesCount: localNodes.length,
-      reduxNodesCount: reduxNodes.length,
-      activeNodesCount: nodes.length
-    });
 
     // Sync canvas state to project persistence
     useProjectSync(nodes, arrows, enableSync);
@@ -1054,7 +1047,7 @@ const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
                     onDragEnd={(e) => handleNodeDragEnd(node.id, e)}
                     onResize={(width, height) => handleNodeResize(node.id, width, height)}
                     onClick={(nodeId, x, y) => handleArrowNodeClick(nodeId, x, y)}
-                    onSelect={(isSelected) => handleNodeSelect(node.id, isSelected)}
+                    onSelect={(nodeId, isSelected) => handleNodeSelect(nodeId, isSelected)}
                     onDblClick={(nodeId) => dispatch(setRenamingNodeId(nodeId))}
                     onRightClick={(nodeId, x, y) => {
                       setContextMenu({ x, y, type: 'node', id: nodeId });
@@ -1080,6 +1073,7 @@ const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
                     isSelected={isArrowSelected}
                     isSquareArrow={isSquareArrowMode}
                     isCurvedArrow={isCurvedArrowMode}
+                    arrowType={arrow.arrowType}
                     startNodeId={arrow.startNodeId}
                     endNodeId={arrow.endNodeId}
                     nodes={nodes}
@@ -1170,8 +1164,10 @@ const KonvaCanvas = React.forwardRef<Konva.Stage, KonvaCanvasProps>(
                   const newName = e.target.value;
                   if (newName && newName !== node.label) {
                     dispatch(updateNode({ id: node.id, updates: { label: newName, name: newName } }));
-                    // Also update in project slice for persistence
-                    dispatch(updateNodeInGraph({ nodeId: node.id, canvasNode: { ...node, label: newName, name: newName } }));
+                    // Only update project slice in Redux mode (not local mode)
+                    if (!isLocalMode) {
+                      dispatch(updateNodeInGraph({ nodeId: node.id, canvasNode: { ...node, label: newName, name: newName } }));
+                    }
                   }
                   dispatch(setRenamingNodeId(null));
                 }}

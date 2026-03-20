@@ -17,14 +17,14 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "prebuild": "npm run clean",
-    "prepublishOnly": "npm run build",
+    "prebuild": "bun run clean",
+    "prepublishOnly": "bun run build",
     "lint": "eslint src/**/*.ts --ignore-pattern '**/__tests__/**' --ignore-pattern '**/*.test.ts' --no-warn-ignored",
     "lint:fix": "eslint src/**/*.ts --ignore-pattern '**/__tests__/**' --ignore-pattern '**/*.test.ts' --no-warn-ignored --fix",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "type-check": "tsc --noEmit",
-    "check-all": "npm run type-check && npm run lint && npm run format:check"
+    "check-all": "bun run type-check && bun run lint && bun run format:check"
   },
   "keywords": [
     "oauth",
@@ -47,12 +47,13 @@
   "homepage": "https://github.com/kubegram/kubegram/tree/main/kubegram-auth#readme",
   "devDependencies": {
     "@types/node": "^24.10.13",
+    "hono": "^4.11.0",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@kubegram/common-events": "file:../common-events",
+    "@kubegram/common-events": "^1.1.0",
     "@openauthjs/openauth": "^0.4.3",
-    "valibot": "^0.42.0"
+    "valibot": "^1.2.0"
   },
   "peerDependencies": {
     "ioredis": "^5.4.0",

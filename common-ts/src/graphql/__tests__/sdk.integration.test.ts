@@ -9,7 +9,7 @@
  * These tests are automatically skipped in CI environments.
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
 import { GraphQLSdk, createGraphQLSdk } from '../sdk.js';
 import type { RawGraphQLResponse } from '../axios-client.js';
 import { GraphType, ConnectionType } from '../generated/client.js';

@@ -15,7 +15,6 @@
  */
 
 import { generateText } from 'ai';
-import type { GenerateTextResult } from 'ai';
 import { ModelProvider, ModelName } from '../types/enums.js';
 import { createLLMProvider, type LanguageModel } from './providers.js';
 
@@ -94,7 +93,7 @@ export class LLMRouter {
   async generateText(
     params: RouterGenerateTextParams,
     task?: string
-  ): Promise<GenerateTextResult<Record<string, never>, string>> {
+  ): Promise<Awaited<ReturnType<typeof generateText>>> {
     const orderedEntries = this.getOrderedEntries(task);
 
     let lastError: unknown;
@@ -115,7 +114,7 @@ export class LLMRouter {
         this.markSuccess(entry.provider);
         this.trackRequest(entry.provider);
         console.info(`[LLMRouter] ${entry.provider} succeeded${task ? ` (task: ${task})` : ''}`);
-        return result as GenerateTextResult<Record<string, never>, string>;
+        return result;
       } catch (err) {
         console.warn(`[LLMRouter] ${entry.provider} failed, trying next provider`, err);
         this.markFailure(entry.provider);

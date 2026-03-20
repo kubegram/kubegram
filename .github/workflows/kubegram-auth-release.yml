@@ -24,20 +24,24 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@kubegram'
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Install dependencies
-        run: npm install
+        run: make ci-install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Type check
-        working-directory: kubegram-auth
-        run: npm run type-check
+        run: make ci-typecheck-kubegram-auth
 
       - name: Lint code
-        working-directory: kubegram-auth
-        run: npm run lint
+        run: make ci-lint-kubegram-auth
 
       - name: Build
-        working-directory: kubegram-auth
-        run: npm run build
+        run: make ci-build-kubegram-auth
 
       - name: Verify build output
         working-directory: kubegram-auth
@@ -55,7 +59,7 @@ jobs:
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
-          if npm view @kubegram/kubegram-auth@$CURRENT_VERSION version > /dev/null 2>&1; then
+          if npm view @kubegram/kubegram-auth@$CURRENT_VERSION version --registry https://npm.pkg.github.com > /dev/null 2>&1; then
             echo "Version $CURRENT_VERSION already exists on npm"
             echo "should-publish=false" >> $GITHUB_OUTPUT
           else
@@ -67,8 +71,7 @@ jobs:
 
       - name: Publish to GitHub Packages
         if: steps.version-check.outputs.should-publish == 'true'
-        working-directory: kubegram-auth
-        run: npm publish
+        run: make ci-publish-kubegram-auth
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 

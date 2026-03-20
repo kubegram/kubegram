@@ -8,6 +8,7 @@ import type { SchemaBuilder } from '../schema';
 import { entityService } from '../../services/entity-service';
 import { codegenService } from '../../services/codegen-service';
 import { planService } from '../../services/plan-service';
+import { validationService } from '../../services/validation-service';
 import { GraphNodeType, GraphType } from '../../types/enums';
 import type { Graph, GraphNode } from '../../types/graph';
 
@@ -266,6 +267,35 @@ export function registerMutations(builder: SchemaBuilder) {
             modelName: input.modelName,
             graph: input.graph // Now required
           });
+        },
+      }),
+
+      // Initiate infrastructure validation workflow
+      initiateValidation: t.field({
+        type: 'ValidationJobStatus',
+        args: {
+          input: t.arg({ type: 'ValidationInput', required: true }),
+        },
+        resolve: async (_root, args) => {
+          const input = args.input as any;
+          return validationService.submitJob({
+            graphId: input.graphId,
+            namespace: input.namespace,
+            apiSchema: input.apiSchema,
+            modelProvider: input.modelProvider,
+            modelName: input.modelName,
+          });
+        },
+      }),
+
+      // Cancel a validation job
+      cancelValidation: t.field({
+        type: 'Boolean',
+        args: {
+          jobId: t.arg.string({ required: true }),
+        },
+        resolve: async (_root, args) => {
+          return validationService.cancelJob(args.jobId);
         },
       }),
     }),

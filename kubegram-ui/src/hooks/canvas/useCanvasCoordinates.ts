@@ -27,7 +27,7 @@ export const useCanvasCoordinates = () => {
    * Convert screen coordinates to canvas coordinates for arrow interactions
    */
   const getArrowClickCoordinates = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>, stageRef: React.RefObject<Konva.Stage>) => {
+    (e: Konva.KonvaEventObject<MouseEvent>, stageRef: React.RefObject<Konva.Stage | null>) => {
       if (!stageRef.current) return { x: 0, y: 0 };
 
       const stage = stageRef.current;

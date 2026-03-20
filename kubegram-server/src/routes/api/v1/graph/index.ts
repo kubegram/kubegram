@@ -13,6 +13,8 @@ import crud from './crud';
 import codegenRoutes from './codegen'; // Renamed from 'codegen' to 'codegenRoutes'
 import crudRoutes from './crud';     // Renamed from 'crud' to 'crudRoutes'
 import planRoutes from './plan';      // Added import for planRoutes
+import validationRoutes from './validation';
+import suggestRoutes from './suggest';
 import { type AuthContext } from '@/middleware/auth';
 
 type Variables = {
@@ -31,5 +33,7 @@ graphRoutes.use('*', parseJsonFields);
 graphRoutes.route('/codegen', codegenRoutes); // Updated to codegenRoutes
 graphRoutes.route('/crud', crudRoutes);       // Updated to crudRoutes
 graphRoutes.route('/plan', planRoutes);       // Added planRoutes
+graphRoutes.route('/validate', validationRoutes);
+graphRoutes.route('/suggest', suggestRoutes);
 
 export default graphRoutes;

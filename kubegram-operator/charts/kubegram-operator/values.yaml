@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: kubegram-operator
+  repository: ghcr.io/kubegram/kubegram-operator
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
@@ -130,6 +130,11 @@ env:
 debug:
   enabled: false
   port: 40000
+
+# Kubegram Server Configuration
+kubegram:
+  serverUrl: "http://kubegram-server:8090"
+  serverToken: ""  # Required: set via --set or values file
 
 # Argo CD Configuration (Dependency)
 argo-cd:

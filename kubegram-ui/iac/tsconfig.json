@@ -16,6 +16,8 @@
         ]
     },
     "files": [
-        "index.ts"
+        "index.ts",
+        "bootstrap.ts",
+        "iam.ts"
     ]
 }

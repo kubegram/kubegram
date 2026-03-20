@@ -38,9 +38,9 @@ honoApp.use('*', openAuthMiddleware);
 honoApp.onError(openAuthErrorHandler);
 
 // Mount OAuth app at root for /.well-known/ endpoints (JWKS, etc.)
-honoApp.route('/', app);
+honoApp.route('/', app as any);
 // Also mount at /oauth for backwards compatibility
-honoApp.route('/oauth', app);
+honoApp.route('/oauth', app as any);
 
 // Static files
 // Explicitly serve logo.png to ensure it works

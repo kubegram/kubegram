@@ -88,6 +88,13 @@ export const projects = pgTable('projects', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
   deletedAt: timestamp('deleted_at'),
+  // GitHub integration: GitHub App installation scoped to this project's repo
+  githubInstallationId: integer('github_installation_id'),
+  githubOwner: text('github_owner'),
+  githubRepo: text('github_repo'),
+  githubBaseBranch: text('github_base_branch').default('main'),
+  // ArgoCD integration: Application name in ArgoCD to sync after PR merge
+  argocdAppName: text('argocd_app_name'),
 });
 
 // Generation Jobs table
@@ -106,6 +113,8 @@ export const generationJobs = pgTable('generation_jobs', {
   completedAt: timestamp('completed_at'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+  // GitHub PR created for this job's artifacts; null until PR is opened (duplicate guard)
+  githubPrUrl: text('github_pr_url'),
 });
 
 // Generation Job Artifacts table (Optional)
@@ -144,6 +153,31 @@ export const companyLlmTokens = pgTable('company_llm_tokens', {
   encryptionKeyId: integer('encryption_key_id').references(() => companyCertificates.id),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Operator Tokens table
+export const operatorTokens = pgTable('operator_tokens', {
+  id: serial('id').primaryKey(),
+  token: text('token').notNull().unique(),
+  companyId: uuid('company_id').references(() => companies.id),
+  clusterId: text('cluster_id'), // Will be assigned on first operator registration
+  label: text('label'), // Human-readable label for the token
+  createdAt: timestamp('created_at').defaultNow(),
+  expiresAt: timestamp('expires_at'), // Optional expiration
+  revokedAt: timestamp('revoked_at'),
+});
+
+// Operators table (registered operators)
+export const operators = pgTable('operators', {
+  id: serial('id').primaryKey(),
+  clusterId: text('cluster_id').notNull().unique(),
+  tokenId: integer('token_id').references(() => operatorTokens.id),
+  companyId: uuid('company_id').references(() => companies.id),
+  version: text('version'),
+  mcpEndpoint: text('mcp_endpoint'),
+  status: text('status').notNull().default('online'), // online, offline
+  lastSeenAt: timestamp('last_seen_at').defaultNow(),
+  registeredAt: timestamp('registered_at').defaultNow(),
 });
 
 
@@ -208,4 +242,10 @@ export type NewCompanyCertificate = InferInsertModel<typeof companyCertificates>
 
 export type CompanyLlmToken = InferSelectModel<typeof companyLlmTokens>;
 export type NewCompanyLlmToken = InferInsertModel<typeof companyLlmTokens>;
+
+export type OperatorToken = InferSelectModel<typeof operatorTokens>;
+export type NewOperatorToken = InferInsertModel<typeof operatorTokens>;
+
+export type Operator = InferSelectModel<typeof operators>;
+export type NewOperator = InferInsertModel<typeof operators>;
 

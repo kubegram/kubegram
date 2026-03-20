@@ -30,6 +30,7 @@ export const initialState: CanvasState = {
     isDrawingArrow: false,
     tempArrowEnd: null,
     arrowSnapTarget: null,
+    selectedArrowType: 'SOLID',
 
     // Selection and interaction
     selectedItems: savedState?.activity?.selectedItems || { nodes: [], arrows: [] },

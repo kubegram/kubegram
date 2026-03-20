@@ -12,6 +12,10 @@ import { registerCodegenTypes } from './types/codegen';
 import { registerInputTypes } from './types/inputs';
 import { registerPlanTypes } from './types/plan';
 import { registerPlanInputTypes } from './types/plan-inputs';
+import { registerValidationTypes } from './types/validation';
+import { registerValidationInputTypes } from './types/validation-inputs';
+import { registerSuggestionTypes } from './types/suggestion';
+import { registerSuggestionInputTypes } from './types/suggestion-inputs';
 import { registerQueries } from './resolvers/queries';
 import { registerMutations } from './resolvers/mutations';
 
@@ -93,6 +97,10 @@ registerCodegenTypes(builder);
 registerInputTypes(builder);
 registerPlanTypes(builder);
 registerPlanInputTypes(builder);
+registerValidationTypes(builder);
+registerValidationInputTypes(builder);
+registerSuggestionTypes(builder);
+registerSuggestionInputTypes(builder);
 
 // Register resolvers
 registerQueries(builder);

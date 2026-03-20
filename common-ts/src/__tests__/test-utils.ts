@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import { jest, expect } from '@jest/globals';
+import { jest, expect } from 'bun:test';
 
 // Global test utilities
 export interface KubernetesResourceMatcher {

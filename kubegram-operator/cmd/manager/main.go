@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kubegram/kubegram-operator/pkg/controllers"
 	"github.com/kubegram/kubegram-operator/pkg/mcp"
 	"github.com/kubegram/kubegram-operator/pkg/transport"
 	sdkMcp "github.com/modelcontextprotocol/go-sdk/mcp"
@@ -77,10 +78,21 @@ func main() {
 
 	// If still empty, default to localhost
 	if llmWebSocketURL == "" {
-		// TODO: Change this to the actual prod api endpoint
 		llmWebSocketURL = "ws://localhost:8665"
 	}
 	llmWebSocketURL = fmt.Sprintf("%s/%s", llmWebSocketURL, "operator")
+
+	// Get kubegram-server URL and token for operator registration
+	kubegramServerURL := os.Getenv("KUBEGRAM_SERVER_URL")
+	if kubegramServerURL == "" {
+		kubegramServerURL = "http://kubegram-server:8090"
+	}
+
+	serverToken := os.Getenv("KUBEGRAM_SERVER_TOKEN")
+	if serverToken == "" {
+		setupLog.Error(nil, "KUBEGRAM_SERVER_TOKEN environment variable is required")
+		os.Exit(1)
+	}
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -187,9 +199,79 @@ func main() {
 		}()
 	}
 
+	// Register Pod readiness reconciler — triggers validation when all
+	// kubegram-annotated pods reach Ready state after a codegen deployment.
+	kubegramServerURL = os.Getenv("KUBEGRAM_SERVER_URL")
+	if kubegramServerURL == "" {
+		kubegramServerURL = "http://kubegram-server:8090"
+	}
+	podReconciler := controllers.NewPodReadinessReconciler(mgr.GetClient(), mgr.GetScheme(), kubegramServerURL)
+	if err := podReconciler.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to set up pod readiness reconciler")
+		os.Exit(1)
+	}
+
+	// Register operator with kubegram-server
+	go registerOperator(kubegramServerURL, serverToken)
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+func registerOperator(serverURL, token string) {
+	// Get cluster ID from environment (can be set via downward API from Helm)
+	clusterID := os.Getenv("KUBEGRAM_CLUSTER_ID")
+	if clusterID == "" {
+		// Use hostname as fallback - will be associated on first registration
+		hostname, err := os.Hostname()
+		if err != nil {
+			clusterID = "unknown"
+		} else {
+			clusterID = hostname
+		}
+	}
+
+	// Get operator version
+	version := "latest"
+	if buildVersion := os.Getenv("OPERATOR_VERSION"); buildVersion != "" {
+		version = buildVersion
+	}
+
+	// Get MCP endpoint
+	mcpEndpoint := os.Getenv("KUBEGRAM_MCP_ENDPOINT")
+	if mcpEndpoint == "" {
+		mcpEndpoint = "stdio"
+	}
+
+	payload := fmt.Sprintf(`{
+		"clusterId": "%s",
+		"version": "%s",
+		"mcpEndpoint": "%s"
+	}`, clusterID, version, mcpEndpoint)
+
+	req, err := http.NewRequest("POST", serverURL+"/api/admin/v1/operators/register", strings.NewReader(payload))
+	if err != nil {
+		setupLog.Error(err, "failed to create operator registration request")
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		setupLog.Error(err, "failed to register operator with kubegram-server", "url", serverURL)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		setupLog.Info("operator registered with kubegram-server", "clusterId", clusterID)
+	} else {
+		setupLog.Error(nil, "operator registration failed", "status", resp.StatusCode)
 	}
 }

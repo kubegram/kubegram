@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import Konva from 'konva';
 
 interface UseCanvasScrollArgs {
-  stageRef: React.RefObject<Konva.Stage>;
+  stageRef: React.RefObject<Konva.Stage | null>;
 }
 
 export const useCanvasScroll = ({ stageRef }: UseCanvasScrollArgs) => {

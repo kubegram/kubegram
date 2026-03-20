@@ -227,7 +227,7 @@ export class ValidationWorkflow extends BaseWorkflow<ValidationState, Validation
                 model: provider,
                 prompt,
                 temperature: 0,
-                maxTokens: 2000,
+                maxOutputTokens: 2000,
             });
 
             const raw = JSON.parse(text.trim()) as Array<Omit<ValidationTestCase, 'correlationId'>>;
@@ -391,7 +391,7 @@ export class ValidationWorkflow extends BaseWorkflow<ValidationState, Validation
                     model: provider,
                     prompt,
                     temperature: 0.2,
-                    maxTokens: 500,
+                    maxOutputTokens: 500,
                 });
 
                 analysisText = text.trim();

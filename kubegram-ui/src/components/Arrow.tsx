@@ -1,7 +1,7 @@
 import type Konva from 'konva';
 import React, { useRef, memo, useCallback, useState, useEffect } from 'react';
 import { Arrow as KonvaArrow, Group, Circle, Text, Line } from 'react-konva';
-import { type CanvasNode, type CanvasArrow } from '../types/canvas';
+import { type CanvasNode, type CanvasArrow, type ArrowType } from '../types/canvas';
 import { useCanvasCoordinates } from '../hooks/canvas/useCanvasCoordinates';
 import { calculateCollisionAwareSquarePath, lineIntersectsNodes } from '../utils/collision-detection';
 import InfoTooltip from './InfoTooltip';
@@ -38,6 +38,7 @@ interface ArrowProps {
   isSnapped?: boolean;
   isSquareArrow?: boolean;
   isCurvedArrow?: boolean;
+  arrowType?: ArrowType;
   startNodeId?: string;
   endNodeId?: string;
   nodes?: CanvasNode[];
@@ -62,10 +63,6 @@ interface ArrowProps {
   isPulsing?: boolean;
   animateIn?: boolean;
   onAnimateInComplete?: () => void;
-  // Arrow body dragging props
-  onArrowDragStart?: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  onArrowDragMove?: (e: Konva.KonvaEventObject<DragEvent>) => void;
-  onArrowDragEnd?: (e: Konva.KonvaEventObject<DragEvent>) => void;
 }
 
 const Arrow: React.FC<ArrowProps> = memo(
@@ -80,6 +77,7 @@ const Arrow: React.FC<ArrowProps> = memo(
     isSnapped = false,
     isSquareArrow = false,
     isCurvedArrow = false,
+    arrowType = 'SOLID',
     startNodeId,
     endNodeId,
     nodes = [],
@@ -99,18 +97,10 @@ const Arrow: React.FC<ArrowProps> = memo(
     isPulsing = false,
     animateIn = false,
     onAnimateInComplete,
-    onArrowDragStart,
-    onArrowDragMove,
-    onArrowDragEnd,
   }) => {
     const arrowRef = useRef<Konva.Group>(null);
     const flowLineRef = useRef<Konva.Line>(null);
 
-    // Arrow body dragging state
-    const [isDraggingArrow, setIsDraggingArrow] = useState(false);
-    const [dragStartPosition, setDragStartPosition] = useState({ x: 0, y: 0 });
-    const [preservedPath, setPreservedPath] = useState<number[]>([]);
-    const [preservedDelta, setPreservedDelta] = useState({ x: 0, y: 0 });
     const glowLineRef = useRef<Konva.Line>(null);
     const flowRafRef = useRef<number | null>(null);
     const pulseRafRef = useRef<number | null>(null);
@@ -303,17 +293,6 @@ const Arrow: React.FC<ArrowProps> = memo(
 
     // Get the appropriate arrow points based on mode with collision detection
     const getArrowPoints = useCallback(() => {
-      // Use preserved path if we're dragging the arrow body
-      if (isDraggingArrow && preservedPath.length > 0) {
-        // Transform the preserved path by the current delta
-        const transformedPath = [];
-        for (let i = 0; i < preservedPath.length; i += 2) {
-          transformedPath.push(preservedPath[i] + preservedDelta.x);
-          transformedPath.push(preservedPath[i + 1] + preservedDelta.y);
-        }
-        return transformedPath;
-      }
-
       // Always check for collisions first
       const excludeNodeIds = [];
       if (startNodeId) excludeNodeIds.push(startNodeId);
@@ -368,9 +347,6 @@ const Arrow: React.FC<ArrowProps> = memo(
       startNodeId,
       endNodeId,
       id,
-      isDraggingArrow,
-      preservedPath,
-      preservedDelta,
     ]);
 
     /**
@@ -431,62 +407,6 @@ const Arrow: React.FC<ArrowProps> = memo(
         }
       },
       [id, onRightClick, convertScreenToCanvasCoordinates],
-    );
-
-    /**
-     * ARROW BODY DRAG HANDLERS - Path Preservation
-     *
-     * Handles dragging of the entire arrow while preserving its path shape.
-     * Captures the calculated path before drag and transforms it during movement.
-     */
-    const handleArrowDragStart = useCallback(
-      (e: Konva.KonvaEventObject<DragEvent>) => {
-        e.cancelBubble = true;
-        setIsDraggingArrow(true);
-        
-        // Capture the current calculated path
-        const currentPath = getArrowPoints();
-        setPreservedPath(currentPath);
-        
-        // Store initial drag position
-        const pos = e.target.position();
-        setDragStartPosition({ x: pos.x, y: pos.y });
-        
-        onArrowDragStart?.(e);
-      },
-      [getArrowPoints, onArrowDragStart],
-    );
-
-    const handleArrowDragMove = useCallback(
-      (e: Konva.KonvaEventObject<DragEvent>) => {
-        e.cancelBubble = true;
-        
-        if (!isDraggingArrow) return;
-        
-        const stage = e.target.getStage();
-        if (!stage) return;
-        
-        const currentPos = e.target.position();
-        const deltaX = currentPos.x - dragStartPosition.x;
-        const deltaY = currentPos.y - dragStartPosition.y;
-        
-        setPreservedDelta({ x: deltaX, y: deltaY });
-        
-        onArrowDragMove?.(e);
-      },
-      [isDraggingArrow, dragStartPosition, onArrowDragMove],
-    );
-
-    const handleArrowDragEnd = useCallback(
-      (e: Konva.KonvaEventObject<DragEvent>) => {
-        e.cancelBubble = true;
-        setIsDraggingArrow(false);
-        setPreservedPath([]);
-        setPreservedDelta({ x: 0, y: 0 });
-        
-        onArrowDragEnd?.(e);
-      },
-      [onArrowDragEnd],
     );
 
     // Start Point Drag Handlers
@@ -617,9 +537,16 @@ const Arrow: React.FC<ArrowProps> = memo(
         {/* Main arrow line */}
         <KonvaArrow
           points={getArrowPoints()}
-          stroke={isSnapped ? '#00FF00' : '#a7a7a7'}
-          strokeWidth={isSnapped ? 3 : 2}
-          fill={isSnapped ? '#00FF00' : '#a7a7a7'}
+          stroke={isSnapped ? '#00FF00' : (isSelected ? '#2196F3' : (arrowType === 'RED' ? '#ef4444' : '#a7a7a7'))}
+          strokeWidth={(isSnapped ? 3 : 2) + (arrowType === 'THICK' ? 2 : 0)}
+          fill={isSnapped ? '#00FF00' : (isSelected ? '#2196F3' : (arrowType === 'RED' ? '#ef4444' : '#a7a7a7'))}
+          dash={
+            arrowType === 'DASHED'
+              ? [10, 10]
+              : arrowType === 'DOTTED'
+                ? [2, 6]
+                : undefined
+          }
           pointerLength={10}
           pointerWidth={9}
           shadowColor={isSnapped ? '#00FF00' : 'black'}

@@ -29,6 +29,12 @@ export const config = {
     enableHA: (process.env.ENABLE_HA || 'false').toLowerCase() === 'true',
     // Security
     globalEncryptionKey: SecretsManager.getGlobalEncryptionKey(),
+    // GitHub App integration: URL of kubegram-github-app + shared secret
+    githubAppUrl: process.env.GITHUB_APP_URL || 'http://kubegram-github-app:3000',
+    kubegramInternalSecret: process.env.KUBEGRAM_INTERNAL_SECRET || '',
+    // ArgoCD integration: server URL and API token for triggering syncs
+    argocdServerUrl: process.env.ARGOCD_SERVER_URL || '',
+    argocdToken: process.env.ARGOCD_TOKEN || '',
 };
 
 export default config;

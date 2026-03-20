@@ -154,6 +154,7 @@ OPENAI_API_KEY=                  # OpenAI (optional)
 GOOGLE_API_KEY=                  # Gemini (optional)
 DEEPSEEK_API_KEY=                # DeepSeek (optional)
 OLLAMA_BASE_URL=                  # Ollama URL (default: http://localhost:11434)
+OPENROUTER_API_KEY=              # OpenRouter — 100+ models via openrouter.ai (optional)
 VOYAGE_API_KEY=                  # Voyage AI embeddings
 
 ENABLE_AUTH=false                 # Enable Bearer token auth
@@ -187,7 +188,7 @@ Manages:
 
 File: `src/llm/providers.ts`
 
-Singleton pattern supporting Claude, OpenAI, Gemini, DeepSeek, Ollama. Uses Vercel AI SDK (`ai` package) for unified interface.
+Singleton pattern supporting Claude, OpenAI, Gemini, DeepSeek, Ollama, and OpenRouter. Uses Vercel AI SDK (`ai` package) for unified interface. OpenRouter model IDs use `provider/model-name` format (e.g. `openai/gpt-4o`, `meta-llama/llama-3.1-70b-instruct`).
 
 ### RAG / Embeddings
 

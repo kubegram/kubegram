@@ -11,7 +11,6 @@ import { HelpCircle } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { toggleToolbar, setShowHelpModal } from '@/store/slices/uiSlice';
 import { GraphQL } from '@/lib/graphql-client';
-// import { useGraphConversion } from '@/hooks/useGraphConversion';
 import { useCodeGeneration } from '@/hooks/useCodeGeneration';
 import { type CanvasGraph, type CanvasNode, type CanvasArrow } from '@/types/canvas';
 import {
@@ -25,6 +24,8 @@ import {
 } from '@/store/slices/canvas';
 import { restorePreviousGraph, updateProjectName } from '@/store/slices/project/projectSlice';
 import { useGraphConversion } from '@/hooks/useGraphConversion-v2';
+import { useAISuggestions } from '@/hooks/useAISuggestions';
+import { AISuggestionPanel } from '@/components/AISuggestionPanel';
 
 /**
  * KonvaPage Component Props
@@ -135,6 +136,9 @@ const KonvaPage: React.FC<KonvaPageProps> = ({ isSidebarCollapsed, isHeaderColla
   // Initialize graph conversion - this will trigger conversion when canvas changes
   const { graph, isInitialized, canvasGraph } = useGraphConversion();
 
+  // AI canvas suggestions
+  const { isEnabled: isAISuggestionsEnabled, toggleEnabled: toggleAISuggestions } = useAISuggestions();
+
   // Initialize code generation
   const {
     isGenerating,
@@ -197,8 +201,7 @@ const KonvaPage: React.FC<KonvaPageProps> = ({ isSidebarCollapsed, isHeaderColla
     }
 
     // Prepare the graph data for code generation
-    // Prepare the graph data for code generation
-    const graphForGen: any = { // Cast to any or construct properly if I had imports. Assuming CanvasGraph shape roughly.
+    const graphForGen: CanvasGraph = {
       ...canvasGraph,
       id: project?.graph?.id ?? 'temp-id',
       name: project?.graph?.name ?? 'Temp Graph',
@@ -551,8 +554,13 @@ const KonvaPage: React.FC<KonvaPageProps> = ({ isSidebarCollapsed, isHeaderColla
           onToggleCollapse={handleToggleToolbar}
           onRestore={handleRestoreGraph}
           canRestore={!!previousGraph}
+          onToggleAISuggestions={toggleAISuggestions}
+          isAISuggestionsEnabled={isAISuggestionsEnabled}
         />
       )}
+
+      {/* AI Suggestion Panel */}
+      <AISuggestionPanel isEnabled={isAISuggestionsEnabled} />
 
       {/* Help Button */}
       <div className="absolute bottom-4 left-4 z-40">

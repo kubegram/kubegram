@@ -1,5 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { StoreProvider } from './store/StoreProvider';
 import { useAppSelector, useAppDispatch } from './store/hooks';
 import { toggleSidebar } from './store/slices/uiSlice';
@@ -25,6 +25,29 @@ import OAuthProviderInfo from './pages/OAuthProviderInfo';
 import ReportsPage from './pages/ReportsPage';
 import { CodegenTestPage, PlanTestPage } from './pages/test';
 import JsonCanvasPage from './pages/JsonCanvasPage';
+
+// Preview mode: lazy-loaded to keep preview code out of production bundle
+const PlanViewPage = React.lazy(() => import('./pages/PlanViewPage'));
+const PreviewBanner = React.lazy(() => import('./preview/PreviewBanner'));
+
+/**
+ * CodeViewPageWrapper Component
+ * 
+ * Wrapper that extracts jobId from URL params and passes to CodeViewPage
+ */
+const CodeViewPageWrapper: React.FC<{ isSidebarCollapsed?: boolean; isHeaderCollapsed?: boolean }> = ({
+  isSidebarCollapsed,
+  isHeaderCollapsed,
+}) => {
+  const { jobId } = useParams<{ jobId?: string }>();
+  return (
+    <CodeViewPage
+      jobId={jobId}
+      isSidebarCollapsed={isSidebarCollapsed}
+      isHeaderCollapsed={isHeaderCollapsed}
+    />
+  );
+};
 
 /**
  * LoginModalWrapper Component
@@ -61,7 +84,9 @@ const LoginModalWrapper: React.FC = () => {
       const timer = setTimeout(() => setShouldShowModal(true), 150);
       return () => clearTimeout(timer);
     } else {
-      setShouldShowModal(false);
+      // Use setTimeout to avoid calling setState synchronously in effect
+      const timer = setTimeout(() => setShouldShowModal(false), 0);
+      return () => clearTimeout(timer);
     }
   }, [isLoginModalOpen]);
 
@@ -86,19 +111,23 @@ const LoginModalWrapper: React.FC = () => {
   // Handle OAuth errors
   useEffect(() => {
     if (error) {
-      setLoginError(error);
+      // Use setTimeout to avoid calling setState synchronously in effect
+      const timer = setTimeout(() => {
+        setLoginError(error);
 
-      // Clear auth tokens
-      localStorage.removeItem('kubegram_auth');
+        // Clear auth tokens
+        localStorage.removeItem('kubegram_auth');
 
-      // Clear all cookies
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
+        // Clear all cookies
+        document.cookie.split(";").forEach((c) => {
+          document.cookie = c
+            .replace(/^ +/, "")
+            .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
 
-      dispatch(clearError());
+        dispatch(clearError());
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [error, dispatch]);
 
@@ -188,8 +217,17 @@ const AppContent: React.FC = () => {
   const handleToggleSidebar = useCallback(() => {
     dispatch(toggleSidebar());
   }, [dispatch]);
+  const isPreviewMode = import.meta.env.VITE_PREVIEW_MODE === 'true';
+
   return (
     <div className="h-screen w-screen bg-background text-foreground">
+      {/* Preview Mode Banner */}
+      {isPreviewMode && (
+        <React.Suspense fallback={null}>
+          <PreviewBanner />
+        </React.Suspense>
+      )}
+
       {/* Sidebar Navigation - Only show for App pages */}
       {!isStandalonePage && (
         <Sidebar isCollapsed={isSidebarCollapsed} onToggleCollapse={handleToggleSidebar} />
@@ -203,6 +241,7 @@ const AppContent: React.FC = () => {
           }`}
         style={{
           height: '100vh',
+          paddingTop: isPreviewMode ? '24px' : undefined,
         }}
       >
         <Routes>
@@ -245,7 +284,18 @@ const AppContent: React.FC = () => {
             path="/code-view"
             element={
               <ProtectedRoute>
-                <CodeViewPage
+                <CodeViewPageWrapper
+                  isSidebarCollapsed={isSidebarCollapsed}
+                  isHeaderCollapsed={isHeaderCollapsed}
+                />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/code-view/:jobId"
+            element={
+              <ProtectedRoute>
+                <CodeViewPageWrapper
                   isSidebarCollapsed={isSidebarCollapsed}
                   isHeaderCollapsed={isHeaderCollapsed}
                 />
@@ -301,6 +351,50 @@ const AppContent: React.FC = () => {
           {/* Test Pages - Development */}
           <Route path="/test/codegen" element={<CodegenTestPage />} />
           <Route path="/test/plan" element={<PlanTestPage />} />
+
+          {/* Preview Mode Routes - tree-shaken from production builds */}
+          {isPreviewMode && (
+            <>
+              <Route
+                path="/preview/canvas"
+                element={
+                  <KonvaPage
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    isHeaderCollapsed={isHeaderCollapsed}
+                  />
+                }
+              />
+              <Route
+                path="/preview/code-view"
+                element={
+                  <CodeViewPage
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    isHeaderCollapsed={isHeaderCollapsed}
+                  />
+                }
+              />
+              <Route
+                path="/preview/compare-view"
+                element={
+                  <CompareViewPage
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    isHeaderCollapsed={isHeaderCollapsed}
+                  />
+                }
+              />
+              <Route
+                path="/preview/plan-view"
+                element={
+                  <React.Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
+                    <PlanViewPage
+                      isSidebarCollapsed={isSidebarCollapsed}
+                      isHeaderCollapsed={isHeaderCollapsed}
+                    />
+                  </React.Suspense>
+                }
+              />
+            </>
+          )}
         </Routes>
       </main>
 

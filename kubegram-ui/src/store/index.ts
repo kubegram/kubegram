@@ -7,6 +7,7 @@ import teamReducer from './slices/team/teamSlice';
 import projectReducer from './slices/project/projectSlice';
 import oauthReducer from './slices/oauth/oauthSlice';
 import codegenReducer from './slices/codegen/codegenSlice';
+import suggestionsReducer from './slices/suggestionsSlice';
 import { graphSyncMiddleware } from './middleware/graphSyncMiddleware';
 import { authErrorMiddleware } from './middleware/authErrorMiddleware';
 
@@ -20,6 +21,7 @@ export type RootState = {
   project: ReturnType<typeof projectReducer>;
   oauth: ReturnType<typeof oauthReducer>;
   codegen: ReturnType<typeof codegenReducer>;
+  suggestions: ReturnType<typeof suggestionsReducer>;
 };
 
 export const store = configureStore({
@@ -32,6 +34,7 @@ export const store = configureStore({
     project: projectReducer,
     oauth: oauthReducer,
     codegen: codegenReducer,
+    suggestions: suggestionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

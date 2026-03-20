@@ -21,7 +21,7 @@ import {
  * - Distance checking for back-to-content button
  */
 export const useCanvasEvents = (
-  stageRef: React.RefObject<Konva.Stage>,
+  stageRef: React.RefObject<Konva.Stage | null>,
   isSidebarCollapsed: boolean,
   isHeaderCollapsed: boolean,
   onDeleteSelectedItems?: () => void,

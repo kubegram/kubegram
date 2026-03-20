@@ -198,6 +198,7 @@ export enum ModelProvider {
   deepseek = 'deepseek',
   openai = 'openai',
   google = 'google',
+  openrouter = 'openrouter',
 }
 
 // Model names for each provider
@@ -217,6 +218,7 @@ export enum ModelName {
   DEEPSEEK_REASONER = 'deepseek-reasoner',
   // Ollama/Gemma
   GEMMA_9B = 'gemma2:9b-instruct',
+  OPENROUTER_DEFAULT = 'openai/gpt-4o-mini',
 }
 
 // Valid models per provider
@@ -226,6 +228,7 @@ export const VALID_MODELS: Record<ModelProvider, ModelName[]> = {
   [ModelProvider.google]: [ModelName.GEMINI_FLASH, ModelName.GEMINI_PRO],
   [ModelProvider.deepseek]: [ModelName.DEEPSEEK_CHAT, ModelName.DEEPSEEK_REASONER],
   [ModelProvider.gemma]: [ModelName.GEMMA_9B],
+  [ModelProvider.openrouter]: [], // OpenRouter model IDs are dynamic (e.g. "openai/gpt-4o") — validation is bypassed
 };
 
 // Default model per provider
@@ -235,6 +238,7 @@ export const DEFAULT_MODEL: Record<ModelProvider, ModelName> = {
   [ModelProvider.google]: ModelName.GEMINI_FLASH,
   [ModelProvider.deepseek]: ModelName.DEEPSEEK_CHAT,
   [ModelProvider.gemma]: ModelName.GEMMA_9B,
+  [ModelProvider.openrouter]: ModelName.OPENROUTER_DEFAULT,
 };
 
 // Type exports for easy importing

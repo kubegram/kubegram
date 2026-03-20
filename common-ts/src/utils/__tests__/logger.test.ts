@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { testUtils } from '../../__tests__/test-utils.js';
 
 describe('Utils', () => {

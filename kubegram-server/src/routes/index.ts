@@ -9,6 +9,8 @@ import tokensRoutes from './tokens';
 import usersRoutes from './api/v1/users';
 import providersRoutes from './api/v1/providers';
 import graphRoutes from './api/v1/graph';
+import { mcpRoute } from '@/mcp';
+import { internalRoutes } from './internal';
 
 const apiRoutes = new Hono();
 
@@ -19,6 +21,11 @@ apiRoutes.route('/v1', tokensRoutes);
 apiRoutes.route('/v1/users', usersRoutes);
 apiRoutes.route('/v1/providers', providersRoutes);
 apiRoutes.route('/v1/graph', graphRoutes);
+apiRoutes.route('/v1/mcp', mcpRoute);
 // apiRoutes.route('/v1/release', releaseRoutes);
+
+// Internal cluster-only routes (sidecar registry, validation result relay)
+// Mounted at /api/internal — not behind user auth middleware
+apiRoutes.route('/internal', internalRoutes);
 
 export { apiRoutes };

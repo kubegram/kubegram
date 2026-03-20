@@ -7,6 +7,8 @@ import type { SchemaBuilder } from '../schema';
 import { entityService } from '../../services/entity-service';
 import { codegenService } from '../../services/codegen-service';
 import { planService } from '../../services/plan-service';
+import { validationService } from '../../services/validation-service';
+import { suggestionService } from '../../services/suggestion-service.js';
 import { ConnectionType, GraphNodeType, GraphType } from '../../types/enums';
 import type { Graph, GraphNode } from '../../types/graph';
 import { validateGraph as validateGraphStructure } from '../../utils/codegen';
@@ -386,6 +388,45 @@ export function registerQueries(builder: SchemaBuilder) {
         },
         resolve: async () => {
           throw new Error('node lookup by id is not yet implemented');
+        },
+      }),
+
+      // Get validation job status
+      getValidationStatus: t.field({
+        type: 'ValidationJobStatus',
+        nullable: true,
+        args: {
+          jobId: t.arg.string({ required: true }),
+        },
+        resolve: async (_root, args) => {
+          return validationService.getJobStatus(args.jobId);
+        },
+      }),
+
+      // Get validation job results (only available after completion)
+      getValidationResults: t.field({
+        type: 'ValidationResult',
+        nullable: true,
+        args: {
+          jobId: t.arg.string({ required: true }),
+        },
+        resolve: async (_root, args) => {
+          return validationService.getJobResults(args.jobId);
+        },
+      }),
+
+      // Synchronous AI canvas suggestions — returns in < 2 s using a fast model
+      suggestImprovements: t.field({
+        type: 'SuggestImprovementsResult',
+        args: {
+          input: t.arg({ type: 'SuggestImprovementsInput', required: true }),
+        },
+        resolve: async (_root, args) => {
+          return suggestionService.getSuggestions(
+            args.input.graph,
+            args.input.modelProvider ?? undefined,
+            args.input.modelName ?? undefined,
+          );
         },
       }),
     }),

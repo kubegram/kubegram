@@ -49,6 +49,7 @@ export interface ArrowDrawingState {
     isDrawingArrow: boolean;
     tempArrowEnd: Point | null;
     arrowSnapTarget: string | null; // Node ID that arrow will snap to
+    selectedArrowType: 'SOLID' | 'DASHED' | 'DOTTED' | 'THICK' | 'RED';
 }
 
 /**

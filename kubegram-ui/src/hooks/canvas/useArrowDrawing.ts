@@ -22,12 +22,13 @@ import { useCanvasCoordinates } from './useCanvasCoordinates';
  * - Handling canvas and node clicks for arrow creation
  * - Managing temporary arrow preview
  */
-export const useArrowDrawing = (_: React.RefObject<Konva.Stage>) => {
+export const useArrowDrawing = (_: React.RefObject<Konva.Stage | null>) => {
   const dispatch = useAppDispatch();
   const isArrowMode = useAppSelector((state) => state.canvas.activity.isArrowMode);
   const isDrawingArrow = useAppSelector((state) => state.canvas.activity.isDrawingArrow);
   const arrowStart = useAppSelector((state) => state.canvas.activity.arrowStart);
   const tempArrowEnd = useAppSelector((state) => state.canvas.activity.tempArrowEnd);
+  const selectedArrowType = useAppSelector((state) => state.canvas.activity.selectedArrowType);
   const currentSnapTarget = useAppSelector((state) => state.canvas.activity.arrowSnapTarget);
   const nodes = useAppSelector((state) => state.canvas.data.canvasElementsLookup.nodes);
 
@@ -107,6 +108,7 @@ export const useArrowDrawing = (_: React.RefObject<Konva.Stage>) => {
           endY: endConnection ? endConnection.connectionPoint.y : y,
           node: endNode!,
           connectionType: GraphQL.ConnectionType.ConnectsTo,
+          arrowType: selectedArrowType,
         };
 
         console.log('✨ Creating new arrow:', newArrow);
@@ -128,7 +130,7 @@ export const useArrowDrawing = (_: React.RefObject<Konva.Stage>) => {
         }
       }
     },
-    [isArrowMode, isDrawingArrow, arrowStart, findNearestNodeConnection, nodes, dispatch],
+    [isArrowMode, isDrawingArrow, arrowStart, findNearestNodeConnection, nodes, dispatch, selectedArrowType],
   );
 
   // Handle node click for arrow drawing
@@ -181,6 +183,7 @@ export const useArrowDrawing = (_: React.RefObject<Konva.Stage>) => {
             endY: connectionPoint.y,
             node: endNode!,
             connectionType: GraphQL.ConnectionType.ConnectsTo,
+            arrowType: selectedArrowType,
           };
 
           console.log('✨ Creating arrow between nodes:', newArrow);
@@ -202,7 +205,7 @@ export const useArrowDrawing = (_: React.RefObject<Konva.Stage>) => {
         console.log('🚫 Ignoring self-connection attempt:', nodeId);
       }
     },
-    [isArrowMode, arrowStart, getNodeConnectionPoint, nodes, dispatch],
+    [isArrowMode, arrowStart, getNodeConnectionPoint, nodes, dispatch, selectedArrowType],
   );
 
   // Handle canvas mouse move for temporary arrow preview with snapping
