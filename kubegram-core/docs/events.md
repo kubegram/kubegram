@@ -6,7 +6,7 @@ This document defines the domain events used by kubegram-core for orchestrating 
 
 ## Events Architecture
 
-Kubegram Core uses `@kubegram/common-events` for event-driven orchestration:
+Kubegram Core uses `@kubegram/events` for event-driven orchestration:
 
 - **EventBus**: Pub/sub messaging for workflow updates
 - **DomainEvent**: Base class for all events with DDD patterns
@@ -201,7 +201,7 @@ class PlanFailedEvent extends DomainEvent {
 ### Publishing Events
 
 ```typescript
-import { EventBus, DomainEvent } from '@kubegram/common-events';
+import { EventBus, DomainEvent } from '@kubegram/events';
 import { CodegenStartedEvent } from './events/codegen';
 
 const eventBus = new EventBus({ enableCache: true });
@@ -233,7 +233,7 @@ eventBus.subscribe('codegen.completed', async (event: CodegenCompletedEvent) => 
 ### Request-Response with Suspension
 
 ```typescript
-import { SuspensionManager, LocalPubSubProvider } from '@kubegram/common-events';
+import { SuspensionManager, LocalPubSubProvider } from '@kubegram/events';
 
 const provider = new LocalPubSubProvider();
 const suspensionManager = new SuspensionManager(provider);
@@ -253,7 +253,7 @@ const result = await suspensionManager.suspendForResponse(
 Events should be registered with the EventRegistry for serialization:
 
 ```typescript
-import { EventRegistry } from '@kubegram/common-events';
+import { EventRegistry } from '@kubegram/events';
 
 EventRegistry.getInstance().register(
   'codegen.started',

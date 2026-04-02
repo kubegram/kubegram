@@ -5,7 +5,7 @@
  *   - Step-based state machine with linear (or overridable) progression
  *   - State checkpointing via RedisCheckpointer at each step
  *   - Retry logic (configurable per workflow)
- *   - Event publishing via WorkflowPubSub (backed by @kubegram/common-events EventBus)
+ *   - Event publishing via WorkflowPubSub (backed by @kubegram/events EventBus)
  *
  * Ported from kuberag/src/workflows/base-workflow.ts
  * Dependencies replaced: PubSub → WorkflowPubSub, checkpointer import path updated.

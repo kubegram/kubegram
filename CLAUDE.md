@@ -13,7 +13,7 @@ NPM workspaces monorepo with 6 TypeScript packages + 1 Go module:
 ```
 kubegram/
 ├── common-ts/             # @kubegram/common-ts - Shared GraphQL SDK
-├── common-events/         # @kubegram/common-events - Typed event system, pub/sub, caching
+├── events/         # @kubegram/events - Typed event system, pub/sub, caching
 ├── kuberag/               # RAG engine (GraphQL API + Dgraph + vector search)
 ├── kubegram-server/       # API Gateway + Auth (Hono on Bun, PostgreSQL, Drizzle ORM)
 ├── kubegram-ui/           # React canvas interface (Konva.js, Redux Toolkit)
@@ -32,7 +32,7 @@ kubegram/
 | kubegram-server | Bun | Hono.js + TypeScript | PostgreSQL (Drizzle ORM), Redis | OpenAuth.js, Valibot, Winston |
 | kuberag | Bun | GraphQL API + TypeScript | Dgraph (graph + vector), Redis | Multi-LLM (Claude, OpenAI, Gemini, DeepSeek, Ollama), Voyage AI embeddings |
 | common-ts | Node.js | TypeScript | - | Axios, Zod, GraphQL codegen |
-| common-events | Node.js | TypeScript | Optional Redis | eventemitter3, DDD domain events |
+| events | Node.js | TypeScript | Optional Redis | eventemitter3, DDD domain events |
 | kubegram-github-app | Node.js | Express + TypeScript | - | Octokit, Helmet, Winston |
 | kubegram-operator | Go 1.24 | MCP SDK | - | client-go, controller-runtime, gorilla/websocket |
 
@@ -138,7 +138,7 @@ OpenAuth.js with OAuth 2.0 PKCE. Providers: GitHub, Google, GitLab, Okta, SSO/OI
 └── healthz/       # /live (liveness), /ready (readiness)
 ```
 
-### Event System (common-events)
+### Event System (events)
 
 - TypedEventEmitter for type-safe events
 - DomainEvent + DomainEventDispatcher (DDD patterns)
@@ -198,7 +198,7 @@ Permission model: Company → Organization → Team → User. Team-based project
 - [enhanced-codeviewpage.md](kubegram-ui/docs/enhanced-codeviewpage.md) - Code view layout
 
 ### Shared Package Docs
-- [common-events/docs/caching.md](common-events/docs/caching.md) - Event caching architecture
+- [events/docs/caching.md](events/docs/caching.md) - Event caching architecture
 
 ## Environment Variables
 
@@ -239,8 +239,8 @@ VITE_FORCE_REAUTH=false
 ## CI/CD
 
 - **GitHub Actions**: Auto-deploy UI to GitHub Pages (www.kubegram.com) on push to main
-- **Makefile CI targets**: `make ci-all-common` and `make ci-all-common-events` for shared packages
-- **Publishing**: `make ci-publish-common` / `make ci-publish-common-events` for npm publishing
+- **Makefile CI targets**: `make ci-all-common` and `make ci-all-events` for shared packages
+- **Publishing**: `make ci-publish-common` / `make ci-publish-events` for npm publishing
 
 ## Development Guidelines
 

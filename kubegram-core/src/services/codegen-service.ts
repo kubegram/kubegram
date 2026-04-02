@@ -1,10 +1,10 @@
 /**
  * Code generation service for kubegram-core
- * Adapted from kuberag to use dependency injection and common-events
+ * Adapted from kuberag to use dependency injection and @kubegram/events
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { EventBus } from '@kubegram/common-events';
+import { EventBus } from '@kubegram/events';
 import { Graph } from '../types/graph.js';
 import {
   GeneratedCodeGraph,
@@ -60,7 +60,7 @@ export interface CodegenServiceConfig {
  * are intentional no-ops or stubs until that wiring is complete.
  *
  * Injection points:
- *  - `eventBus`: @kubegram/common-events EventBus instance.
+ *  - `eventBus`: @kubegram/events EventBus instance.
  *  - `config.redisClient`: ioredis client (reserved; not yet used).
  */
 export class CodegenService {

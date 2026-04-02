@@ -31,7 +31,7 @@ This document outlines the plan for:
 |------|-------------------|
 | `redis.ts` | Remove kuberag-specific config; accept config via constructor |
 | `cache.ts` | Make configurable, add event integration |
-| `pubsub.ts` | Add integration with `@kubegram/common-events` |
+| `pubsub.ts` | Add integration with `@kubegram/events` |
 | `checkpointer.ts` | Add workflow state serialization |
 
 ### 1.3 Services
@@ -41,7 +41,7 @@ This document outlines the plan for:
 
 | File | Adaptations Needed |
 |------|-------------------|
-| `codegen-service.ts` | Replace local state imports with `@kubegram/common-events` |
+| `codegen-service.ts` | Replace local state imports with `@kubegram/events` |
 | `plan-service.ts` | Same as above |
 | `entity-service.ts` | May stay in kuberag (GraphQL-specific) |
 
@@ -212,5 +212,5 @@ These files are specific to kuberag's GraphQL API and should NOT be copied:
 2. ✅ kubegram-core can be published to GitHub Packages
 3. ✅ kuberag uses kubegram-core for core functionality
 4. ✅ MCP can be toggled on/off via `ENABLE_MCP` env var
-5. ✅ All events use `@kubegram/common-events` pattern
+5. ✅ All events use `@kubegram/events` pattern
 6. ✅ No breaking changes to kubegram-server integration

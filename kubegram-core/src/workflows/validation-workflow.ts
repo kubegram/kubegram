@@ -18,7 +18,7 @@
 
 import { generateText } from 'ai';
 import type { Redis } from 'ioredis';
-import type { EventBus } from '@kubegram/common-events';
+import type { EventBus } from '@kubegram/events';
 import { v4 as uuidv4 } from 'uuid';
 
 import { RedisCheckpointer } from '../types/checkpointer.js';

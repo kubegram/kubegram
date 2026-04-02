@@ -16,11 +16,11 @@ This is the flow of the architecture:
 
 ### Proposed Solution
 
-Extract the Kuberag functionality into the package [kubegram-core](../../kubegram-core/) and use the [events](../../common-events/README.md) to manage the codge generation and planning events, and caching using both in memory caching and events and pubsub/distribured events (using redis). The library should have all of the function in the [common-ts](../../common-ts/) without the graphql part.
+Extract the Kuberag functionality into the package [kubegram-core](../../kubegram-core/) and use the [events](../../events/README.md) to manage the codge generation and planning events, and caching using both in memory caching and events and pubsub/distribured events (using redis). The library should have all of the function in the [common-ts](../../common-ts/) without the graphql part.
 
 ### Library Publishing
 
-The library should be published the same way the events [worfk library is being publishedlow](../../.github/workflows/common-events-release.yml)
+The library should be published the same way the events [worfk library is being publishedlow](../../.github/workflows/events-release.yml)
 
 ## Implementation Plan
 
@@ -43,7 +43,7 @@ kubegram-server → kuberag (GraphQL) → kubegram-core (services)
 | Plan Service | kubegram-core |
 | MCP Server | kubegram-core (lazy on WebSocket connect) |
 | LLM/RAG | kubegram-core |
-| Events | @kubegram/common-events |
+| Events | @kubegram/events |
 
 ### Phase 1: Setup & Structure
 - [x] Create kubegram-core package structure
@@ -57,7 +57,7 @@ Copy and adapt these modules to kubegram-core:
 1. **Types** - `types/graph.ts`, `types/codegen.ts`, `types/enums.ts`, `types/workflow.ts`
 2. **Services** - `services/codegen-service.ts`, `services/plan-service.ts`
 3. **Workflows** - `workflows/types.ts`, `workflows/codegen-workflow.ts`, `workflows/plan-workflow.ts`
-4. **State** - Adapt `state/redis.ts`, `state/cache.ts`, `state/pubsub.ts` to use @kubegram/common-events
+4. **State** - Adapt `state/redis.ts`, `state/cache.ts`, `state/pubsub.ts` to use @kubegram/events
 5. **LLM/RAG** - `llm/providers.ts`, `rag/embeddings.ts`, `rag/context.ts`, `prompts/*`
 6. **MCP** - `mcp/*` (configure lazy-loading)
 

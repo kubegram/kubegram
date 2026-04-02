@@ -10,7 +10,7 @@ Kubegram Core extracts the core business logic from Kuberag into a portable Type
 - 📋 **Infrastructure Planning**: AI-powered infrastructure planning
 - 🔌 **MCP Integration**: Model Context Protocol server for Kubernetes operations
 - 🧠 **RAG Context**: Retrieval-Augmented Generation for better LLM outputs
-- 📡 **Event-Driven**: Built on `@kubegram/common-events` for orchestration
+- 📡 **Event-Driven**: Built on `@kubegram/events` for orchestration
 
 ## Installation
 
@@ -108,7 +108,7 @@ await mcp.start({
 All operations emit domain events:
 
 ```typescript
-import { EventBus } from '@kubegram/common-events';
+import { EventBus } from '@kubegram/events';
 
 const eventBus = new EventBus({ enableCache: true });
 
@@ -259,7 +259,7 @@ npm run lint
 ## Related Packages
 
 - [@kubegram/common-ts](https://github.com/kubegram/kubegram/tree/main/common-ts) - GraphQL SDK
-- [@kubegram/common-events](https://github.com/kubegram/kubegram/tree/main/common-events) - Event library
+- [@kubegram/events](https://github.com/kubegram/kubegram/tree/main/events) - Event library
 
 ## License
 

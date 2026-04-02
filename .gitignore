@@ -20,6 +20,10 @@ build/
 .env.docker
 !*.env.example
 
+# act local CI secrets/vars (never commit real values)
+.secrets
+.vars
+
 # Logs
 logs/
 *.log

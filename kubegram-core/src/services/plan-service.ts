@@ -1,10 +1,10 @@
 /**
  * Plan service for kubegram-core
- * Adapted from kuberag to use dependency injection and common-events
+ * Adapted from kuberag to use dependency injection and @kubegram/events
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { EventBus } from '@kubegram/common-events';
+import { EventBus } from '@kubegram/events';
 import { GraphInput } from '../types/graph.js';
 import { ModelProvider, ModelName } from '../types/enums.js';
 import { PlanWorkflowResult } from '../types/state.js';

@@ -1,4 +1,4 @@
-import { EventBus } from '@kubegram/common-events';
+import { EventBus } from '@kubegram/events';
 
 /**
  * KubegramCore — top-level composition root for the kubegram-core library.

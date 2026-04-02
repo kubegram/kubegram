@@ -1,4 +1,4 @@
-import { EventBus } from '@kubegram/common-events';
+import { EventBus } from '@kubegram/events';
 import { KubegramGitHubEvent } from '../types/github-events.types';
 import logger from '../utils/logger';
 

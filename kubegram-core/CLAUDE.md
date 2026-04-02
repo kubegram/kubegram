@@ -15,7 +15,7 @@ Kubegram Core extracts the business logic from Kuberag into a portable library t
 
 - **Runtime**: Bun (or Node.js)
 - **TypeScript**: Strict mode
-- **Events**: @kubegram/common-events for pub/sub and orchestration
+- **Events**: @kubegram/events for pub/sub and orchestration
 - **LLM**: Vercel AI SDK (@ai-sdk/anthropic, @ai-sdk/openai, etc.)
 - **Embeddings**: Voyage AI
 - **Validation**: Zod
@@ -72,10 +72,10 @@ src/
 
 ### Event-Driven Architecture
 
-Kubegram Core uses `@kubegram/common-events` for all orchestration:
+Kubegram Core uses `@kubegram/events` for all orchestration:
 
 ```typescript
-import { EventBus, DomainEvent } from '@kubegram/common-events';
+import { EventBus, DomainEvent } from '@kubegram/events';
 
 // Subscribe to events
 eventBus.subscribe('codegen.progress', async (event) => {

@@ -155,7 +155,7 @@ export class ValidationService {
         try {
             // Lazy import kubegram-core so kuberag doesn't hard-depend on it at module load
             const { runValidationWorkflow } = await import('@kubegram/kubegram-core');
-            const { EventBus } = await import('@kubegram/common-events');
+            const { EventBus } = await import('@kubegram/events');
             const eventBus = new EventBus();
 
             const redis = redisClient.getClient();

@@ -1,6 +1,6 @@
 # Kubegram GitHub App
 
-A GitHub App that acts as an event listener for GitHub events and publishes them to the Kubegram deployment event system using the existing `@kubegram/common-events` library.
+A GitHub App that acts as an event listener for GitHub events and publishes them to the Kubegram deployment event system using the existing `@kubegram/events` library.
 
 ## Overview
 
@@ -16,7 +16,7 @@ This TypeScript application serves as the bridge between GitHub events and the K
 - **GitHub App Authentication**: JWT-based authentication with fine-grained permissions
 - **Webhook Security**: SHA-256 signature verification
 - **Event Processing**: Handlers for push, pull request, release, and check run events
-- **Kubegram Integration**: Seamless event publishing via `@kubegram/common-events`
+- **Kubegram Integration**: Seamless event publishing via `@kubegram/events`
 - **Enterprise Ready**: Security hardening, health checks, monitoring
 - **Containerized**: Multi-stage Docker builds with security best practices
 - **Kubernetes Native**: Complete K8s deployment manifests with HPA

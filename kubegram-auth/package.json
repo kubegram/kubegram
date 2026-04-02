@@ -51,7 +51,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@kubegram/common-events": "^1.1.0",
+    "@kubegram/events": "^1.0.0",
     "@openauthjs/openauth": "^0.4.3",
     "valibot": "^1.2.0"
   },
