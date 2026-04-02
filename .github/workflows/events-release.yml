@@ -1,11 +1,11 @@
-name: Release common-events
+name: Release events
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'common-events/**'
+      - 'events/**'
 
 jobs:
   release:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://npm.pkg.github.com'
+          registry-url: 'https://registry.npmjs.org'
           scope: '@kubegram'
 
       - name: Setup Bun
@@ -32,21 +32,23 @@ jobs:
 
       - name: Install dependencies
         run: make ci-install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Type check
-        run: make ci-typecheck-common-events
+        run: make ci-typecheck-events
 
       - name: Lint code
-        run: make ci-lint-common-events
+        run: make ci-lint-events
 
       - name: Run tests
-        run: make ci-test-common-events
+        run: make ci-test-events
 
       - name: Build
-        run: make ci-build-common-events
+        run: make ci-build-events
 
       - name: Verify build output
-        working-directory: common-events
+        working-directory: events
         run: |
           if [ ! -d "dist" ]; then
             echo "Build failed - dist directory not found"
@@ -56,12 +58,12 @@ jobs:
 
       - name: Check if version changed
         id: version-check
-        working-directory: common-events
+        working-directory: events
         run: |
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
 
-          if npm view @kubegram/common-events@$CURRENT_VERSION version --registry https://npm.pkg.github.com > /dev/null 2>&1; then
+          if npm view @kubegram/events@$CURRENT_VERSION version --registry https://registry.npmjs.org > /dev/null 2>&1; then
             echo "Version $CURRENT_VERSION already exists on npm"
             echo "should-publish=false" >> $GITHUB_OUTPUT
           else
@@ -69,13 +71,13 @@ jobs:
             echo "should-publish=true" >> $GITHUB_OUTPUT
           fi
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish to GitHub Packages
+      - name: Publish to npm
         if: steps.version-check.outputs.should-publish == 'true'
-        run: make ci-publish-common-events
+        run: make ci-publish-events
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         if: steps.version-check.outputs.should-publish == 'true'
@@ -83,14 +85,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
         with:
-          tag_name: common-events/v${{ steps.version-check.outputs.current-version }}
-          release_name: common-events v${{ steps.version-check.outputs.current-version }}
+          tag_name: events/v${{ steps.version-check.outputs.current-version }}
+          release_name: events v${{ steps.version-check.outputs.current-version }}
           body: |
-            ## @kubegram/common-events v${{ steps.version-check.outputs.current-version }}
+            ## @kubegram/events v${{ steps.version-check.outputs.current-version }}
 
             ### Installation
             ```bash
-            npm install @kubegram/common-events@${{ steps.version-check.outputs.current-version }}
+            npm install @kubegram/events@${{ steps.version-check.outputs.current-version }}
             ```
           draft: false
           prerelease: false
