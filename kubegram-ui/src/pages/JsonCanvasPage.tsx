@@ -595,7 +595,7 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
   return (
     <div className="w-full h-full">
       {/* Project Name Header */}
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-30">
+      <div className="absolute top-4 left-4 z-30 pl-10">
         {isEditingName ? (
           <Input
             value={tempProjectName}
@@ -617,28 +617,32 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
             </span>
           </div>
         )}
-        
-        <div className="flex items-center gap-2 mt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleImportClick}
-            className="h-10 bg-card/95 backdrop-blur-sm border shadow-lg"
-            title="Import .canvas file"
-          >
-            <Upload className="w-4 h-4 mr-1" />
-            Import
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            className="h-10 bg-card/95 backdrop-blur-sm border shadow-lg"
-            title="Export as .canvas file"
-          >
-            <Download className="w-4 h-4 mr-1" />
-            Export
-          </Button>
+      </div>
+
+      {/* Import/Export Controls - Left Sidebar */}
+      <div className="absolute top-1/2 left-0 transform -translate-y-1/2 z-30 group">
+        <div className="backdrop-blur-sm rounded-r-lg shadow-lg border border-gray-700 h-auto py-3 px-2 translate-x-[-calc(100%-32px)] group-hover:translate-x-0 transition-transform duration-200 ease-in-out"
+             style={{ backgroundColor: '#2e2e2eff' }}>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleImportClick}
+              className="h-10 w-10 p-0 hover:bg-gray-700 text-gray-300 justify-center"
+              title="Import .canvas file"
+            >
+              <Upload className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleExport}
+              className="h-10 w-10 p-0 hover:bg-gray-700 text-gray-300 justify-center"
+              title="Export as .canvas file"
+            >
+              <Download className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </div>
 

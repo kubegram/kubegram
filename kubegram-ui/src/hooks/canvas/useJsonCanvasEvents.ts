@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import Konva from 'konva';
-import type { JsonCanvasEdge, NodeSide } from '@/types/jsoncanvas';
+import type { JsonCanvasEdge, JsonCanvasNode, NodeSide } from '@/types/jsoncanvas';
 import { useCanvasCoordinates } from './useCanvasCoordinates';
 import type { JsonCanvasStateReturn } from './useJsonCanvasState';
 import type { RenderNode } from '@/utils/jsoncanvas';
@@ -35,7 +35,9 @@ export function useJsonCanvasEvents(
     showBackToContent: _showBackToContent, setShowBackToContent,
     clearSelection,
     addEdge,
+    addNode,
     updateRenderNode,
+    jsonCanvas,
   } = state;
 
   const {
@@ -48,6 +50,11 @@ export function useJsonCanvasEvents(
 
   const pendingPosRef = useRef<{ x: number; y: number } | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Tracks whether the current mousedown→mouseup gesture included actual pixel movement (>3px).
+  // Prevents treating a plain click on empty canvas as a group-move or rect-select.
+  const hasDraggedRef = useRef(false);
+  // Set to true after a rect-select completes; read by click handlers to avoid overriding the selection.
+  const justFinishedSelectionRef = useRef(false);
 
   // Compute which side of a node a point is closest to
   const computeSide = useCallback((node: RenderNode, px: number, py: number): NodeSide => {
@@ -99,7 +106,7 @@ export function useJsonCanvasEvents(
     const pos = stage.position();
     const scale = stage.scaleX();
     const distance = Math.sqrt(pos.x * pos.x + pos.y * pos.y);
-    setShowBackToContent(distance > 1500 || scale < 0.3);
+    setShowBackToContent(distance > 500 || scale < 0.5);
   }, [setShowBackToContent]);
 
   const handleBackToContent = useCallback(() => {
@@ -144,8 +151,12 @@ export function useJsonCanvasEvents(
   // --- Arrow drawing: canvas click ---
   const handleArrowCanvasClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      // Clear selection on empty canvas click
+      // Clear selection on empty canvas click, but not if a rect-select just finished
       if (e.target === e.target.getStage()) {
+        if (justFinishedSelectionRef.current) {
+          justFinishedSelectionRef.current = false;
+          return;
+        }
         clearSelection();
       }
 
@@ -286,6 +297,7 @@ export function useJsonCanvasEvents(
   // --- Group selection: mouse down ---
   const handleGroupMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>, arrowMode: boolean) => {
+      hasDraggedRef.current = false;
       if (arrowMode) return;
       if (e.target !== e.target.getStage()) return;
 
@@ -311,6 +323,9 @@ export function useJsonCanvasEvents(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (isSelecting && selectionRect) {
         const { x, y } = screenToCanvasCoords(e);
+        if (Math.abs(x - selectionRect.x) > 3 || Math.abs(y - selectionRect.y) > 3) {
+          hasDraggedRef.current = true;
+        }
         setSelectionRect({
           x: selectionRect.x,
           y: selectionRect.y,
@@ -319,6 +334,9 @@ export function useJsonCanvasEvents(
         });
       } else if (isGroupMoving && groupMoveStart) {
         const { x, y } = screenToCanvasCoords(e);
+        if (Math.abs(x - groupMoveStart.x) > 3 || Math.abs(y - groupMoveStart.y) > 3) {
+          hasDraggedRef.current = true;
+        }
         setGroupMoveOffset({
           x: x - groupMoveStart.x,
           y: y - groupMoveStart.y,
@@ -332,6 +350,13 @@ export function useJsonCanvasEvents(
   // --- Group selection: mouse up ---
   const handleGroupMouseUp = useCallback(() => {
     if (isSelecting && selectionRect) {
+      if (!hasDraggedRef.current) {
+        // Plain click on empty canvas with no selection active — just cancel
+        setIsSelecting(false);
+        setSelectionRect(null);
+        return;
+      }
+
       // Find elements in selection
       const selectedNodes: string[] = [];
       const selectedArrows: string[] = [];
@@ -357,9 +382,20 @@ export function useJsonCanvasEvents(
       });
 
       setSelectedItems({ nodes: selectedNodes, arrows: selectedArrows });
+      // Protect against the click event that fires after mouseup overriding this selection
+      justFinishedSelectionRef.current = true;
       setIsSelecting(false);
       setSelectionRect(null);
     } else if (isGroupMoving && groupMoveOffset) {
+      if (!hasDraggedRef.current) {
+        // Plain click on canvas with items selected — clear selection
+        setIsGroupMoving(false);
+        setGroupMoveStart(null);
+        setGroupMoveOffset(null);
+        clearSelection();
+        return;
+      }
+
       // Apply group movement
       selectedItems.nodes.forEach((nodeId) => {
         const node = nodes.find((n) => n.id === nodeId);
@@ -376,7 +412,7 @@ export function useJsonCanvasEvents(
       setGroupMoveOffset(null);
     }
   }, [isSelecting, selectionRect, isGroupMoving, groupMoveOffset,
-    nodes, arrows, selectedItems, rectsIntersect,
+    nodes, arrows, selectedItems, rectsIntersect, clearSelection,
     setSelectedItems, setIsSelecting, setSelectionRect,
     setIsGroupMoving, setGroupMoveStart, setGroupMoveOffset, updateRenderNode]);
 
@@ -414,6 +450,43 @@ export function useJsonCanvasEvents(
     },
     [setContextMenu],
   );
+
+  // --- Copy / Paste ---
+  const PASTE_OFFSET = 50;
+  const clipboardRef = useRef<{ nodes: JsonCanvasNode[]; arrows: JsonCanvasEdge[] }>({ nodes: [], arrows: [] });
+
+  const handleCopySelected = useCallback(() => {
+    const selectedNodeIds = new Set(selectedItems.nodes);
+    const selectedArrowIds = new Set(selectedItems.arrows);
+    clipboardRef.current = {
+      nodes: (jsonCanvas.nodes ?? []).filter((n) => selectedNodeIds.has(n.id)),
+      arrows: (jsonCanvas.edges ?? []).filter((e) => selectedArrowIds.has(e.id)),
+    };
+  }, [selectedItems, jsonCanvas]);
+
+  const handlePasteFromClipboard = useCallback(() => {
+    const { nodes: copiedNodes, arrows: copiedArrows } = clipboardRef.current;
+    if (copiedNodes.length === 0) return;
+
+    const idMap = new Map<string, string>();
+    const now = Date.now();
+
+    copiedNodes.forEach((node, i) => {
+      const newId = `${node.type}-${now}-${i}`;
+      idMap.set(node.id, newId);
+      addNode({ ...node, id: newId, x: node.x + PASTE_OFFSET, y: node.y + PASTE_OFFSET });
+    });
+
+    copiedArrows.forEach((arrow, i) => {
+      const newFrom = idMap.get(arrow.fromNode);
+      const newTo = idMap.get(arrow.toNode);
+      if (newFrom && newTo) {
+        addEdge({ ...arrow, id: `edge-${now}-${i}`, fromNode: newFrom, toNode: newTo });
+      }
+    });
+
+    setSelectedItems({ nodes: [...idMap.values()], arrows: [] });
+  }, [addNode, addEdge, setSelectedItems]);
 
   // --- Keyboard + wheel events ---
   useEffect(() => {
@@ -497,6 +570,14 @@ export function useJsonCanvasEvents(
         e.preventDefault();
         clearSelection();
       }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        handleCopySelected();
+      }
+      else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        handlePasteFromClipboard();
+      }
 
       setTimeout(() => checkDistanceFromContent(), 10);
     };
@@ -509,7 +590,8 @@ export function useJsonCanvasEvents(
   }, [stageRef, nodes, arrows, checkDistanceFromContent, clearSelection,
     setIsDrawingArrow, setArrowStart, setTempArrowEnd, setDragItem,
     setIsSelecting, setSelectionRect, setIsGroupMoving, setGroupMoveStart,
-    setGroupMoveOffset, setSelectedItems, setShowBackToContent]);
+    setGroupMoveOffset, setSelectedItems, setShowBackToContent,
+    handleCopySelected, handlePasteFromClipboard]);
 
   // Cleanup rAF on unmount
   useEffect(() => {
@@ -551,5 +633,12 @@ export function useJsonCanvasEvents(
     // Coordinate utils
     getArrowClickCoordinates,
     findElementsByCoordinates,
+
+    // Selection refs (read by JsonCanvasEditor to avoid click-event interference)
+    justFinishedSelectionRef,
+
+    // Copy / paste
+    handleCopySelected,
+    handlePasteFromClipboard,
   };
 }

@@ -51,6 +51,7 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
   }) => {
     const [showAllIcons, setShowAllIcons] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeNodeSet, setActiveNodeSet] = useState<'abstract' | 'k8s'>('abstract');
 
     const dispatch = useAppDispatch();
     const selectedArrowType = useAppSelector((state) => state.canvas.activity.selectedArrowType);
@@ -113,8 +114,62 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
       { id: 'traefik', title: 'Traefik', src: '/traefik_proxy.svg', alt: 'Traefik', nodeType: 'Traefik', nodeLabel: 'Traefik' },
     ];
 
-    // Filter icons based on search term
-    const filteredIcons = allServiceIcons.filter(icon =>
+    const k8sNodeTypes = [
+      // Core
+      { type: 'Pod', title: 'Pod', icon: '/kubernetes/resources/unlabeled/pod.svg' },
+      { type: 'Service', title: 'Service', icon: '/kubernetes/resources/unlabeled/svc.svg' },
+      { type: 'Namespace', title: 'Namespace', icon: '/kubernetes/resources/unlabeled/ns.svg' },
+      { type: 'Node', title: 'Node', icon: '/kubernetes/resources/unlabeled/node.svg' },
+      { type: 'ConfigMap', title: 'ConfigMap', icon: '/kubernetes/resources/unlabeled/cm.svg' },
+      { type: 'Secret', title: 'Secret', icon: '/kubernetes/resources/unlabeled/secret.svg' },
+      { type: 'ServiceAccount', title: 'ServiceAccount', icon: '/kubernetes/resources/unlabeled/sa.svg' },
+      { type: 'PersistentVolume', title: 'PV', icon: '/kubernetes/resources/unlabeled/pv.svg' },
+      { type: 'PersistentVolumeClaim', title: 'PVC', icon: '/kubernetes/resources/unlabeled/pvc.svg' },
+      { type: 'Event', title: 'Event', icon: '/kubernetes/resources/unlabeled/event.svg' },
+      { type: 'LimitRange', title: 'LimitRange', icon: '/kubernetes/resources/unlabeled/limits.svg' },
+      { type: 'ResourceQuota', title: 'ResourceQuota', icon: '/kubernetes/resources/unlabeled/quota.svg' },
+      { type: 'ReplicationController', title: 'RC', icon: '/kubernetes/resources/unlabeled/rc.svg' },
+      { type: 'Endpoints', title: 'Endpoints', icon: '/kubernetes/resources/unlabeled/ep.svg' },
+      { type: 'Binding', title: 'Binding', icon: '/kubernetes/resources/unlabeled/binding.svg' },
+
+      // Apps
+      { type: 'Deployment', title: 'Deployment', icon: '/kubernetes/resources/unlabeled/deploy.svg' },
+      { type: 'StatefulSet', title: 'StatefulSet', icon: '/kubernetes/resources/unlabeled/sts.svg' },
+      { type: 'DaemonSet', title: 'DaemonSet', icon: '/kubernetes/resources/unlabeled/ds.svg' },
+      { type: 'ReplicaSet', title: 'ReplicaSet', icon: '/kubernetes/resources/unlabeled/rs.svg' },
+
+      // Batch
+      { type: 'Job', title: 'Job', icon: '/kubernetes/resources/unlabeled/job.svg' },
+      { type: 'CronJob', title: 'CronJob', icon: '/kubernetes/resources/unlabeled/cronjob.svg' },
+
+      // Networking
+      { type: 'Ingress', title: 'Ingress', icon: '/kubernetes/resources/unlabeled/ing.svg' },
+      { type: 'NetworkPolicy', title: 'NetPol', icon: '/kubernetes/resources/unlabeled/netpol.svg' },
+
+      // RBAC
+      { type: 'Role', title: 'Role', icon: '/kubernetes/resources/unlabeled/role.svg' },
+      { type: 'RoleBinding', title: 'RoleBinding', icon: '/kubernetes/resources/unlabeled/rb.svg' },
+
+      // Storage
+      { type: 'StorageClass', title: 'StorageClass', icon: '/kubernetes/resources/unlabeled/sc.svg' },
+      { type: 'Volume', title: 'Volume', icon: '/kubernetes/resources/unlabeled/vol.svg' },
+
+      // Policy
+      { type: 'PodSecurityPolicy', title: 'PSP', icon: '/kubernetes/resources/unlabeled/psp.svg' },
+
+      // Custom
+      { type: 'CustomResourceDefinition', title: 'CRD', icon: '/kubernetes/resources/unlabeled/crd.svg' },
+      { type: 'Group', title: 'Group', icon: '/kubernetes/resources/unlabeled/group.svg' },
+      { type: 'User', title: 'User', icon: '/kubernetes/resources/unlabeled/user.svg' },
+      { type: 'HorizontalPodAutoscaler', title: 'HPA', icon: '/kubernetes/resources/unlabeled/hpa.svg' },
+    ];
+
+    // Normalise both sets into a common shape for filtering and rendering
+    const activeIcons = activeNodeSet === 'abstract'
+      ? allServiceIcons.map(i => ({ id: i.id, title: i.title, src: i.src, nodeType: i.nodeType, nodeLabel: i.nodeLabel }))
+      : k8sNodeTypes.map(i => ({ id: i.type, title: i.title, src: i.icon, nodeType: i.type, nodeLabel: i.title }));
+
+    const filteredIcons = activeIcons.filter(icon =>
       icon.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -141,6 +196,28 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
         {/* Toolbar Content - Only show when not collapsed */}
         {!isCollapsed && (
           <>
+            {/* Node set toggle */}
+            <div className="flex items-center gap-1 border-r border-gray-600 pr-3 mr-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className={`h-7 px-2 text-xs ${activeNodeSet === 'abstract' ? 'bg-purple-500/30 text-purple-300' : 'text-gray-400'}`}
+                onClick={() => { setActiveNodeSet('abstract'); setShowAllIcons(false); setSearchTerm(''); }}
+                title="Custom service nodes"
+              >
+                Services
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className={`h-7 px-2 text-xs ${activeNodeSet === 'k8s' ? 'bg-purple-500/30 text-purple-300' : 'text-gray-400'}`}
+                onClick={() => { setActiveNodeSet('k8s'); setShowAllIcons(false); setSearchTerm(''); }}
+                title="Kubernetes resource nodes"
+              >
+                K8s
+              </Button>
+            </div>
+
             {/* Search Bar */}
             <div className="relative">
               <Input
@@ -228,7 +305,7 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
                   className="h-10 w-10 p-1 hover:bg-gray-700 text-gray-300 cursor-grab active:cursor-grabbing"
                   title={`Drag to add ${icon.nodeLabel} node`}
                 >
-                  <img src={icon.src} alt={icon.alt} className="w-10 h-10" />
+                  <img src={icon.src} alt={icon.title} className="w-10 h-10" />
                 </Button>
               ))}
             </div>

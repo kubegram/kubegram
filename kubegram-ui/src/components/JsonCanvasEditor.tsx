@@ -56,6 +56,7 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
     dragItem,
     renamingNodeId,
     showBackToContent,
+    setShowBackToContent,
     setDragItem,
     setRenamingNodeId,
     setContextMenu,
@@ -86,11 +87,45 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
     handleCanvasRightClick,
     getArrowClickCoordinates,
     findElementsByCoordinates,
+    justFinishedSelectionRef,
+    handleCopySelected,
+    handlePasteFromClipboard,
   } = events;
 
   // Canvas view state
   const [stageScale, setStageScale] = useState(1);
   const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+
+  const updateBackToContent = useCallback((pos: { x: number; y: number }, scale: number) => {
+    const distance = Math.sqrt(pos.x ** 2 + pos.y ** 2);
+    console.log('dfddfd');
+    console.log('📏 Distance from origin:', distance.toFixed(2), 'Scale:', scale.toFixed(2));
+    console.log()
+    setShowBackToContent(distance > 300 || scale < 0.6 || scale > 3);
+  }, [setShowBackToContent]);
+
+  // Panning is driven by the scroll container (useCanvasScroll), not stagePos.
+  // Listen to its scroll event to detect when the user has moved far from origin.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const onScroll = () => {
+      const pos = { x: -container.scrollLeft, y: -container.scrollTop };
+      updateBackToContent(pos, stageScale);
+    };
+    container.addEventListener('scroll', onScroll, { passive: true });
+    return () => container.removeEventListener('scroll', onScroll);
+  }, [scrollContainerRef, stageScale, updateBackToContent]);
+
+
+  // Sync React state back to origin after the 500ms tween completes, then hide the button.
+  const handleBackToContentWithSync = useCallback(() => {
+    handleBackToContent();
+    setTimeout(() => {
+      setStagePos({ x: 0, y: 0 });
+      setStageScale(1);
+    }, 510);
+  }, [handleBackToContent]);
 
   const CANVAS_SIZE = 5000;
   const PADDING = 500;
@@ -160,53 +195,48 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
   }, [updateRenderNode]);
 
   // --- Node selection ---
+  // desiredSelected = the NEW state the node wants (true = select me, false = deselect me)
+  // DraggableNode passes !isSelected (inverted current state) as this argument
   const handleNodeSelect = useCallback((
-    nodeId: string, 
-    isSelected: boolean, 
-    isCtrlKey: boolean, 
+    nodeId: string,
+    desiredSelected: boolean,
+    isCtrlKey: boolean,
     isShiftKey: boolean
   ) => {
-    console.log('🎯 handleNodeSelect called:', { 
-      nodeId, 
-      isSelected, 
-      isCtrlKey,
-      isShiftKey,
-      currentSelected: selectedItems.nodes,
-      nodesCount: nodes.length
-    });
+    // A rect-select just finished — don't let the trailing click event override it
+    if (justFinishedSelectionRef.current) {
+      justFinishedSelectionRef.current = false;
+      return;
+    }
 
     if (isCtrlKey) {
-      // CTRL+CLICK: Toggle node in/out of selection (multi-select)
+      // CTRL+CLICK: desiredSelected=true → add to selection, false → remove
       setSelectedItems({
         ...selectedItems,
-        nodes: isSelected
-          ? selectedItems.nodes.filter((id) => id !== nodeId)
-          : [...selectedItems.nodes, nodeId],
+        nodes: desiredSelected
+          ? [...selectedItems.nodes, nodeId]
+          : selectedItems.nodes.filter((id) => id !== nodeId),
       });
     } else if (isShiftKey && selectedItems.nodes.length > 0) {
       // SHIFT+CLICK: Range selection - select all nodes between first selected and clicked
       const firstSelectedIndex = nodes.findIndex(n => n.id === selectedItems.nodes[0]);
       const clickedIndex = nodes.findIndex(n => n.id === nodeId);
-      
+
       if (firstSelectedIndex !== -1 && clickedIndex !== -1) {
         const start = Math.min(firstSelectedIndex, clickedIndex);
         const end = Math.max(firstSelectedIndex, clickedIndex);
-        
         const rangeNodeIds = nodes.slice(start, end + 1).map(n => n.id);
-        
         setSelectedItems({
           ...selectedItems,
           nodes: [...new Set([...selectedItems.nodes, ...rangeNodeIds])],
         });
       }
     } else {
-      // REGULAR CLICK: Clear previous selection, select only this node
-      setSelectedItems({
-        ...selectedItems,
-        nodes: [nodeId],
-      });
+      // REGULAR CLICK: Select only this node (no-op if already the sole selection)
+      if (selectedItems.nodes.length === 1 && selectedItems.nodes[0] === nodeId) return;
+      setSelectedItems({ nodes: [nodeId], arrows: [] });
     }
-  }, [selectedItems, setSelectedItems, nodes]);
+  }, [justFinishedSelectionRef, selectedItems, setSelectedItems, nodes]);
 
   // --- Arrow selection ---
   const handleArrowSelect = useCallback((arrowId: string, isSelected: boolean) => {
@@ -289,7 +319,8 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
     setStagePos(newPos);
     stage.scale({ x: newScale, y: newScale });
     stage.position(newPos);
-  }, []);
+    updateBackToContent(newPos, newScale);
+  }, [updateBackToContent]);
 
   // --- Drag bound ---
   const dragBoundFunc = useCallback((pos: { x: number; y: number }) => {
@@ -310,23 +341,11 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
 
   // Convert toolbar icon path to canvas icon path
   const getCanvasIconPath = (resourceName: string, dragIconPath?: string): string => {
-    // If a direct icon path is provided (from drag data), check if it's already a valid path
-    if (dragIconPath) {
-      // Already a valid kubernetes path
-      if (dragIconPath.startsWith('/kubernetes/')) {
-        return dragIconPath;
-      }
-      // Check if it's a toolbar icon that needs mapping
-      if (dragIconPath.startsWith('/')) {
-        // It's a path, might need mapping
-        const iconName = dragIconPath.split('/').pop()?.replace('-canvas.svg', '').replace('.svg', '');
-        if (iconName && iconMap[iconName]) {
-          return iconMap[iconName];
-        }
-      }
+    // The toolbar already provides the correct icon path — use it directly
+    if (dragIconPath && dragIconPath.startsWith('/')) {
+      return dragIconPath;
     }
-
-    // Map Kubernetes resource names to their icon paths
+    // Fallback: map by resource name (used when no direct path is available)
     return iconMap[resourceName] || iconMap[resourceName.replace(/ /g, '')] || `/kubernetes/resources/unlabeled/pod.svg`;
   };
 
@@ -496,12 +515,6 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
       tabIndex={0}
       onClick={() => containerRef.current?.focus()}
     >
-      {/* Back to Content Button */}
-      <CanvasNavigation
-        showBackToContent={showBackToContent}
-        onBackToContent={handleBackToContent}
-      />
-
       <div
         ref={scrollContainerRef}
         className="overflow-auto relative"
@@ -522,9 +535,18 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
           draggable={!isSelecting && !isDrawingArrow && !isGroupMoving}
           dragBoundFunc={dragBoundFunc}
           onWheel={handleWheel}
+          onDragMove={(e) => {
+            if (e.target === stageRef.current) {
+              const pos = e.target.position();
+              setStagePos(pos);
+              updateBackToContent(pos, stageScale);
+            }
+          }}
           onDragEnd={(e) => {
             if (e.target === stageRef.current) {
-              setStagePos(e.target.position());
+              const pos = e.target.position();
+              setStagePos(pos);
+              updateBackToContent(pos, stageScale);
             }
           }}
         >
@@ -574,6 +596,7 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
                 endX={arrow.endX}
                 endY={arrow.endY}
                 isSelected={selectedItems.arrows.includes(arrow.id)}
+                isMultiSelected={selectedItems.arrows.length > 1 && selectedItems.arrows.includes(arrow.id)}
                 isSquareArrow={arrow.pathMode === 'square'}
                 isCurvedArrow={arrow.pathMode === 'curved'}
                 startNodeId={arrow.startNodeId}
@@ -628,14 +651,22 @@ const JsonCanvasEditor: React.FC<JsonCanvasEditorProps> = ({
             />
 
             {/* Context menu */}
-            <CanvasContextMenu 
-              contextMenu={contextMenu} 
+            <CanvasContextMenu
+              contextMenu={contextMenu}
               onDelete={handleContextMenuDelete}
               selectedCount={selectedItems.nodes.length + selectedItems.arrows.length}
+              onCopy={handleCopySelected}
+              onDuplicate={() => { handleCopySelected(); handlePasteFromClipboard(); }}
             />
           </Layer>
         </Stage>
       </div>
+
+      {/* Back to Content Button — rendered after scroll container so it's not buried by overflow stacking context */}
+      <CanvasNavigation
+        showBackToContent={showBackToContent}
+        onBackToContent={handleBackToContentWithSync}
+      />
 
       {/* Renaming overlay */}
       {renamingNodeId && (() => {

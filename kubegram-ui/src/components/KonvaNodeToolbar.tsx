@@ -12,11 +12,12 @@ import monitorIcon from '@/assets/icons/monitor.svg';
 import secretIcon from '@/assets/icons/secret.svg';
 import serviceIcon from '@/assets/icons/service.svg';
 
+
 /**
  * Available node types that can be dragged onto the Konva canvas
  * Each type has an icon path and a type identifier
  */
-const legacyNodeTypes = [
+const abstractNodeTypes = [
   { type: 'LoadBalancer', label: 'Load Balancer', icon: lbIcon },
   { type: 'Logger', label: 'Logger', icon: loggerIcon },
   { type: 'Config', label: 'Config', icon: configIcon },
@@ -103,7 +104,7 @@ const KonvaNodeToolbar: React.FC<KonvaNodeToolbarProps> = memo(({ isCollapsed = 
   const isK8sGraph = graphType === GraphQL.GraphType.Infrastructure;
 
   const displayNodes = useMemo(() => {
-    let nodes = isK8sGraph ? k8sNodeTypes : legacyNodeTypes;
+    let nodes = isK8sGraph ? k8sNodeTypes : abstractNodeTypes;
 
     if (searchTerm) {
       nodes = nodes.filter(node =>

@@ -70,8 +70,3 @@ Copy and adapt these modules to kubegram-core:
 ### Phase 4: MCP Lazy Loading ✅
 - MCP server starts only when first WebSocket connects
 - No `ENABLE_MCP` env var - connection-driven
-
-### Phase 5: Publish & Deprecate
-- [ ] Publish kubegram-core to GitHub Packages
-- [ ] Add @deprecated comments in kuberag
-- [ ] Update kuberag CLAUDE.md

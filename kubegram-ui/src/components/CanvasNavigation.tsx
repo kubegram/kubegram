@@ -15,12 +15,13 @@ const CanvasNavigation: React.FC<CanvasNavigationProps> = ({
   showBackToContent,
   onBackToContent,
 }) => {
+  console.log('CanvasNavigation rendered with showBackToContent:', showBackToContent);
   if (!showBackToContent) {
     return null;
   }
 
   return (
-    <div className="absolute top-20 right-4 z-50">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
       <button
         onClick={onBackToContent}
         className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg shadow-lg border transition-all duration-200 flex items-center gap-2 backdrop-blur-sm"

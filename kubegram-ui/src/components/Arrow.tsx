@@ -35,6 +35,7 @@ interface ArrowProps {
   endY: number;
   isDragging?: boolean;
   isSelected?: boolean;
+  isMultiSelected?: boolean;
   isSnapped?: boolean;
   isSquareArrow?: boolean;
   isCurvedArrow?: boolean;
@@ -74,6 +75,7 @@ const Arrow: React.FC<ArrowProps> = memo(
     endY,
     isDragging = false,
     isSelected = false,
+    isMultiSelected = false,
     isSnapped = false,
     isSquareArrow = false,
     isCurvedArrow = false,
@@ -537,9 +539,9 @@ const Arrow: React.FC<ArrowProps> = memo(
         {/* Main arrow line */}
         <KonvaArrow
           points={getArrowPoints()}
-          stroke={isSnapped ? '#00FF00' : (isSelected ? '#2196F3' : (arrowType === 'RED' ? '#ef4444' : '#a7a7a7'))}
+          stroke={isSnapped ? '#00FF00' : (isSelected ? '#2196F3' : (isMultiSelected ? '#60A5FA' : (arrowType === 'RED' ? '#ef4444' : '#a7a7a7')))}
           strokeWidth={(isSnapped ? 3 : 2) + (arrowType === 'THICK' ? 2 : 0)}
-          fill={isSnapped ? '#00FF00' : (isSelected ? '#2196F3' : (arrowType === 'RED' ? '#ef4444' : '#a7a7a7'))}
+          fill={isSnapped ? '#00FF00' : (isSelected ? '#2196F3' : (isMultiSelected ? '#60A5FA' : (arrowType === 'RED' ? '#ef4444' : '#a7a7a7')))}
           dash={
             arrowType === 'DASHED'
               ? [10, 10]
