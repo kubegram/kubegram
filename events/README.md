@@ -7,6 +7,7 @@ A comprehensive TypeScript event library providing typed event emitters, domain 
 This library offers a complete event-driven architecture solution with TypeScript support, combining multiple event patterns in a single, cohesive package:
 
 - 🚀 **Typed Event Emitter**: Type-safe event emission and handling
+
 - 🏗️ **Domain Events**: Domain-Driven Design (DDD) event patterns with serialization
 - 📡 **Pub/Sub System**: Async publish/subscribe messaging with subscription management
 - 💾 **Event Caching**: Performance-optimized event storage with Redis support
