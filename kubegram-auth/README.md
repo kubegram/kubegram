@@ -135,6 +135,7 @@ const session = await sm.validateSession(sessionId);
 - `SessionManager` - Token verification class
 - `createSessionManager(options)` - Create session manager
 
+
 ### Types
 
 - `UserSubject` - User subject type
