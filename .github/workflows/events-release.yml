@@ -31,9 +31,7 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: make ci-install
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: make ci-install-events
 
       - name: Type check
         run: make ci-typecheck-events
@@ -48,13 +46,7 @@ jobs:
         run: make ci-build-events
 
       - name: Verify build output
-        working-directory: events
-        run: |
-          if [ ! -d "dist" ]; then
-            echo "Build failed - dist directory not found"
-            exit 1
-          fi
-          echo "Build successful - dist directory created"
+        run: make ci-verify-build-events
 
       - name: Check if version changed
         id: version-check

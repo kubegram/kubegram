@@ -13,7 +13,8 @@
 	act-pr-validation act-common-release act-events-release \
 	act-core-release act-auth-release act-cli-release-dry \
 	act-operator-dry act-operator-live act-sidecar-dry act-sidecar-live \
-	act-deploy-dry act-validate act-lint act-test act-list act-help
+	act-deploy-dry act-validate act-lint act-test act-list act-help \
+	ci-install-events ci-verify-build-events
 
 # Start all services
 up:
@@ -157,6 +158,10 @@ ci-install:
 	cd kubegram-ui && bun install --frozen-lockfile
 	cd kubegram-github-app && bun install --frozen-lockfile
 
+# Install events workspace dependencies only
+ci-install-events:
+	cd events && bun install --frozen-lockfile
+
 # common-ts CI steps
 ci-typecheck-common:
 	cd common-ts && bun run type-check
@@ -193,11 +198,18 @@ ci-test-events:
 ci-build-events:
 	cd events && bun run build
 
+ci-verify-build-events:
+	@if [ ! -d "events/dist" ]; then \
+	  echo "Build failed - dist directory not found"; \
+	  exit 1; \
+	fi
+	@echo "Build successful - dist directory created"
+
 ci-publish-events:
 	cd events && bun publish
 
 # Run all events CI steps
-ci-all-events: ci-typecheck-events ci-lint-events ci-test-events ci-build-events
+ci-all-events: ci-typecheck-events ci-lint-events ci-test-events ci-build-events ci-verify-build-events
 	@echo "✅ All events CI checks passed"
 
 # kubegram-core CI steps
