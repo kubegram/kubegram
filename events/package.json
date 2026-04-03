@@ -2,8 +2,7 @@
   "name": "@kubegram/events",
   "version": "1.0.0",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org",
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   },
   "description": "TypeScript event library for typed event emitters, domain events, and pub/sub messaging with caching",
   "type": "module",
