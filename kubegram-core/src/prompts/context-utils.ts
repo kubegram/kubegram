@@ -4,7 +4,7 @@
  * No LLM I/O — keyword-prefix classification only.
  */
 
-import type { ProcessedContext } from '../workflows/types.js';
+import type { ProcessedContext } from "../workflows/types.js";
 
 export { ProcessedContext };
 
@@ -25,18 +25,18 @@ export function processUserContext(context: string[]): ProcessedContext {
     const lowerMessage = message.toLowerCase();
 
     if (
-      lowerMessage.includes('system:') ||
-      lowerMessage.includes('retry:') ||
-      lowerMessage.includes('error:') ||
-      lowerMessage.includes('fix:') ||
-      lowerMessage.includes('correction:')
+      lowerMessage.includes("system:") ||
+      lowerMessage.includes("retry:") ||
+      lowerMessage.includes("error:") ||
+      lowerMessage.includes("fix:") ||
+      lowerMessage.includes("correction:")
     ) {
       result.systemMessages.push(message);
     } else if (
-      lowerMessage.includes('plan:') ||
-      lowerMessage.includes('strategy:') ||
-      lowerMessage.includes('approach:') ||
-      lowerMessage.includes('architecture:')
+      lowerMessage.includes("plan:") ||
+      lowerMessage.includes("strategy:") ||
+      lowerMessage.includes("approach:") ||
+      lowerMessage.includes("architecture:")
     ) {
       result.planningContext.push(message);
     } else {

@@ -3,39 +3,39 @@
  * Adapted from kuberag to use dependency injection and @kubegram/events
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import { EventBus } from '@kubegram/events';
-import { GraphInput } from '../types/graph.js';
-import { ModelProvider, ModelName } from '../types/enums.js';
-import { PlanWorkflowResult } from '../types/state.js';
+import { v4 as uuidv4 } from "uuid";
+import { EventBus } from "@kubegram/events";
+import { GraphInput } from "../types/graph.js";
+import { ModelProvider, ModelName } from "../types/enums.js";
+import { PlanWorkflowResult } from "../types/state.js";
 
 export interface PlanJobStatus {
-    jobId: string;
-    status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
-    step: string;
-    error?: string;
-    createdAt: string;
-    updatedAt: string;
-    userRequest: string;
+  jobId: string;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  step: string;
+  error?: string;
+  createdAt: string;
+  updatedAt: string;
+  userRequest: string;
 }
 
 export interface PlanJobSubmissionOptions {
-    modelProvider?: ModelProvider;
-    modelName?: ModelName;
-    timeout?: number;
-    graph: GraphInput;
+  modelProvider?: ModelProvider;
+  modelName?: ModelName;
+  timeout?: number;
+  graph: GraphInput;
 }
 
 export interface BackgroundPlanJobContext {
-    threadId: string;
-    jobId: string;
-    userRequest: string;
-    options: PlanJobSubmissionOptions;
-    startTime: number;
+  threadId: string;
+  jobId: string;
+  userRequest: string;
+  options: PlanJobSubmissionOptions;
+  startTime: number;
 }
 
 export interface PlanServiceConfig {
-    redisClient?: unknown;
+  redisClient?: unknown;
 }
 
 /**
@@ -48,107 +48,113 @@ export interface PlanServiceConfig {
  * wired via PlanWorkflow.
  */
 export class PlanService {
-    private eventBus: EventBus;
-    private config: PlanServiceConfig;
-    private readonly activeJobs = new Map<string, BackgroundPlanJobContext>();
-    private readonly jobResults = new Map<string, PlanWorkflowResult>();
+  private eventBus: EventBus;
+  private config: PlanServiceConfig;
+  private readonly activeJobs = new Map<string, BackgroundPlanJobContext>();
+  private readonly jobResults = new Map<string, PlanWorkflowResult>();
 
-    constructor(eventBus: EventBus, config: PlanServiceConfig = {}) {
-        this.eventBus = eventBus;
-        this.config = config;
+  constructor(eventBus: EventBus, config: PlanServiceConfig = {}) {
+    this.eventBus = eventBus;
+    this.config = config;
+  }
+
+  async initializePlan(
+    userRequest: string,
+    options: PlanJobSubmissionOptions,
+  ): Promise<{ jobId: string }> {
+    const jobId = uuidv4();
+
+    await this.eventBus.publish({
+      id: uuidv4(),
+      type: "plan.started",
+      occurredOn: new Date(),
+      aggregateId: jobId,
+      metadata: {
+        jobId,
+        userRequest,
+        options,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    return { jobId };
+  }
+
+  async submitJob(
+    userRequest: string,
+    options: PlanJobSubmissionOptions,
+  ): Promise<PlanJobStatus> {
+    const jobId = uuidv4();
+
+    await this.eventBus.publish({
+      id: uuidv4(),
+      type: "plan.started",
+      occurredOn: new Date(),
+      aggregateId: jobId,
+      metadata: {
+        jobId,
+        userRequest,
+        options,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+
+    return {
+      jobId,
+      status: "pending",
+      step: "queued",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      userRequest,
+    };
+  }
+
+  async getJobStatus(jobId: string): Promise<PlanJobStatus | null> {
+    const activeJob = this.activeJobs.get(jobId);
+    if (activeJob) {
+      return {
+        jobId,
+        status: "running",
+        step: "processing",
+        createdAt: new Date(activeJob.startTime).toISOString(),
+        updatedAt: new Date().toISOString(),
+        userRequest: activeJob.userRequest,
+      };
     }
 
-    async initializePlan(
-        userRequest: string,
-        options: PlanJobSubmissionOptions
-    ): Promise<{ jobId: string }> {
-        const jobId = uuidv4();
-
-        await this.eventBus.publish({
-            id: uuidv4(),
-            type: 'plan.started',
-            occurredOn: new Date(),
-            aggregateId: jobId,
-            metadata: {
-                jobId,
-                userRequest,
-                options
-            }
-        } as any);
-
-        return { jobId };
+    const result = this.jobResults.get(jobId);
+    if (result) {
+      return {
+        jobId,
+        status: result.success ? "completed" : "failed",
+        step: "completed",
+        error: result.error,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userRequest: "",
+      };
     }
 
-    async submitJob(
-        userRequest: string,
-        options: PlanJobSubmissionOptions
-    ): Promise<PlanJobStatus> {
-        const jobId = uuidv4();
+    return null;
+  }
 
-        await this.eventBus.publish({
-            id: uuidv4(),
-            type: 'plan.started',
-            occurredOn: new Date(),
-            aggregateId: jobId,
-            metadata: {
-                jobId,
-                userRequest,
-                options
-            }
-        } as any);
+  async getJobResult(jobId: string): Promise<PlanWorkflowResult | null> {
+    return this.jobResults.get(jobId) || null;
+  }
 
-        return {
-            jobId,
-            status: 'pending',
-            step: 'queued',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            userRequest,
-        };
-    }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async cancelPlan(_jobId: string): Promise<boolean> {
+    return false;
+  }
 
-    async getJobStatus(jobId: string): Promise<PlanJobStatus | null> {
-        const activeJob = this.activeJobs.get(jobId);
-        if (activeJob) {
-            return {
-                jobId,
-                status: 'running',
-                step: 'processing',
-                createdAt: new Date(activeJob.startTime).toISOString(),
-                updatedAt: new Date().toISOString(),
-                userRequest: activeJob.userRequest,
-            };
-        }
+  private startJobProcessor(): void {
+    // Background processor would be started here
+  }
 
-        const result = this.jobResults.get(jobId);
-        if (result) {
-            return {
-                jobId,
-                status: result.success ? 'completed' : 'failed',
-                step: 'completed',
-                error: result.error,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                userRequest: '',
-            };
-        }
-
-        return null;
-    }
-
-    async getJobResult(jobId: string): Promise<PlanWorkflowResult | null> {
-        return this.jobResults.get(jobId) || null;
-    }
-
-    async cancelPlan(jobId: string): Promise<boolean> {
-        return false;
-    }
-
-    private startJobProcessor(): void {
-        // Background processor would be started here
-    }
-
-    private async submitBackgroundJob(context: BackgroundPlanJobContext): Promise<void> {
-        // Background job processing
-    }
+  private async submitBackgroundJob(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _context: BackgroundPlanJobContext,
+  ): Promise<void> {
+    // Background job processing
+  }
 }

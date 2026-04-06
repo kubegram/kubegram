@@ -4,7 +4,7 @@
  * These classes extend DomainEvent and can be published directly to EventBus.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 /** JSON representation of a domain event */
 export interface DomainEventJSON {
@@ -36,7 +36,11 @@ abstract class BaseDomainEvent implements DomainEvent {
   aggregateId?: string;
   metadata?: Record<string, unknown>;
 
-  constructor(type: string, aggregateId?: string, metadata?: Record<string, unknown>) {
+  constructor(
+    type: string,
+    aggregateId?: string,
+    metadata?: Record<string, unknown>,
+  ) {
     this.id = uuidv4();
     this.type = type;
     this.occurredOn = new Date();
@@ -66,7 +70,12 @@ export class PlanStartedEvent extends BaseDomainEvent {
     public readonly planningType: string,
     aggregateId?: string,
   ) {
-    super('plan.started', aggregateId ?? jobId, { jobId, userId, graphId, planningType });
+    super("plan.started", aggregateId ?? jobId, {
+      jobId,
+      userId,
+      graphId,
+      planningType,
+    });
   }
 
   override toJSON(): DomainEventJSON {
@@ -89,7 +98,12 @@ export class PlanProgressEvent extends BaseDomainEvent {
     public readonly message: string,
     aggregateId?: string,
   ) {
-    super('plan.progress', aggregateId ?? jobId, { jobId, step, progress, message });
+    super("plan.progress", aggregateId ?? jobId, {
+      jobId,
+      step,
+      progress,
+      message,
+    });
   }
 
   override toJSON(): DomainEventJSON {
@@ -111,7 +125,7 @@ export class PlanCompletedEvent extends BaseDomainEvent {
     public readonly processingTime: number,
     aggregateId?: string,
   ) {
-    super('plan.completed', aggregateId ?? jobId, { jobId, processingTime });
+    super("plan.completed", aggregateId ?? jobId, { jobId, processingTime });
   }
 
   override toJSON(): DomainEventJSON {
@@ -131,7 +145,7 @@ export class PlanFailedEvent extends BaseDomainEvent {
     public readonly error: string,
     aggregateId?: string,
   ) {
-    super('plan.failed', aggregateId ?? jobId, { jobId, error });
+    super("plan.failed", aggregateId ?? jobId, { jobId, error });
   }
 
   override toJSON(): DomainEventJSON {

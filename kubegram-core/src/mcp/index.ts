@@ -21,14 +21,14 @@ export interface MCPServiceOptions {
 }
 
 export class MCPService {
-  private server: any = null;
+  private server: null = null;
   private isRunning = false;
   private config: MCPConfig;
 
   constructor(config: MCPConfig = {}) {
     this.config = {
       port: config.port || 3001,
-      host: config.host || '0.0.0.0',
+      host: config.host || "0.0.0.0",
     };
   }
 
@@ -38,7 +38,7 @@ export class MCPService {
    */
   async start(options: MCPServiceOptions = {}): Promise<void> {
     const port = options.port || this.config.port;
-    
+
     console.info(`MCP service configured on port ${port} (lazy-start mode)`);
     // Actual server start happens on first connection
   }
@@ -47,9 +47,10 @@ export class MCPService {
    * Called when a WebSocket connection is established
    * This is where we actually start the MCP server
    */
-  async onConnection(socket: any): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async onConnection(_socket: unknown): Promise<void> {
     if (!this.isRunning) {
-      console.info('Starting MCP server on first WebSocket connection...');
+      console.info("Starting MCP server on first WebSocket connection...");
       this.isRunning = true;
       // Initialize MCP server here
     }
@@ -57,7 +58,7 @@ export class MCPService {
 
   async stop(): Promise<void> {
     this.isRunning = false;
-    console.info('MCP service stopped');
+    console.info("MCP service stopped");
   }
 
   isActive(): boolean {

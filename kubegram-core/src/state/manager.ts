@@ -22,11 +22,13 @@ export class StateManager {
     this.config = config;
   }
 
-  async get(key: string): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  async get(_key: string): Promise<any> {
     return null;
   }
 
-  async set(key: string, value: any, ttl?: number): Promise<void> {}
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+  async set(_key: string, _value: any, _ttl?: number): Promise<void> {}
 }
 
 export const stateManager = new StateManager();

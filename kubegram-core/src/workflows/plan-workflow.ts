@@ -8,162 +8,166 @@
  * (the caller decides whether to persist the graph to Dgraph via kuberag).
  */
 
-import { generateText } from 'ai';
-import { v4 as uuidv4 } from 'uuid';
-import type { Redis } from 'ioredis';
-import type { EventBus } from '@kubegram/events';
+import { generateText } from "ai";
+import { v4 as uuidv4 } from "uuid";
+import type { Redis } from "ioredis";
+import type { EventBus } from "@kubegram/events";
 
-import { RedisCheckpointer } from '../types/checkpointer.js';
-import { WorkflowPubSub } from '../state/pubsub.js';
-import { createLLMProvider } from '../llm/providers.js';
-import type { LLMRouter } from '../llm/router.js';
-import { validateGraph } from '../utils/codegen.js';
-import type { Graph, GraphNode } from '../types/graph.js';
-import { GraphType } from '../types/enums.js';
-import type { StepHandler, WorkflowContext } from '../types/workflow.js';
+import { RedisCheckpointer } from "../types/checkpointer.js";
+import { WorkflowPubSub } from "../state/pubsub.js";
+import { createLLMProvider } from "../llm/providers.js";
+import type { LLMRouter } from "../llm/router.js";
+import { validateGraph } from "../utils/codegen.js";
+import { type GraphNode } from "../types/graph.js";
+import { GraphType } from "../types/enums.js";
+import type { StepHandler, WorkflowContext } from "../types/workflow.js";
 import {
-    PlanStartedEvent,
-    PlanProgressEvent,
-    PlanCompletedEvent,
-    PlanFailedEvent,
-} from '../events/plan.js';
+  PlanStartedEvent,
+  PlanCompletedEvent,
+  PlanFailedEvent,
+} from "../events/plan.js";
 
-import { BaseWorkflow } from './base-workflow.js';
+import { BaseWorkflow } from "./base-workflow.js";
 import {
-    PlanWorkflowStep,
-    type PlanState,
-    type PlanWorkflowResult,
-    type PlanWorkflowOptions,
-    createInitialPlanState,
-    addWorkflowMessage,
-    addValidationError,
-} from './types.js';
+  PlanWorkflowStep,
+  type PlanState,
+  type PlanWorkflowResult,
+  type PlanWorkflowOptions,
+  createInitialPlanState,
+  addWorkflowMessage,
+  addValidationError,
+} from "./types.js";
 
 export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
-    protected readonly steps: PlanWorkflowStep[] = [
-        PlanWorkflowStep.ANALYZE_REQUEST,
-        PlanWorkflowStep.GENERATE_GRAPH,
-        PlanWorkflowStep.VALIDATE_GRAPH,
-        PlanWorkflowStep.SAVE_GRAPH,
-    ];
+  protected readonly steps: PlanWorkflowStep[] = [
+    PlanWorkflowStep.ANALYZE_REQUEST,
+    PlanWorkflowStep.GENERATE_GRAPH,
+    PlanWorkflowStep.VALIDATE_GRAPH,
+    PlanWorkflowStep.SAVE_GRAPH,
+  ];
 
-    protected readonly handlers: Record<PlanWorkflowStep, StepHandler<PlanState>> = {
-        [PlanWorkflowStep.ANALYZE_REQUEST]: s => this.analyzeRequest(s),
-        [PlanWorkflowStep.GENERATE_GRAPH]: s => this.generateGraph(s),
-        [PlanWorkflowStep.VALIDATE_GRAPH]: s => this.validateGraphStep(s),
-        [PlanWorkflowStep.SAVE_GRAPH]: s => this.saveGraph(s),
-        // Terminal steps — never executed, required by Record type
-        [PlanWorkflowStep.COMPLETED]: async s => s,
-        [PlanWorkflowStep.FAILED]: async s => s,
-    };
+  protected readonly handlers: Record<
+    PlanWorkflowStep,
+    StepHandler<PlanState>
+  > = {
+    [PlanWorkflowStep.ANALYZE_REQUEST]: (s) => this.analyzeRequest(s),
+    [PlanWorkflowStep.GENERATE_GRAPH]: (s) => this.generateGraph(s),
+    [PlanWorkflowStep.VALIDATE_GRAPH]: (s) => this.validateGraphStep(s),
+    [PlanWorkflowStep.SAVE_GRAPH]: (s) => this.saveGraph(s),
+    // Terminal steps — never executed, required by Record type
+    [PlanWorkflowStep.COMPLETED]: async (s) => s,
+    [PlanWorkflowStep.FAILED]: async (s) => s,
+  };
 
-    protected readonly initialStep = PlanWorkflowStep.ANALYZE_REQUEST;
+  protected readonly initialStep = PlanWorkflowStep.ANALYZE_REQUEST;
 
-    protected readonly terminalSteps: PlanWorkflowStep[] = [
-        PlanWorkflowStep.COMPLETED,
-        PlanWorkflowStep.FAILED,
-    ];
+  protected readonly terminalSteps: PlanWorkflowStep[] = [
+    PlanWorkflowStep.COMPLETED,
+    PlanWorkflowStep.FAILED,
+  ];
 
-    protected readonly channelPrefix = 'plan';
+  protected readonly channelPrefix = "plan";
 
-    private readonly router?: LLMRouter;
-    private readonly eventBus: EventBus;
+  private readonly router?: LLMRouter;
+  private readonly eventBus: EventBus;
 
-    constructor(redis: Redis, eventBus: EventBus, options?: { router?: LLMRouter }) {
-        super(
-            new RedisCheckpointer<PlanState>(redis, 'plan'),
-            new WorkflowPubSub(eventBus),
-        );
-        this.router = options?.router;
-        this.eventBus = eventBus;
-    }
+  constructor(
+    redis: Redis,
+    eventBus: EventBus,
+    options?: { router?: LLMRouter },
+  ) {
+    super(
+      new RedisCheckpointer<PlanState>(redis, "plan"),
+      new WorkflowPubSub(eventBus),
+    );
+    this.router = options?.router;
+    this.eventBus = eventBus;
+  }
 
-    // --- Public API ---
+  // --- Public API ---
 
-    async run(
-        userRequest: string,
-        threadId: string,
-        context: WorkflowContext,
-        options: PlanWorkflowOptions,
-    ): Promise<PlanWorkflowResult> {
-        const state = createInitialPlanState(userRequest, options);
+  async run(
+    userRequest: string,
+    threadId: string,
+    context: WorkflowContext,
+    options: PlanWorkflowOptions,
+  ): Promise<PlanWorkflowResult> {
+    const state = createInitialPlanState(userRequest, options);
 
-        // Emit domain event for workflow start
+    // Emit domain event for workflow start
+    await this.eventBus.publish(
+      new PlanStartedEvent(
+        context.jobId,
+        context.userId ?? "anonymous",
+        options.graph.id,
+        "infrastructure_planning",
+      ),
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const startTime = Date.now();
+
+    try {
+      const result = await this.execute(state, { ...context, threadId });
+
+      // Emit domain event for completion or failure
+      if (result.success && result.state.graph) {
         await this.eventBus.publish(
-            new PlanStartedEvent(
-                context.jobId,
-                context.userId ?? 'anonymous',
-                options.graph.id,
-                'infrastructure_planning',
-            ),
+          new PlanCompletedEvent(
+            context.jobId,
+            { graph: result.state.graph, context: result.state.planContext },
+            result.duration,
+          ),
         );
+      } else if (result.error) {
+        await this.eventBus.publish(
+          new PlanFailedEvent(context.jobId, result.error),
+        );
+      }
 
-        const startTime = Date.now();
-
-        try {
-            const result = await this.execute(state, { ...context, threadId });
-
-            // Emit domain event for completion or failure
-            if (result.success && result.state.graph) {
-                await this.eventBus.publish(
-                    new PlanCompletedEvent(
-                        context.jobId,
-                        { graph: result.state.graph, context: result.state.planContext },
-                        result.duration,
-                    ),
-                );
-            } else if (result.error) {
-                await this.eventBus.publish(
-                    new PlanFailedEvent(
-                        context.jobId,
-                        result.error,
-                    ),
-                );
-            }
-
-            return {
-                state: result.state,
-                success: result.success,
-                planResult: result.success && result.state.graph
-                    ? { graph: result.state.graph, context: result.state.planContext }
-                    : undefined,
-                error: result.error,
-                duration: result.duration,
-            };
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            await this.eventBus.publish(
-                new PlanFailedEvent(
-                    context.jobId,
-                    errorMessage,
-                ),
-            );
-            throw error;
-        }
+      return {
+        state: result.state,
+        success: result.success,
+        planResult:
+          result.success && result.state.graph
+            ? { graph: result.state.graph, context: result.state.planContext }
+            : undefined,
+        error: result.error,
+        duration: result.duration,
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      await this.eventBus.publish(
+        new PlanFailedEvent(context.jobId, errorMessage),
+      );
+      throw error;
     }
+  }
 
-    // --- Overridden hooks ---
+  // --- Overridden hooks ---
 
-    protected shouldContinue(state: PlanState): boolean {
-        if (state.validationErrors.some(e => e.severity === 'error')) return false;
-        return super.shouldContinue(state);
-    }
+  protected shouldContinue(state: PlanState): boolean {
+    if (state.validationErrors.some((e) => e.severity === "error"))
+      return false;
+    return super.shouldContinue(state);
+  }
 
-    // --- Step handlers ---
+  // --- Step handlers ---
 
-    private async analyzeRequest(state: PlanState): Promise<PlanState> {
-        console.info('Step: analyzeRequest');
+  private async analyzeRequest(state: PlanState): Promise<PlanState> {
+    console.info("Step: analyzeRequest");
 
-        state = addWorkflowMessage(state, 'user', state.userRequest);
-        state.planContext.push(`User Request: ${state.userRequest}`);
+    state = addWorkflowMessage(state, "user", state.userRequest);
+    state.planContext.push(`User Request: ${state.userRequest}`);
 
-        return addWorkflowMessage(state, 'system', 'Analyzed user request');
-    }
+    return addWorkflowMessage(state, "system", "Analyzed user request");
+  }
 
-    private async generateGraph(state: PlanState): Promise<PlanState> {
-        console.info('Step: generateGraph');
+  private async generateGraph(state: PlanState): Promise<PlanState> {
+    console.info("Step: generateGraph");
 
-        const systemPrompt = `You are an expert infrastructure architect.
+    const systemPrompt = `You are an expert infrastructure architect.
 Create a JSON representation of the infrastructure required for the user's request.
 The output must be a valid JSON object with a 'nodes' array and an optional 'edges' array.
 Each node must have: id (uuid), name, nodeType (from enums: MICROSERVICE, DATABASE, CACHE, QUEUE, KUBERNETES_CLUSTER, etc.),
@@ -179,78 +183,88 @@ Example output:
   ]
 }`;
 
-        let userPrompt = `Request: ${state.userRequest}\n\nExisting Context: ${state.planContext.join('\n')}`;
+    let userPrompt = `Request: ${state.userRequest}\n\nExisting Context: ${state.planContext.join("\n")}`;
 
-        if (state.graph) {
-            userPrompt += `\n\nExisting Graph: ${JSON.stringify(state.graph, null, 2)}
+    if (state.graph) {
+      userPrompt += `\n\nExisting Graph: ${JSON.stringify(state.graph, null, 2)}
 Please modify the existing graph or add to it based on the request. Preserve existing IDs for unchanged nodes.`;
-        }
-
-        // Use router with failover if configured, else direct provider
-        const { text } = this.router
-            ? await this.router.generateText(
-                { system: systemPrompt, prompt: userPrompt, temperature: 0.1 },
-                'plan',
-              )
-            : await generateText({
-                model: createLLMProvider(state.modelProvider, state.modelName),
-                system: systemPrompt,
-                prompt: userPrompt,
-                temperature: 0.1,
-              });
-
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) throw new Error('Failed to parse JSON from LLM response');
-
-        const generatedData = JSON.parse(jsonMatch[0]);
-
-        const nodes: GraphNode[] = (generatedData.nodes ?? []).map((n: any) => ({
-            ...n,
-            id: n.id || uuidv4(),
-            edges: [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        }));
-
-        state.graph = {
-            id: uuidv4(),
-            name: generatedData.name || 'Generated Graph',
-            description: generatedData.description || 'Generated from user request',
-            graphType: GraphType.MICROSERVICE,
-            nodes,
-            companyId: '',
-            userId: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        return addWorkflowMessage(state, 'assistant', `Generated graph with ${nodes.length} nodes`);
     }
 
-    private async validateGraphStep(state: PlanState): Promise<PlanState> {
-        console.info('Step: validateGraph');
+    // Use router with failover if configured, else direct provider
+    const { text } = this.router
+      ? await this.router.generateText(
+          { system: systemPrompt, prompt: userPrompt, temperature: 0.1 },
+          "plan",
+        )
+      : await generateText({
+          model: createLLMProvider(state.modelProvider, state.modelName),
+          system: systemPrompt,
+          prompt: userPrompt,
+          temperature: 0.1,
+        });
 
-        if (!state.graph) throw new Error('No graph generated to validate');
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Failed to parse JSON from LLM response");
 
-        const validation = validateGraph(state.graph);
+    const generatedData = JSON.parse(jsonMatch[0]);
 
-        for (const error of validation.errors) {
-            state = addValidationError(state, { field: 'general', message: error, severity: 'error' });
-        }
+    const nodes: GraphNode[] = (generatedData.nodes ?? []).map(
+      (n: { id?: string }) => ({
+        ...n,
+        id: n.id || uuidv4(),
+        edges: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }),
+    );
 
-        return addWorkflowMessage(
-            state,
-            'system',
-            `Validation complete: ${validation.errors.length} errors`,
-        );
+    state.graph = {
+      id: uuidv4(),
+      name: generatedData.name || "Generated Graph",
+      description: generatedData.description || "Generated from user request",
+      graphType: GraphType.MICROSERVICE,
+      nodes,
+      companyId: "",
+      userId: "",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    return addWorkflowMessage(
+      state,
+      "assistant",
+      `Generated graph with ${nodes.length} nodes`,
+    );
+  }
+
+  private async validateGraphStep(state: PlanState): Promise<PlanState> {
+    console.info("Step: validateGraph");
+
+    if (!state.graph) throw new Error("No graph generated to validate");
+
+    const validation = validateGraph(state.graph);
+
+    for (const error of validation.errors) {
+      state = addValidationError(state, {
+        field: "general",
+        message: error,
+        severity: "error",
+      });
     }
 
-    private async saveGraph(state: PlanState): Promise<PlanState> {
-        console.info('Step: saveGraph');
-        // Graph persistence is handled by the caller (kuberag → Dgraph).
-        // This step finalizes the plan and signals completion.
-        return addWorkflowMessage(state, 'system', 'Graph plan finalized');
-    }
+    return addWorkflowMessage(
+      state,
+      "system",
+      `Validation complete: ${validation.errors.length} errors`,
+    );
+  }
+
+  private async saveGraph(state: PlanState): Promise<PlanState> {
+    console.info("Step: saveGraph");
+    // Graph persistence is handled by the caller (kuberag → Dgraph).
+    // This step finalizes the plan and signals completion.
+    return addWorkflowMessage(state, "system", "Graph plan finalized");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -258,31 +272,31 @@ Please modify the existing graph or add to it based on the request. Preserve exi
 // ---------------------------------------------------------------------------
 
 export async function runPlanWorkflow(
-    userRequest: string,
-    threadId: string,
-    context: WorkflowContext,
-    redis: Redis,
-    eventBus: EventBus,
-    options: PlanWorkflowOptions,
+  userRequest: string,
+  threadId: string,
+  context: WorkflowContext,
+  redis: Redis,
+  eventBus: EventBus,
+  options: PlanWorkflowOptions,
 ): Promise<PlanWorkflowResult> {
-    const workflow = new PlanWorkflow(redis, eventBus);
-    return workflow.run(userRequest, threadId, context, options);
+  const workflow = new PlanWorkflow(redis, eventBus);
+  return workflow.run(userRequest, threadId, context, options);
 }
 
 export async function getPlanWorkflowStatus(
-    threadId: string,
-    redis: Redis,
-    eventBus: EventBus,
+  threadId: string,
+  redis: Redis,
+  eventBus: EventBus,
 ): Promise<PlanState | null> {
-    const workflow = new PlanWorkflow(redis, eventBus);
-    return workflow.getStatus(threadId);
+  const workflow = new PlanWorkflow(redis, eventBus);
+  return workflow.getStatus(threadId);
 }
 
 export async function cancelPlanWorkflow(
-    threadId: string,
-    redis: Redis,
-    eventBus: EventBus,
+  threadId: string,
+  redis: Redis,
+  eventBus: EventBus,
 ): Promise<boolean> {
-    const workflow = new PlanWorkflow(redis, eventBus);
-    return workflow.cancel(threadId);
+  const workflow = new PlanWorkflow(redis, eventBus);
+  return workflow.cancel(threadId);
 }

@@ -4,7 +4,7 @@
  * These classes extend DomainEvent and can be published directly to EventBus.
  */
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 /** JSON representation of a domain event */
 export interface DomainEventJSON {
@@ -36,7 +36,11 @@ abstract class BaseDomainEvent implements DomainEvent {
   aggregateId?: string;
   metadata?: Record<string, unknown>;
 
-  constructor(type: string, aggregateId?: string, metadata?: Record<string, unknown>) {
+  constructor(
+    type: string,
+    aggregateId?: string,
+    metadata?: Record<string, unknown>,
+  ) {
     this.id = uuidv4();
     this.type = type;
     this.occurredOn = new Date();
@@ -67,7 +71,12 @@ export class CodegenStartedEvent extends BaseDomainEvent {
     public readonly options: { provider?: string; model?: string } = {},
     aggregateId?: string,
   ) {
-    super('codegen.started', aggregateId ?? jobId, { jobId, userId, graphId, options });
+    super("codegen.started", aggregateId ?? jobId, {
+      jobId,
+      userId,
+      graphId,
+      options,
+    });
   }
 
   override toJSON(): DomainEventJSON {
@@ -91,7 +100,12 @@ export class CodegenProgressEvent extends BaseDomainEvent {
     public readonly message: string,
     aggregateId?: string,
   ) {
-    super('codegen.progress', aggregateId ?? jobId, { jobId, step, progress, message });
+    super("codegen.progress", aggregateId ?? jobId, {
+      jobId,
+      step,
+      progress,
+      message,
+    });
   }
 
   override toJSON(): DomainEventJSON {
@@ -114,7 +128,12 @@ export class CodegenCompletedEvent extends BaseDomainEvent {
     public readonly processingTime: number,
     aggregateId?: string,
   ) {
-    super('codegen.completed', aggregateId ?? jobId, { jobId, graphId, manifestCount: manifests.length, processingTime });
+    super("codegen.completed", aggregateId ?? jobId, {
+      jobId,
+      graphId,
+      manifestCount: manifests.length,
+      processingTime,
+    });
   }
 
   override toJSON(): DomainEventJSON {
@@ -140,7 +159,12 @@ export class CodegenFailedEvent extends BaseDomainEvent {
     public readonly retryable?: boolean,
     aggregateId?: string,
   ) {
-    super('codegen.failed', aggregateId ?? jobId, { jobId, step, error, retryable });
+    super("codegen.failed", aggregateId ?? jobId, {
+      jobId,
+      step,
+      error,
+      retryable,
+    });
   }
 
   override toJSON(): DomainEventJSON {

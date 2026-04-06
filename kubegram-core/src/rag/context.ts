@@ -20,11 +20,19 @@ export interface RagContextOptions {
 }
 
 export class RagContextService {
-  async buildContext(graphId: string, options: RagContextOptions = {}): Promise<string> {
-    return '';
+  async buildContext(
+    _graphId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options: RagContextOptions = {},
+  ): Promise<string> {
+    return "";
   }
 
-  async findSimilar(embedding: number[], limit: number = 5): Promise<any[]> {
+  async findSimilar(
+    _embedding: number[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _limit: number = 5,
+  ): Promise<unknown[]> {
     return [];
   }
 }

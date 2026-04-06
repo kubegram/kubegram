@@ -3,14 +3,20 @@
  * Copied from kuberag - these interfaces are used throughout the application
  */
 
-import { GraphNodeType, DependencyType, GraphType, ConnectionType, KubernetesClusterType } from './enums.js';
+import {
+  GraphNodeType,
+  DependencyType,
+  GraphType,
+  ConnectionType,
+  KubernetesClusterType,
+} from "./enums.js";
 
 // ============================================================================
 // Base Types and Scalars
 // ============================================================================
 
 export type ID = string;
-export type JSON = Record<string, any>;
+export type JSON = Record<string, unknown>;
 export type YAML = string;
 export type DateTime = string;
 

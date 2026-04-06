@@ -14,9 +14,9 @@
  *   const { text } = await router.generateText({ system, prompt, temperature: 0 }, 'codegen');
  */
 
-import { generateText } from 'ai';
-import { ModelProvider, ModelName } from '../types/enums.js';
-import { createLLMProvider, type LanguageModel } from './providers.js';
+import { generateText } from "ai";
+import { ModelProvider, ModelName } from "../types/enums.js";
+import { createLLMProvider, type LanguageModel } from "./providers.js";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -48,7 +48,10 @@ export interface ProviderHealthState {
 }
 
 /** All params accepted by the AI SDK's generateText, minus `model` (router selects that). */
-export type RouterGenerateTextParams = Omit<Parameters<typeof generateText>[0], 'model'>;
+export type RouterGenerateTextParams = Omit<
+  Parameters<typeof generateText>[0],
+  "model"
+>;
 
 // ---------------------------------------------------------------------------
 // LLMRouter
@@ -56,7 +59,10 @@ export type RouterGenerateTextParams = Omit<Parameters<typeof generateText>[0], 
 
 export class LLMRouter {
   private healthState = new Map<ModelProvider, ProviderHealthState>();
-  private requestCounts = new Map<ModelProvider, { count: number; resetAt: number }>();
+  private requestCounts = new Map<
+    ModelProvider,
+    { count: number; resetAt: number }
+  >();
 
   constructor(private config: LLMRouterConfig) {}
 
@@ -68,8 +74,12 @@ export class LLMRouter {
     // 1. Task-specific routing takes precedence
     if (task && this.config.taskRouting?.[task]) {
       const preferred = this.config.taskRouting[task];
-      const entry = this.config.providers.find(p => p.provider === preferred);
-      if (entry && this.isProviderHealthy(entry.provider) && !this.isRateLimited(entry)) {
+      const entry = this.config.providers.find((p) => p.provider === preferred);
+      if (
+        entry &&
+        this.isProviderHealthy(entry.provider) &&
+        !this.isRateLimited(entry)
+      ) {
         return createLLMProvider(entry.provider, entry.modelName);
       }
     }
@@ -77,12 +87,15 @@ export class LLMRouter {
     // 2. Priority-ordered fallback
     const sorted = this.getSortedProviders();
     for (const entry of sorted) {
-      if (this.isProviderHealthy(entry.provider) && !this.isRateLimited(entry)) {
+      if (
+        this.isProviderHealthy(entry.provider) &&
+        !this.isRateLimited(entry)
+      ) {
         return createLLMProvider(entry.provider, entry.modelName);
       }
     }
 
-    throw new Error('No healthy LLM providers available');
+    throw new Error("No healthy LLM providers available");
   }
 
   /**
@@ -92,7 +105,7 @@ export class LLMRouter {
    */
   async generateText(
     params: RouterGenerateTextParams,
-    task?: string
+    task?: string,
   ): Promise<Awaited<ReturnType<typeof generateText>>> {
     const orderedEntries = this.getOrderedEntries(task);
 
@@ -110,20 +123,27 @@ export class LLMRouter {
 
       try {
         const model = createLLMProvider(entry.provider, entry.modelName);
-        const result = await generateText({ ...params, model } as Parameters<typeof generateText>[0]);
+        const result = await generateText({ ...params, model } as Parameters<
+          typeof generateText
+        >[0]);
         this.markSuccess(entry.provider);
         this.trackRequest(entry.provider);
-        console.info(`[LLMRouter] ${entry.provider} succeeded${task ? ` (task: ${task})` : ''}`);
+        console.info(
+          `[LLMRouter] ${entry.provider} succeeded${task ? ` (task: ${task})` : ""}`,
+        );
         return result;
       } catch (err) {
-        console.warn(`[LLMRouter] ${entry.provider} failed, trying next provider`, err);
+        console.warn(
+          `[LLMRouter] ${entry.provider} failed, trying next provider`,
+          err,
+        );
         this.markFailure(entry.provider);
         lastError = err;
       }
     }
 
     throw new Error(
-      `All LLM providers failed${task ? ` for task "${task}"` : ''}. Last error: ${lastError}`
+      `All LLM providers failed${task ? ` for task "${task}"` : ""}. Last error: ${lastError}`,
     );
   }
 
@@ -145,13 +165,13 @@ export class LLMRouter {
     if (state.consecutiveFailures >= 3) {
       const cooldownSeconds = Math.min(
         60 * Math.pow(2, state.consecutiveFailures - 3),
-        3600
+        3600,
       );
       state.cooldownUntil = new Date(Date.now() + cooldownSeconds * 1000);
       state.isHealthy = false;
       console.warn(
         `[LLMRouter] ${provider} entering cooldown for ${cooldownSeconds}s ` +
-        `(${state.consecutiveFailures} consecutive failures)`
+          `(${state.consecutiveFailures} consecutive failures)`,
       );
     }
 
@@ -227,9 +247,12 @@ export class LLMRouter {
 
     if (task && this.config.taskRouting?.[task]) {
       const preferredProvider = this.config.taskRouting[task];
-      const preferred = sorted.find(e => e.provider === preferredProvider);
+      const preferred = sorted.find((e) => e.provider === preferredProvider);
       if (preferred) {
-        return [preferred, ...sorted.filter(e => e.provider !== preferredProvider)];
+        return [
+          preferred,
+          ...sorted.filter((e) => e.provider !== preferredProvider),
+        ];
       }
     }
 

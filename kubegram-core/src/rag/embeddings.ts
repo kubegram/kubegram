@@ -21,16 +21,18 @@ export class EmbeddingsService {
     this.config = config;
   }
 
-  async generateEmbedding(text: string): Promise<number[]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async generateEmbedding(_text: string): Promise<number[]> {
     // Subclass EmbeddingsService and override this method, or use kuberag's
     // concrete implementation which wraps the Voyage AI REST API.
-    throw new Error('Not implemented - requires API key configuration');
+    throw new Error("Not implemented - requires API key configuration");
   }
 
-  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async generateEmbeddings(_texts: string[]): Promise<number[][]> {
     // Subclass EmbeddingsService and override this method, or use kuberag's
     // concrete implementation which wraps the Voyage AI REST API.
-    throw new Error('Not implemented - requires API key configuration');
+    throw new Error("Not implemented - requires API key configuration");
   }
 }
 

@@ -16,11 +16,11 @@
  */
 
 export enum BaseWorkflowStatus {
-  PENDING = 'pending',
-  RUNNING = 'running',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  CANCELLED = 'cancelled',
+  PENDING = "pending",
+  RUNNING = "running",
+  COMPLETED = "completed",
+  FAILED = "failed",
+  CANCELLED = "cancelled",
 }
 
 export interface BaseWorkflowState<
@@ -62,7 +62,14 @@ export interface WorkflowContext {
 }
 
 export interface WorkflowEvent {
-  type: 'started' | 'step_started' | 'step_completed' | 'step_failed' | 'completed' | 'failed' | 'cancelled';
+  type:
+    | "started"
+    | "step_started"
+    | "step_completed"
+    | "step_failed"
+    | "completed"
+    | "failed"
+    | "cancelled";
   workflowId: string;
   step?: string;
   error?: string;

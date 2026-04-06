@@ -6,7 +6,7 @@
  */
 
 // Base domain event interfaces (from codegen module - shared definition)
-export type { DomainEvent, DomainEventJSON } from './codegen.js';
+export type { DomainEvent, DomainEventJSON } from "./codegen.js";
 
 // Codegen events
 export {
@@ -14,7 +14,7 @@ export {
   CodegenProgressEvent,
   CodegenCompletedEvent,
   CodegenFailedEvent,
-} from './codegen.js';
+} from "./codegen.js";
 
 // Plan events
 export {
@@ -22,4 +22,4 @@ export {
   PlanProgressEvent,
   PlanCompletedEvent,
   PlanFailedEvent,
-} from './plan.js';
+} from "./plan.js";

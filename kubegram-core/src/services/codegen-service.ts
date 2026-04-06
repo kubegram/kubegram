@@ -3,15 +3,11 @@
  * Adapted from kuberag to use dependency injection and @kubegram/events
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import { EventBus } from '@kubegram/events';
-import { Graph } from '../types/graph.js';
-import {
-  GeneratedCodeGraph,
-  JobStatus,
-  JobStatusInput
-} from '../types/codegen.js';
-import { ModelProvider, ModelName, JobStatusStatus } from '../types/enums.js';
+import { v4 as uuidv4 } from "uuid";
+import { EventBus } from "@kubegram/events";
+import { Graph } from "../types/graph.js";
+import { GeneratedCodeGraph, JobStatus } from "../types/codegen.js";
+import { ModelProvider, ModelName, JobStatusStatus } from "../types/enums.js";
 
 export interface CodegenJobStatus {
   jobId: string;
@@ -30,7 +26,7 @@ export interface CodegenJobStatus {
 export interface JobSubmissionOptions {
   modelProvider?: ModelProvider;
   modelName?: ModelName;
-  priority?: 'low' | 'normal' | 'high';
+  priority?: "low" | "normal" | "high";
   timeout?: number;
   enableCache?: boolean;
   enableRAG?: boolean;
@@ -76,13 +72,13 @@ export class CodegenService {
 
   async initializeCodegen(
     graph: Graph,
-    options: JobSubmissionOptions = {}
+    options: JobSubmissionOptions = {},
   ): Promise<{ jobId: string }> {
     const jobId = uuidv4();
-    
+
     await this.eventBus.publish({
       id: uuidv4(),
-      type: 'codegen.started',
+      type: "codegen.started",
       occurredOn: new Date(),
       aggregateId: jobId,
       metadata: {
@@ -91,41 +87,46 @@ export class CodegenService {
         graphName: graph.name,
         companyId: graph.companyId,
         userId: graph.userId,
-        options
-      }
+        options,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return { jobId };
   }
 
-  async getJobStatus(jobId: string): Promise<JobStatus | null> {
+  async getJobStatus(_jobId: string): Promise<JobStatus | null> {
     return {
-      jobId,
+      jobId: _jobId,
       status: JobStatusStatus.PENDING,
-      step: 'pending'
+      step: "pending",
     };
   }
 
-  async cancelJob(jobId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async cancelJob(_jobId: string): Promise<boolean> {
     return false;
   }
 
   async generateCode(
     graph: Graph,
-    options: JobSubmissionOptions = {}
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _options: JobSubmissionOptions = {},
   ): Promise<GeneratedCodeGraph> {
-    throw new Error('Not implemented - use initializeCodegen for async job submission');
+    throw new Error(
+      "Not implemented - use initializeCodegen for async job submission",
+    );
   }
 
   async submitJob(
     graph: Graph,
-    options: JobSubmissionOptions = {}
+    options: JobSubmissionOptions = {},
   ): Promise<JobStatus> {
     const jobId = uuidv4();
-    
+
     await this.eventBus.publish({
       id: uuidv4(),
-      type: 'codegen.started',
+      type: "codegen.started",
       occurredOn: new Date(),
       aggregateId: jobId,
       metadata: {
@@ -134,22 +135,25 @@ export class CodegenService {
         graphName: graph.name,
         companyId: graph.companyId,
         userId: graph.userId,
-        options
-      }
+        options,
+      },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return {
       jobId,
       status: JobStatusStatus.PENDING,
-      step: 'queued'
+      step: "queued",
     };
   }
 
-  async getGeneratedCode(jobId: string): Promise<GeneratedCodeGraph | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getGeneratedCode(_jobId: string): Promise<GeneratedCodeGraph | null> {
     return null;
   }
 
-  async checkCache(graph: Graph): Promise<GeneratedCodeGraph | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async checkCache(_graph: Graph): Promise<GeneratedCodeGraph | null> {
     return null;
   }
 
@@ -157,7 +161,10 @@ export class CodegenService {
     return [];
   }
 
-  private async submitBackgroundJob(context: BackgroundJobContext): Promise<void> {
+  private async submitBackgroundJob(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _context: BackgroundJobContext,
+  ): Promise<void> {
     // Background job processing would be implemented here
   }
 
@@ -165,7 +172,8 @@ export class CodegenService {
     // Background processor would be started here
   }
 
-  private async cancelCodegenWorkflow(threadId: string): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async cancelCodegenWorkflow(_threadId: string): Promise<boolean> {
     return false;
   }
 }

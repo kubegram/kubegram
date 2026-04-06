@@ -4,7 +4,6 @@
  */
 
 import {
-  GraphNode,
   Graph,
   GraphInput,
   Microservice,
@@ -22,8 +21,14 @@ import {
   Script,
   ScriptInput,
   Edge,
-} from './graph.js';
-import { GraphNodeType, DependencyType, ModelProvider, ConnectionType, GraphType, JobStatusStatus } from './enums.js';
+} from "./graph.js";
+import {
+  GraphNodeType,
+  DependencyType,
+  ModelProvider,
+  ConnectionType,
+  JobStatusStatus,
+} from "./enums.js";
 
 export interface GeneratedCodeMetadata {
   fileName: string;
