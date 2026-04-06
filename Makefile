@@ -314,8 +314,11 @@ ci-build-kubegram-core:
 ci-publish-kubegram-core:
 	cd kubegram-core && bun publish
 
+ci-install-kubegram-core:
+	cd kubegram-core && bun install --frozen-lockfile
+
 # Run all kubegram-core CI steps
-ci-all-kubegram-core: ci-typecheck-kubegram-core ci-lint-kubegram-core ci-test-kubegram-core ci-build-kubegram-core
+ci-all-kubegram-core: ci-install-kubegram-core ci-typecheck-kubegram-core ci-lint-kubegram-core ci-test-kubegram-core ci-build-kubegram-core
 	@echo "✅ All kubegram-core CI checks passed"
 
 # kubegram-auth CI steps
