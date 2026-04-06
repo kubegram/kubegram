@@ -38,6 +38,7 @@ const core = new KubegramCore({
   }
 });
 
+
 await core.initialize();
 
 // Run code generation
