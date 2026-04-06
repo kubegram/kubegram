@@ -1,0 +1,17 @@
+{
+  "action": "published",
+  "release": {
+    "id": 2,
+    "tag_name": "kubegram-sidecar/v0.1.0",
+    "name": "kubegram-sidecar v0.1.0",
+    "draft": false,
+    "prerelease": false,
+    "body": "Local act test release"
+  },
+  "repository": {
+    "name": "kubegram",
+    "full_name": "kubegram/kubegram",
+    "owner": { "login": "kubegram" }
+  },
+  "sender": { "login": "local-dev" }
+}

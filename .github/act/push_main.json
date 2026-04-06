@@ -1,0 +1,21 @@
+{
+  "ref": "refs/heads/main",
+  "before": "0000000000000000000000000000000000000000",
+  "after": "0000000000000000000000000000000000000001",
+  "repository": {
+    "name": "kubegram",
+    "full_name": "kubegram/kubegram",
+    "owner": { "login": "kubegram" },
+    "default_branch": "main"
+  },
+  "pusher": { "name": "local-dev", "email": "local-dev@example.com" },
+  "commits": [
+    {
+      "id": "0000000000000000000000000000000000000001",
+      "message": "chore: local act test push",
+      "added": [],
+      "removed": [],
+      "modified": ["common-ts/src/index.ts"]
+    }
+  ]
+}

@@ -30,7 +30,7 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: make ci-install
+        run: make ci-install-kubegram-core
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 

@@ -1,0 +1,24 @@
+{
+  "action": "opened",
+  "number": 1,
+  "pull_request": {
+    "number": 1,
+    "title": "Local act test PR",
+    "head": {
+      "ref": "feat/local-test",
+      "sha": "0000000000000000000000000000000000000001"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "0000000000000000000000000000000000000000"
+    },
+    "state": "open"
+  },
+  "repository": {
+    "name": "kubegram",
+    "full_name": "kubegram/kubegram",
+    "owner": { "login": "kubegram" },
+    "default_branch": "main"
+  },
+  "sender": { "login": "local-dev" }
+}
