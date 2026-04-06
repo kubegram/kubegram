@@ -13,8 +13,7 @@
  * for the concrete implementation location.
  */
 
-export * from './events/codegen.js';
-export * from './events/plan.js';
+export * from './events/index.js';
 export * from './services/codegen-service.js';
 export * from './services/plan-service.js';
 export * from './services/entity-service.js';
@@ -28,9 +27,7 @@ export * from './llm/providers.js';
 export * from './llm/router.js';
 export * from './rag/embeddings.js';
 export * from './rag/context.js';
-export * from './prompts/system.js';
-export * from './prompts/node-generators.js';
-export * from './prompts/parser.js';
+export * from './prompts/context-utils.js';
 export * from './state/manager.js';
 export * from './state/pubsub.js';
 export * from './utils/codegen.js';

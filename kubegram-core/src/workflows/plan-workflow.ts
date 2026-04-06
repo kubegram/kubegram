@@ -21,6 +21,12 @@ import { validateGraph } from '../utils/codegen.js';
 import type { Graph, GraphNode } from '../types/graph.js';
 import { GraphType } from '../types/enums.js';
 import type { StepHandler, WorkflowContext } from '../types/workflow.js';
+import {
+    PlanStartedEvent,
+    PlanProgressEvent,
+    PlanCompletedEvent,
+    PlanFailedEvent,
+} from '../events/plan.js';
 
 import { BaseWorkflow } from './base-workflow.js';
 import {
@@ -61,6 +67,7 @@ export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
     protected readonly channelPrefix = 'plan';
 
     private readonly router?: LLMRouter;
+    private readonly eventBus: EventBus;
 
     constructor(redis: Redis, eventBus: EventBus, options?: { router?: LLMRouter }) {
         super(
@@ -68,6 +75,7 @@ export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
             new WorkflowPubSub(eventBus),
         );
         this.router = options?.router;
+        this.eventBus = eventBus;
     }
 
     // --- Public API ---
@@ -79,17 +87,59 @@ export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
         options: PlanWorkflowOptions,
     ): Promise<PlanWorkflowResult> {
         const state = createInitialPlanState(userRequest, options);
-        const result = await this.execute(state, { ...context, threadId });
 
-        return {
-            state: result.state,
-            success: result.success,
-            planResult: result.success && result.state.graph
-                ? { graph: result.state.graph, context: result.state.planContext }
-                : undefined,
-            error: result.error,
-            duration: result.duration,
-        };
+        // Emit domain event for workflow start
+        await this.eventBus.publish(
+            new PlanStartedEvent(
+                context.jobId,
+                context.userId ?? 'anonymous',
+                options.graph.id,
+                'infrastructure_planning',
+            ),
+        );
+
+        const startTime = Date.now();
+
+        try {
+            const result = await this.execute(state, { ...context, threadId });
+
+            // Emit domain event for completion or failure
+            if (result.success && result.state.graph) {
+                await this.eventBus.publish(
+                    new PlanCompletedEvent(
+                        context.jobId,
+                        { graph: result.state.graph, context: result.state.planContext },
+                        result.duration,
+                    ),
+                );
+            } else if (result.error) {
+                await this.eventBus.publish(
+                    new PlanFailedEvent(
+                        context.jobId,
+                        result.error,
+                    ),
+                );
+            }
+
+            return {
+                state: result.state,
+                success: result.success,
+                planResult: result.success && result.state.graph
+                    ? { graph: result.state.graph, context: result.state.planContext }
+                    : undefined,
+                error: result.error,
+                duration: result.duration,
+            };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            await this.eventBus.publish(
+                new PlanFailedEvent(
+                    context.jobId,
+                    errorMessage,
+                ),
+            );
+            throw error;
+        }
     }
 
     // --- Overridden hooks ---

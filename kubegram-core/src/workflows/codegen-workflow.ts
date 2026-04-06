@@ -11,21 +11,26 @@
  *    replacing kuberag's internal singletons.
  */
 
-import { generateText } from 'ai';
 import type { Redis } from 'ioredis';
 import type { EventBus } from '@kubegram/events';
 
 import { RedisCheckpointer } from '../types/checkpointer.js';
 import { WorkflowPubSub } from '../state/pubsub.js';
-import { createLLMProvider } from '../llm/providers.js';
 import type { LLMRouter } from '../llm/router.js';
-import { buildSystemPrompt, SystemPromptBuilder } from '../prompts/system.js';
-import { generateNodePrompt } from '../prompts/node-generators.js';
-import { parseLLMManifestsOutput } from '../prompts/parser.js';
+import { buildClientRegistry } from '../llm/baml-registry.js';
+import { b } from '../baml_client/index.js';
+import type { GraphContext, RAGContextInput, UserContextInput, NodeContext } from '../baml_client/types.js';
+import { processUserContext } from '../prompts/context-utils.js';
 import { getNeededInfrastructure, validateGraph, buildGraphEdges } from '../utils/codegen.js';
 import type { Graph, GraphNode, Edge } from '../types/graph.js';
-import { GraphType, ModelProvider } from '../types/enums.js';
+import { GraphType } from '../types/enums.js';
 import type { StepHandler, WorkflowContext } from '../types/workflow.js';
+import {
+    CodegenStartedEvent,
+    CodegenProgressEvent,
+    CodegenCompletedEvent,
+    CodegenFailedEvent,
+} from '../events/codegen.js';
 
 import { BaseWorkflow } from './base-workflow.js';
 import {
@@ -35,7 +40,6 @@ import {
     type CodegenWorkflowOptions,
     createInitialCodegenState,
     addWorkflowMessage,
-    addTargetMessage,
     addValidationError,
 } from './types.js';
 
@@ -84,7 +88,7 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
     protected readonly channelPrefix = 'codegen';
 
     private readonly ragContextService?: RAGContextService;
-    private readonly router?: LLMRouter;
+    private readonly eventBus: EventBus;
 
     constructor(
         redis: Redis,
@@ -96,7 +100,7 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
             new WorkflowPubSub(eventBus),
         );
         this.ragContextService = options?.ragContextService;
-        this.router = options?.router;
+        this.eventBus = eventBus;
     }
 
     // --- Public API ---
@@ -108,15 +112,72 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
         options: CodegenWorkflowOptions = {},
     ): Promise<CodegenWorkflowResult> {
         const state = createInitialCodegenState(initialGraph, options, context.userContext ?? []);
-        const result = await this.execute(state, { ...context, threadId });
 
-        return {
-            state: result.state,
-            success: result.success,
-            generatedCode: result.success ? result.state.generatedConfigurations : undefined,
-            error: result.error,
-            duration: result.duration,
-        };
+        // Emit domain event for workflow start
+        await this.eventBus.publish(
+            new CodegenStartedEvent(
+                context.jobId,
+                context.userId ?? 'anonymous',
+                initialGraph.id,
+                initialGraph,
+                {
+                    provider: state.modelProvider,
+                    model: options.modelName,
+                },
+            ),
+        );
+
+        const startTime = Date.now();
+
+        try {
+            const result = await this.execute(state, { ...context, threadId });
+
+            // Emit domain event for completion or failure
+            if (result.success && result.state.generatedConfigurations) {
+                await this.eventBus.publish(
+                    new CodegenCompletedEvent(
+                        context.jobId,
+                        result.state.generatedConfigurations.nodes.map(n => ({
+                            id: n.id,
+                            name: n.name,
+                            nodeType: n.nodeType,
+                            namespace: n.namespace,
+                            config: n.config,
+                        })),
+                        initialGraph.id,
+                        result.duration,
+                    ),
+                );
+            } else if (result.error) {
+                await this.eventBus.publish(
+                    new CodegenFailedEvent(
+                        context.jobId,
+                        result.error,
+                        result.state.currentStep,
+                        result.state.retryCount < result.state.maxRetries,
+                    ),
+                );
+            }
+
+            return {
+                state: result.state,
+                success: result.success,
+                generatedCode: result.success ? result.state.generatedConfigurations : undefined,
+                error: result.error,
+                duration: result.duration,
+            };
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            await this.eventBus.publish(
+                new CodegenFailedEvent(
+                    context.jobId,
+                    errorMessage,
+                    state.currentStep,
+                    false,
+                ),
+            );
+            throw error;
+        }
     }
 
     // --- Overridden hooks ---
@@ -169,40 +230,27 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
             return addWorkflowMessage(state, 'system', 'No new infrastructure needed');
         }
 
-        console.info(`Generating prompts for ${state.neededNodes.length} nodes`);
-
-        for (const node of state.neededNodes) {
-            const prompt = generateNodePrompt({
-                id: node.id,
-                name: node.name,
-                nodeType: node.nodeType,
-                namespace: node.namespace,
-                microservice: node.microservice,
-                database: node.database,
-                cache: node.cache,
-                spec: node.spec,
-            } as any);
-
-            state = addTargetMessage(state, node.id, node.nodeType, prompt);
-        }
-
         return addWorkflowMessage(
             state,
             'system',
-            `Generated prompts for ${state.neededNodes.length} nodes`,
+            `Queued ${state.neededNodes.length} nodes for generation`,
         );
     }
 
     /**
-     * Step 3: LLM call with optional RAG context.
+     * Step 3: LLM call via BAML with optional RAG context.
      */
     private async llmCall(state: CodegenState): Promise<CodegenState> {
         console.info('Step: llmCall');
 
-        // Sanitize user context
+        // Sanitize user context via BAML (fast Haiku model, best-effort)
         if (state.userContext && state.userContext.length > 0) {
-            state.userContext = await this.sanitizeContext(state.userContext);
-            state.processedContext = SystemPromptBuilder.processUserContext(state.userContext);
+            try {
+                state.userContext = await b.SanitizeUserContext(state.userContext);
+            } catch {
+                // Sanitization is best-effort — proceed with original context on failure
+            }
+            state.processedContext = processUserContext(state.userContext);
         }
 
         // RAG context (optional — skip if no service injected)
@@ -213,34 +261,34 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
         state.similarGraphs = ragContext.similarGraphs;
         state.ragContext = ragContext.contextText;
 
-        // Build prompts
-        const systemPrompt = buildSystemPrompt(state.graph, ragContext, {
-            includeRAGContext: !!this.ragContextService,
-            includeBestPractices: true,
-            includeSecurityGuidelines: true,
-            includeResourceLimits: true,
-            userContext: state.userContext,
-        });
+        // Build BAML inputs
+        const graphCtx: GraphContext = {
+            graph_name: state.graph.name,
+            default_namespace: state.graph.namespace ?? 'default',
+            total_nodes: state.graph.nodes?.length ?? 0,
+            node_types: this.buildNodeTypeSummary(state.graph),
+        };
+        const ragInput: RAGContextInput = {
+            context_text: ragContext.contextText || undefined,
+        };
+        const userCtxInput: UserContextInput = {
+            system_messages: state.processedContext.systemMessages,
+            user_requirements: state.processedContext.userRequirements,
+            planning_context: state.processedContext.planningContext,
+        };
+        const nodeContexts = state.neededNodes.map(n => this.buildNodeContext(n));
 
-        const userPrompt = this.buildUserPrompt(state);
+        // Single BAML call — structured output, no JSON parsing required
+        const response = await b.GenerateKubernetesManifests(
+            graphCtx,
+            nodeContexts,
+            ragInput,
+            userCtxInput,
+            '1.29',
+            { clientRegistry: buildClientRegistry(state.modelProvider) },
+        );
 
-        // Prefer the router when configured (provides failover across providers).
-        // Fall back to a direct createLLMProvider() call for single-provider setups
-        // or when callers haven't injected a router (e.g. unit tests).
-        const { text } = this.router
-            ? await this.router.generateText(
-                { system: systemPrompt, prompt: userPrompt, temperature: 0 },
-                'codegen',
-              )
-            : await generateText({
-                model: createLLMProvider(state.modelProvider, state.modelName),
-                system: systemPrompt,
-                prompt: userPrompt,
-                temperature: 0,
-              });
-
-        // Parse output
-        const manifests = parseLLMManifestsOutput(text);
+        const manifests = response.manifests;
         state.generatedConfigurations = {
             totalFiles: manifests.length,
             namespace: state.graph.namespace ?? 'default',
@@ -367,50 +415,105 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
 
     // --- Helpers ---
 
-    private async sanitizeContext(context: string[]): Promise<string[]> {
-        try {
-            // Use a fast, cheap model (Haiku) for sanitization rather than the configured
-            // codegen provider. Sanitization is a best-effort safeguard, not a content
-            // transformation — graceful fallback to the original context on any error.
-            const provider = createLLMProvider(ModelProvider.claude, 'claude-3-haiku-20240307');
-            const { text } = await generateText({
-                model: provider,
-                system: `You are a content sanitization assistant. Remove PII, malicious content, and inappropriate material from user-provided context messages. Keep core technical requirements intact. Return a JSON array of sanitized strings.`,
-                prompt: `Sanitize the following context messages and return as JSON array:\n${JSON.stringify(context, null, 2)}`,
-                temperature: 0,
-            });
-
-            const sanitized = JSON.parse(text.trim());
-            if (Array.isArray(sanitized)) {
-                return sanitized.filter((s): s is string => typeof s === 'string' && s.trim() !== '');
-            }
-            return context;
-        } catch {
-            return context;
+    private buildNodeTypeSummary(graph: Graph): string {
+        if (!graph.nodes || graph.nodes.length === 0) return '';
+        const counts: Record<string, number> = {};
+        for (const node of graph.nodes) {
+            const t = node.nodeType || 'Unknown';
+            counts[t] = (counts[t] || 0) + 1;
         }
+        return Object.entries(counts).map(([t, n]) => `${t}: ${n}`).join(', ');
     }
 
-    private buildUserPrompt(state: CodegenState): string {
-        let prompt = '';
+    private buildNodeContext(node: GraphNode): NodeContext {
+        const isExternal = !!node.dependencyType;
+        const ms  = node.microservice;
+        const db  = node.database;
+        const ca  = node.cache;
+        const mq  = node.messageQueue;
+        const px  = node.proxy;
+        const lb  = node.loadBalancer;
+        const mon = node.monitoring;
+        const gw  = node.gateway;
+        const spec = (node.spec ?? {}) as Record<string, any>;
 
-        if (state.processedContext.userRequirements.length > 0) {
-            prompt += '**Additional Requirements:**\n';
-            for (const req of state.processedContext.userRequirements) {
-                prompt += `- ${req}\n`;
-            }
-            prompt += '\n';
+        const envFromSubtype = (
+            ms?.environmentVariables ?? db?.environmentVariables ??
+            ca?.environmentVariables ?? mq?.environmentVariables ??
+            px?.environmentVariables ?? lb?.environmentVariables ??
+            mon?.environmentVariables ?? gw?.environmentVariables
+        );
+        const envMap: Record<string, string> = {};
+        for (const e of envFromSubtype ?? []) {
+            if (e.name && e.value) envMap[e.name] = e.value;
         }
+        const envVars = Object.keys(envMap).length
+            ? JSON.stringify(envMap)
+            : spec.env ? JSON.stringify(spec.env) : undefined;
 
-        if (state.targetMessages.length === 0) {
-            return prompt + 'Generate Kubernetes manifests for the provided infrastructure graph.';
-        }
+        const secretsArray = (
+            ms?.secrets ?? db?.secrets ?? ca?.secrets ?? mq?.secrets ??
+            px?.secrets ?? lb?.secrets ?? mon?.secrets ?? gw?.secrets ?? []
+        ) as { name: string }[];
 
-        prompt += 'Generate Kubernetes manifests for the following infrastructure components:\n\n';
-        for (const tm of state.targetMessages) {
-            prompt += `**${tm.nodeType}: ${tm.nodeId}**\n${tm.prompt}\n\n`;
-        }
+        return {
+            id:            node.id,
+            name:          node.name,
+            node_type:     node.nodeType as string,
+            k8s_namespace: node.namespace ?? 'default',
+            is_external:   isExternal,
 
-        return prompt;
+            language:         ms?.language  ?? spec.language as string | undefined,
+            framework:        ms?.framework ?? spec.framework as string | undefined,
+            container_image:  ms?.image     ?? spec.image as string | undefined,
+            replicas:  db?.replicaCount ?? ca?.replicaCount ?? mq?.replicaCount ?? spec.replicas as number | undefined,
+            ports: (
+                ms?.ports ??
+                (db?.port ? [db.port] :
+                 ca?.port ? [ca.port] :
+                 mq?.port ? [mq.port] :
+                 mon?.port ? [mon.port] :
+                 gw?.port ? [gw.port] :
+                 px?.port ? [px.port] :
+                 lb?.port ? [lb.port] :
+                 spec.ports ?? [])
+            ) as number[],
+
+            engine:        db?.engine  ?? ca?.engine  ?? mq?.engine  ?? spec.engine as string | undefined,
+            version:       db?.version ?? ca?.version ?? mq?.version ?? ms?.version ?? mon?.version ?? gw?.version ?? px?.version ?? lb?.version ?? spec.version as string | undefined,
+            storage_size:  db?.storageSize  ?? mon?.storageSize  ?? spec.storage_size as string | undefined,
+            storage_class: db?.storageClass ?? spec.storage_class as string | undefined,
+            max_memory:    ca?.maxMemory    ?? spec.max_memory as string | undefined,
+            persistence:   ca?.persistenceEnabled ?? spec.persistence_enabled as boolean | undefined,
+            cluster_mode:  ca?.clusterMode  ?? spec.cluster_mode as boolean | undefined,
+
+            partitions:         mq?.partitions        ?? spec.partitions as number | undefined,
+            replication_factor: mq?.replicationFactor ?? spec.replication_factor as number | undefined,
+            management_port:    spec.management_port as number | undefined,
+
+            kind:               (px?.proxyType ?? lb?.loadBalancerType ?? mon?.monitoringType ?? gw?.gatewayType ?? spec.kind) as string | undefined,
+            algorithm:          lb?.algorithm ?? spec.algorithm as string | undefined,
+            upstreams:          (px?.upstreams ?? gw?.upstreams ?? spec.upstreams ?? []) as string[],
+            backends:           (lb?.backends  ?? spec.backends  ?? []) as string[],
+            routes:             (gw?.routes    ?? spec.routes    ?? []) as string[],
+            domains:            (gw?.domains   ?? spec.domains   ?? []) as string[],
+            tls_enabled:        px?.tlsEnabled  ?? gw?.tlsEnabled  ?? lb?.tlsEnabled  ?? spec.tls_enabled as boolean | undefined,
+            auth_enabled:       gw?.authEnabled ?? mon?.authEnabled ?? spec.auth_enabled as boolean | undefined,
+            cors_enabled:       gw?.corsEnabled ?? spec.cors_enabled as boolean | undefined,
+            rate_limit_enabled: px?.rateLimitEnabled ?? gw?.rateLimitEnabled ?? spec.rate_limit_enabled as boolean | undefined,
+
+            scrape_interval:   mon?.scrapeInterval       ?? spec.scrape_interval as string | undefined,
+            retention_period:  mon?.retentionPeriod      ?? spec.retention_period as string | undefined,
+            alertmanager:      mon?.alertmanagerEnabled  ?? spec.alertmanager_enabled as boolean | undefined,
+            health_check_path: lb?.healthCheckPath ?? px?.healthCheckPath ?? gw?.healthCheckPath ?? spec.health_check_path as string | undefined,
+
+            external_host:     (spec.host ?? spec.endpoint ?? spec.dns_name ?? spec.url) as string | undefined,
+            external_provider: spec.provider as string | undefined,
+
+            env_vars:     envVars,
+            resources:    spec.resources ? JSON.stringify(spec.resources) : undefined,
+            secret_names: secretsArray.map(s => s.name).filter(Boolean),
+        };
     }
 }
 
