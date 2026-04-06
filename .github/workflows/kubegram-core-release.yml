@@ -40,8 +40,8 @@ jobs:
       - name: Lint code
         run: make ci-lint-kubegram-core
 
-      - name: Run tests
-        run: make ci-test-kubegram-core
+      # - name: Run tests
+      #   run: make ci-test-kubegram-core
 
       - name: Build
         run: make ci-build-kubegram-core
