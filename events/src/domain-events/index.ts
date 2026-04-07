@@ -1,30 +1,34 @@
 import { randomUUID } from 'node:crypto';
 
-export interface DomainEventJSON {
+export interface DomainEventJSON<T = unknown> {
   id: string;
   type: string;
   occurredOn: string;
+  data: T;
   aggregateId?: string;
   version: number;
   metadata?: Record<string, unknown>;
 }
 
-export abstract class DomainEvent {
+export abstract class DomainEvent<T = unknown> {
   readonly id: string;
   readonly occurredOn: Date;
   readonly type: string;
   readonly aggregateId?: string;
   readonly version: number = 1;
   readonly metadata?: Record<string, unknown>;
-
+  readonly data: T;
+  
   constructor(
     type: string,
+    id: string,
+    data: T,
     aggregateId?: string,
-    metadata?: Record<string, unknown>,
-    id?: string
+    metadata?: Record<string, unknown>
   ) {
-    this.id = id ?? randomUUID();
+    this.id = id;
     this.type = type;
+    this.data = data;
     this.occurredOn = new Date();
     if (aggregateId !== undefined) {
       this.aggregateId = aggregateId;
@@ -34,12 +38,13 @@ export abstract class DomainEvent {
     }
   }
 
-  toJSON(): DomainEventJSON {
-    const result: DomainEventJSON = {
+  toJSON(): DomainEventJSON<T> {
+    const result: DomainEventJSON<T> = {
       id: this.id,
       type: this.type,
       occurredOn: this.occurredOn.toISOString(),
       version: this.version,
+      data: this.data,
     };
     if (this.aggregateId !== undefined) {
       result.aggregateId = this.aggregateId;
