@@ -20,7 +20,7 @@ $ pnpm add @boundaryml/baml
 
 import type { Image, Audio, Pdf, Video } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
-import type {  GraphContext,  ManifestItem,  ManifestsResponse,  NodeContext,  RAGContextInput,  UserContextInput } from "./types"
+import type {  GraphContext,  ManifestItem,  ManifestsResponse,  NodeContext,  OpenApiPathEntry,  RAGContextInput,  TestCaseSummary,  TestResultSummary,  UserContextInput,  ValidationAnalysisResponse,  ValidationStats,  ValidationTestCaseOutput,  ValidationTestCasesResponse } from "./types"
 import type * as types from "./types"
 
 /******************************************************************************
@@ -96,12 +96,48 @@ export namespace partial_types {
       resources?: string | null
       secret_names: string[]
     }
+    export interface OpenApiPathEntry {
+      path?: string | null
+      methods?: string | null
+    }
     export interface RAGContextInput {
       context_text?: string | null
+    }
+    export interface TestCaseSummary {
+      correlationId?: string | null
+      method?: string | null
+      path?: string | null
+      expectedStatus?: number | null
+    }
+    export interface TestResultSummary {
+      correlationId?: string | null
+      success?: boolean | null
+      actualStatus?: number | null
+      responseTimeMs?: number | null
+      error?: string | null
     }
     export interface UserContextInput {
       system_messages: string[]
       user_requirements: string[]
       planning_context: string[]
+    }
+    export interface ValidationAnalysisResponse {
+      analysisText?: string | null
+    }
+    export interface ValidationStats {
+      total?: number | null
+      passed?: number | null
+      failed?: number | null
+      skipped?: number | null
+    }
+    export interface ValidationTestCaseOutput {
+      method?: string | null
+      path?: string | null
+      headers: Record<string, string>
+      body?: string | null
+      expectedStatus?: number | null
+    }
+    export interface ValidationTestCasesResponse {
+      testCases: ValidationTestCaseOutput[]
     }
 }

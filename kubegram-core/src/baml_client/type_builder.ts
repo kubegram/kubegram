@@ -35,16 +35,30 @@ export default class TypeBuilder {
     
     NodeContext: ClassViewer<'NodeContext', "id" | "name" | "node_type" | "k8s_namespace" | "is_external" | "language" | "framework" | "container_image" | "replicas" | "ports" | "engine" | "version" | "storage_size" | "storage_class" | "max_memory" | "persistence" | "cluster_mode" | "partitions" | "replication_factor" | "management_port" | "kind" | "algorithm" | "upstreams" | "backends" | "routes" | "domains" | "tls_enabled" | "auth_enabled" | "cors_enabled" | "rate_limit_enabled" | "scrape_interval" | "retention_period" | "alertmanager" | "health_check_path" | "external_host" | "external_provider" | "env_vars" | "resources" | "secret_names">;
     
+    OpenApiPathEntry: ClassViewer<'OpenApiPathEntry', "path" | "methods">;
+    
     RAGContextInput: ClassViewer<'RAGContextInput', "context_text">;
     
+    TestCaseSummary: ClassViewer<'TestCaseSummary', "correlationId" | "method" | "path" | "expectedStatus">;
+    
+    TestResultSummary: ClassViewer<'TestResultSummary', "correlationId" | "success" | "actualStatus" | "responseTimeMs" | "error">;
+    
     UserContextInput: ClassViewer<'UserContextInput', "system_messages" | "user_requirements" | "planning_context">;
+    
+    ValidationAnalysisResponse: ClassViewer<'ValidationAnalysisResponse', "analysisText">;
+    
+    ValidationStats: ClassViewer<'ValidationStats', "total" | "passed" | "failed" | "skipped">;
+    
+    ValidationTestCaseOutput: ClassViewer<'ValidationTestCaseOutput', "method" | "path" | "headers" | "body" | "expectedStatus">;
+    
+    ValidationTestCasesResponse: ClassViewer<'ValidationTestCasesResponse', "testCases">;
     
     
 
     constructor() {
         this.tb = new _TypeBuilder({
           classes: new Set([
-            "GraphContext","ManifestItem","ManifestsResponse","NodeContext","RAGContextInput","UserContextInput",
+            "GraphContext","ManifestItem","ManifestsResponse","NodeContext","OpenApiPathEntry","RAGContextInput","TestCaseSummary","TestResultSummary","UserContextInput","ValidationAnalysisResponse","ValidationStats","ValidationTestCaseOutput","ValidationTestCasesResponse",
           ]),
           enums: new Set([
             
@@ -68,12 +82,40 @@ export default class TypeBuilder {
           "id","name","node_type","k8s_namespace","is_external","language","framework","container_image","replicas","ports","engine","version","storage_size","storage_class","max_memory","persistence","cluster_mode","partitions","replication_factor","management_port","kind","algorithm","upstreams","backends","routes","domains","tls_enabled","auth_enabled","cors_enabled","rate_limit_enabled","scrape_interval","retention_period","alertmanager","health_check_path","external_host","external_provider","env_vars","resources","secret_names",
         ]);
         
+        this.OpenApiPathEntry = this.tb.classViewer("OpenApiPathEntry", [
+          "path","methods",
+        ]);
+        
         this.RAGContextInput = this.tb.classViewer("RAGContextInput", [
           "context_text",
         ]);
         
+        this.TestCaseSummary = this.tb.classViewer("TestCaseSummary", [
+          "correlationId","method","path","expectedStatus",
+        ]);
+        
+        this.TestResultSummary = this.tb.classViewer("TestResultSummary", [
+          "correlationId","success","actualStatus","responseTimeMs","error",
+        ]);
+        
         this.UserContextInput = this.tb.classViewer("UserContextInput", [
           "system_messages","user_requirements","planning_context",
+        ]);
+        
+        this.ValidationAnalysisResponse = this.tb.classViewer("ValidationAnalysisResponse", [
+          "analysisText",
+        ]);
+        
+        this.ValidationStats = this.tb.classViewer("ValidationStats", [
+          "total","passed","failed","skipped",
+        ]);
+        
+        this.ValidationTestCaseOutput = this.tb.classViewer("ValidationTestCaseOutput", [
+          "method","path","headers","body","expectedStatus",
+        ]);
+        
+        this.ValidationTestCasesResponse = this.tb.classViewer("ValidationTestCasesResponse", [
+          "testCases",
         ]);
         
         

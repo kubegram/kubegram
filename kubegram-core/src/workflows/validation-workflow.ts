@@ -19,6 +19,8 @@
 import { generateText } from "ai";
 import { type EventCache, type EventBus } from "@kubegram/events";
 import { v4 as uuidv4 } from "uuid";
+import { b } from "../baml_client/index.js";
+import type { ValidationTestCaseOutput } from "../baml_client/types.js";
 
 import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
@@ -200,7 +202,7 @@ export class ValidationWorkflow extends BaseWorkflow<
   /**
    * Step 2 — GENERATE_TEST_CASES
    *
-   * Uses an LLM to generate one representative HTTP test case per API path.
+   * Uses an LLM (via BAML) to generate one representative HTTP test case per API path.
    * Each case is assigned a UUID correlation ID that will be used as the
    * X-Kubegram-Validation-ID header so the sidecar's eBPF layer can track it.
    */
@@ -222,38 +224,30 @@ export class ValidationWorkflow extends BaseWorkflow<
       return { ...state, testCases: [], correlationIds: [] };
     }
 
-    const provider = createLLMProvider(state.modelProvider, state.modelName);
-
-    const prompt = [
-      "You are an API testing expert. Given the following OpenAPI path definitions,",
-      "generate one representative HTTP test request per path+method combination.",
-      "Return a JSON array where each element has:",
-      "  method: string (GET/POST/PUT/DELETE/PATCH)",
-      "  path: string (the exact path from the spec, no base URL)",
-      "  headers: object (any Content-Type or Accept headers needed)",
-      "  body: object|null (request body for POST/PUT/PATCH, null otherwise)",
-      "  expectedStatus: number (most common success HTTP status for this operation)",
-      "",
-      "OpenAPI paths:",
-      JSON.stringify(pathEntries, null, 2),
-      "",
-      "Return ONLY the JSON array, no markdown fences, no explanation.",
-    ].join("\n");
+    // Transform OpenAPI paths to BAML input format
+    const bamlPaths = pathEntries.flatMap(([path, methodsObj]) => {
+      if (!methodsObj || typeof methodsObj !== "object") return [];
+      const methods = Object.keys(methodsObj as Record<string, unknown>)
+        .filter((m) => ["get", "post", "put", "delete", "patch"].includes(m.toLowerCase()))
+        .map((m) => m.toUpperCase())
+        .join(",");
+      if (!methods) return [];
+      return [{ path, methods }];
+    });
 
     let testCases: ValidationTestCase[] = [];
 
     try {
-      const { text } = await generateText({
-        model: provider,
-        prompt,
-        temperature: 0,
-        maxOutputTokens: 2000,
-      });
+      const response = await b.GenerateValidationTestCases(bamlPaths);
 
-      const raw = JSON.parse(text.trim()) as Array<
-        Omit<ValidationTestCase, "correlationId">
-      >;
-      testCases = raw.map((tc) => ({ ...tc, correlationId: uuidv4() }));
+      testCases = response.testCases.map((tc: ValidationTestCaseOutput) => ({
+        correlationId: uuidv4(),
+        method: tc.method,
+        path: tc.path,
+        headers: tc.headers,
+        body: tc.body ? JSON.parse(tc.body) : null,
+        expectedStatus: tc.expectedStatus,
+      }));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       state = addValidationError(state, {
@@ -270,9 +264,9 @@ export class ValidationWorkflow extends BaseWorkflow<
   /**
    * Step 3 — TRIGGER_TESTS
    *
-   * Sends the generated test cases to kubegram-server, which proxies them to
-   * the sidecar pods for each service in the target namespace. The sidecar
-   * issues the actual HTTP requests with the X-Kubegram-Validation-ID header.
+   * Sends each test case to kubegram-server with its specific HTTP method.
+   * kubegram-server proxies to sidecar pods which issue the actual HTTP
+   * requests using the test case's method, path, headers, and body.
    */
   private async triggerTests(state: ValidationState): Promise<ValidationState> {
     console.info("Step: triggerTests");
@@ -291,35 +285,42 @@ export class ValidationWorkflow extends BaseWorkflow<
       return state;
     }
 
-    // POST test cases to kubegram-server internal proxy endpoint.
-    // kubegram-server will fan out to each sidecar pod in the namespace.
-    const url = `${state.serverBaseUrl}/api/internal/sidecar/validate`;
-    const body = JSON.stringify({
-      namespace: state.namespace,
-      testCases: state.testCases,
-      timeoutSeconds: 30,
-    });
+    // Send each test case individually with its specific HTTP method
+    const baseUrl = `${state.serverBaseUrl}/api/internal/sidecar/validate`;
+    const errors: string[] = [];
 
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
+    for (const testCase of state.testCases) {
+      const url = `${baseUrl}?namespace=${encodeURIComponent(state.namespace)}`;
+      const body = JSON.stringify({
+        correlationId: testCase.correlationId,
+        method: testCase.method,
+        path: testCase.path,
+        headers: testCase.headers,
+        body: testCase.body,
+        expectedStatus: testCase.expectedStatus,
       });
 
-      if (!res.ok) {
-        const text = await res.text();
-        state = addValidationError(state, {
-          field: "triggerTests",
-          message: `kubegram-server returned ${res.status}: ${text}`,
-          severity: "warning",
+      try {
+        const res = await fetch(url, {
+          method: "POST", // The proxy request is always POST, but the test case method is in the body
+          headers: { "Content-Type": "application/json" },
+          body,
         });
+
+        if (!res.ok) {
+          const text = await res.text();
+          errors.push(`${testCase.method} ${testCase.path}: ${res.status} ${text}`);
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        errors.push(`${testCase.method} ${testCase.path}: ${message}`);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    }
+
+    if (errors.length > 0) {
       state = addValidationError(state, {
         field: "triggerTests",
-        message: `Failed to reach kubegram-server: ${message}`,
+        message: `Failed to trigger ${errors.length} test(s): ${errors.join("; ")}`,
         severity: "warning",
       });
     }
@@ -381,7 +382,7 @@ export class ValidationWorkflow extends BaseWorkflow<
   /**
    * Step 5 — ANALYZE_RESULTS
    *
-   * Uses an LLM to produce a human-readable analysis of the test results
+   * Uses an LLM via BAML to produce a human-readable analysis of the test results
    * and computes the pass/fail summary.
    */
   private async analyzeResults(
@@ -398,35 +399,31 @@ export class ValidationWorkflow extends BaseWorkflow<
 
     if (total > 0) {
       try {
-        const provider = createLLMProvider(
-          state.modelProvider,
-          state.modelName,
+        // Transform data for BAML input
+        const bamlTestCases = state.testCases.map((tc) => ({
+          correlationId: tc.correlationId,
+          method: tc.method,
+          path: tc.path,
+          expectedStatus: tc.expectedStatus,
+        }));
+
+        const bamlResults = state.testResults.map((r) => ({
+          correlationId: r.correlationId,
+          success: r.success,
+          actualStatus: r.actualStatus,
+          responseTimeMs: r.responseTimeMs,
+          error: r.error ?? undefined,
+        }));
+
+        const stats = { total, passed, failed, skipped };
+
+        const response = await b.AnalyzeValidationResults(
+          bamlTestCases,
+          bamlResults,
+          stats,
         );
 
-        const prompt = [
-          "You are a Kubernetes infrastructure validation expert.",
-          "Analyze the following API validation test results and provide a concise summary",
-          "(3-5 sentences) covering: overall health, any failed tests and likely causes,",
-          "and recommended actions if failures exist.",
-          "",
-          "Test cases:",
-          JSON.stringify(state.testCases, null, 2),
-          "",
-          "Results:",
-          JSON.stringify(state.testResults, null, 2),
-          "",
-          "Summary stats:",
-          `  Total: ${total}, Passed: ${passed}, Failed: ${failed}, Skipped: ${skipped}`,
-        ].join("\n");
-
-        const { text } = await generateText({
-          model: provider,
-          prompt,
-          temperature: 0.2,
-          maxOutputTokens: 500,
-        });
-
-        analysisText = text.trim();
+        analysisText = response.analysisText;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.warn("LLM analysis failed, using default summary:", message);

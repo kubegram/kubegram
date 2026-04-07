@@ -115,8 +115,31 @@ export interface NodeContext {
   
 }
 
+export interface OpenApiPathEntry {
+  path: string
+  methods: string
+  
+}
+
 export interface RAGContextInput {
   context_text?: string | null
+  
+}
+
+export interface TestCaseSummary {
+  correlationId: string
+  method: string
+  path: string
+  expectedStatus: number
+  
+}
+
+export interface TestResultSummary {
+  correlationId: string
+  success: boolean
+  actualStatus: number
+  responseTimeMs: number
+  error?: string | null
   
 }
 
@@ -124,5 +147,32 @@ export interface UserContextInput {
   system_messages: string[]
   user_requirements: string[]
   planning_context: string[]
+  
+}
+
+export interface ValidationAnalysisResponse {
+  analysisText: string
+  
+}
+
+export interface ValidationStats {
+  total: number
+  passed: number
+  failed: number
+  skipped: number
+  
+}
+
+export interface ValidationTestCaseOutput {
+  method: string
+  path: string
+  headers: Record<string, string>
+  body?: string | null
+  expectedStatus: number
+  
+}
+
+export interface ValidationTestCasesResponse {
+  testCases: ValidationTestCaseOutput[]
   
 }

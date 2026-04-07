@@ -22,7 +22,7 @@ import type { BamlRuntime, BamlCtxManager, Image, Audio, Pdf, Video } from "@bou
 import { toBamlError, HTTPRequest, ClientRegistry } from "@boundaryml/baml"
 import type { Checked, Check } from "./types"
 import type * as types from "./types"
-import type {GraphContext, ManifestItem, ManifestsResponse, NodeContext, RAGContextInput, UserContextInput} from "./types"
+import type {GraphContext, ManifestItem, ManifestsResponse, NodeContext, OpenApiPathEntry, RAGContextInput, TestCaseSummary, TestResultSummary, UserContextInput, ValidationAnalysisResponse, ValidationStats, ValidationTestCaseOutput, ValidationTestCasesResponse} from "./types"
 import type TypeBuilder from "./type_builder"
 import type * as events from "./events"
 
@@ -37,6 +37,39 @@ type BamlCallOptions<EventsT = never> = {
 export class HttpRequest {
   constructor(private runtime: BamlRuntime, private ctxManager: BamlCtxManager) {}
 
+  
+  AnalyzeValidationResults(
+      testCases: types.TestCaseSummary[],testResults: types.TestResultSummary[],stats: types.ValidationStats,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const __rawEnv__ = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const __env__: Record<string, string> = Object.fromEntries(
+        Object.entries(__rawEnv__).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+
+      // Resolve client option to clientRegistry (client takes precedence)
+      let __clientRegistry__ = __baml_options__?.clientRegistry;
+      if (__baml_options__?.client) {
+        __clientRegistry__ = __clientRegistry__ || new ClientRegistry();
+        __clientRegistry__.setPrimary(__baml_options__.client);
+      }
+
+      return this.runtime.buildRequestSync(
+        "AnalyzeValidationResults",
+        {
+          "testCases": testCases,"testResults": testResults,"stats": stats
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __clientRegistry__,
+        false,
+        __env__,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
   
   GenerateKubernetesManifests(
       graph: types.GraphContext,nodes: types.NodeContext[],rag_context: types.RAGContextInput,user_context: types.UserContextInput,k8s_version: string,
@@ -59,6 +92,39 @@ export class HttpRequest {
         "GenerateKubernetesManifests",
         {
           "graph": graph,"nodes": nodes,"rag_context": rag_context,"user_context": user_context,"k8s_version": k8s_version
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __clientRegistry__,
+        false,
+        __env__,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateValidationTestCases(
+      paths: types.OpenApiPathEntry[],
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const __rawEnv__ = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const __env__: Record<string, string> = Object.fromEntries(
+        Object.entries(__rawEnv__).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+
+      // Resolve client option to clientRegistry (client takes precedence)
+      let __clientRegistry__ = __baml_options__?.clientRegistry;
+      if (__baml_options__?.client) {
+        __clientRegistry__ = __clientRegistry__ || new ClientRegistry();
+        __clientRegistry__.setPrimary(__baml_options__.client);
+      }
+
+      return this.runtime.buildRequestSync(
+        "GenerateValidationTestCases",
+        {
+          "paths": paths
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),
@@ -110,6 +176,39 @@ export class HttpStreamRequest {
   constructor(private runtime: BamlRuntime, private ctxManager: BamlCtxManager) {}
 
   
+  AnalyzeValidationResults(
+      testCases: types.TestCaseSummary[],testResults: types.TestResultSummary[],stats: types.ValidationStats,
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const __rawEnv__ = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const __env__: Record<string, string> = Object.fromEntries(
+        Object.entries(__rawEnv__).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+
+      // Resolve client option to clientRegistry (client takes precedence)
+      let __clientRegistry__ = __baml_options__?.clientRegistry;
+      if (__baml_options__?.client) {
+        __clientRegistry__ = __clientRegistry__ || new ClientRegistry();
+        __clientRegistry__.setPrimary(__baml_options__.client);
+      }
+
+      return this.runtime.buildRequestSync(
+        "AnalyzeValidationResults",
+        {
+          "testCases": testCases,"testResults": testResults,"stats": stats
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __clientRegistry__,
+        true,
+        __env__,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
   GenerateKubernetesManifests(
       graph: types.GraphContext,nodes: types.NodeContext[],rag_context: types.RAGContextInput,user_context: types.UserContextInput,k8s_version: string,
       __baml_options__?: BamlCallOptions<never>
@@ -131,6 +230,39 @@ export class HttpStreamRequest {
         "GenerateKubernetesManifests",
         {
           "graph": graph,"nodes": nodes,"rag_context": rag_context,"user_context": user_context,"k8s_version": k8s_version
+        },
+        this.ctxManager.cloneContext(),
+        __baml_options__?.tb?.__tb(),
+        __clientRegistry__,
+        true,
+        __env__,
+      )
+    } catch (error) {
+      throw toBamlError(error);
+    }
+  }
+  
+  GenerateValidationTestCases(
+      paths: types.OpenApiPathEntry[],
+      __baml_options__?: BamlCallOptions<never>
+  ): HTTPRequest {
+    try {
+      const __rawEnv__ = __baml_options__?.env ? { ...process.env, ...__baml_options__.env } : { ...process.env };
+      const __env__: Record<string, string> = Object.fromEntries(
+        Object.entries(__rawEnv__).filter(([_, value]) => value !== undefined) as [string, string][]
+      );
+
+      // Resolve client option to clientRegistry (client takes precedence)
+      let __clientRegistry__ = __baml_options__?.clientRegistry;
+      if (__baml_options__?.client) {
+        __clientRegistry__ = __clientRegistry__ || new ClientRegistry();
+        __clientRegistry__.setPrimary(__baml_options__.client);
+      }
+
+      return this.runtime.buildRequestSync(
+        "GenerateValidationTestCases",
+        {
+          "paths": paths
         },
         this.ctxManager.cloneContext(),
         __baml_options__?.tb?.__tb(),

@@ -15,6 +15,53 @@ class ManifestsResponse {
   manifests ManifestItem[]
 }
 
+// Validation workflow types
+
+class OpenApiPathEntry {
+  path    string @description("The API path e.g. /api/v1/users")
+  methods string @description("Comma-separated HTTP methods e.g. GET,POST,DELETE")
+}
+
+class ValidationTestCaseOutput {
+  method         string @description("HTTP method: GET, POST, PUT, DELETE, PATCH")
+  path           string @description("The exact path from the spec, no base URL")
+  headers        map<string, string> @description("Content-Type, Accept headers, etc.")
+  body           string? @description("JSON-encoded request body for POST/PUT/PATCH")
+  expectedStatus int    @description("Most common success HTTP status for this operation")
+}
+
+class ValidationTestCasesResponse {
+  testCases ValidationTestCaseOutput[]
+}
+
+// Validation analysis types
+
+class TestCaseSummary {
+  correlationId string
+  method        string
+  path          string
+  expectedStatus int
+}
+
+class TestResultSummary {
+  correlationId    string
+  success          bool
+  actualStatus     int
+  responseTimeMs   int
+  error           string?
+}
+
+class ValidationStats {
+  total   int
+  passed  int
+  failed  int
+  skipped int
+}
+
+class ValidationAnalysisResponse {
+  analysisText string @description("Concise 3-5 sentence analysis of validation results")
+}
+
 // Input types used by prompt templates
 
 class GraphContext {
