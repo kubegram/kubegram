@@ -48,7 +48,13 @@ export class SystemReminderEvent extends DomainEvent {
       userId: data.userId,
       sessionId: data.sessionId,
     };
-    super('system.reminder', data.reminderId, data, data.reminderId, combinedMetadata);
+    super(
+      'system.reminder',
+      data.reminderId,
+      data,
+      data.reminderId,
+      combinedMetadata
+    );
     this.reminderId = data.reminderId;
     this.prompt = data.prompt;
     this.context = data.context;

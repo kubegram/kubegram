@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 export interface DomainEventJSON<T = unknown> {
   id: string;
   type: string;
@@ -18,7 +16,7 @@ export abstract class DomainEvent<T = unknown> {
   readonly version: number = 1;
   readonly metadata?: Record<string, unknown>;
   readonly data: T;
-  
+
   constructor(
     type: string,
     id: string,
