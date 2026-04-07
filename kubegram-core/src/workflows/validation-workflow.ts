@@ -17,11 +17,10 @@
  */
 
 import { generateText } from "ai";
-import type { Redis } from "ioredis";
-import type { EventBus } from "@kubegram/events";
+import { type EventCache, type EventBus } from "@kubegram/events";
 import { v4 as uuidv4 } from "uuid";
 
-import { RedisCheckpointer } from "../types/checkpointer.js";
+import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
 import { createLLMProvider } from "../llm/providers.js";
 import type { Graph } from "../types/graph.js";
@@ -106,9 +105,9 @@ export class ValidationWorkflow extends BaseWorkflow<
 
   protected readonly channelPrefix = "validation";
 
-  constructor(redis: Redis, eventBus: EventBus) {
+  constructor(eventCache: EventCache, eventBus: EventBus) {
     super(
-      new RedisCheckpointer<ValidationState>(redis, "validation"),
+      new Checkpointer<ValidationState>(eventCache, "validation"),
       new WorkflowPubSub(eventBus),
     );
   }
@@ -481,11 +480,11 @@ export async function runValidationWorkflow(
   serverBaseUrl: string,
   threadId: string,
   context: WorkflowContext,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
   options?: ValidationWorkflowOptions,
 ): Promise<ValidationWorkflowResult> {
-  const workflow = new ValidationWorkflow(redis, eventBus);
+  const workflow = new ValidationWorkflow(eventCache, eventBus);
   return workflow.run(
     graph,
     namespace,
@@ -499,18 +498,18 @@ export async function runValidationWorkflow(
 
 export async function getValidationWorkflowStatus(
   threadId: string,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
 ): Promise<ValidationState | null> {
-  const workflow = new ValidationWorkflow(redis, eventBus);
+  const workflow = new ValidationWorkflow(eventCache, eventBus);
   return workflow.getStatus(threadId);
 }
 
 export async function cancelValidationWorkflow(
   threadId: string,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
 ): Promise<boolean> {
-  const workflow = new ValidationWorkflow(redis, eventBus);
+  const workflow = new ValidationWorkflow(eventCache, eventBus);
   return workflow.cancel(threadId);
 }

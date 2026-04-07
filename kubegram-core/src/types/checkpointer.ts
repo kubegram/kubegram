@@ -1,9 +1,10 @@
 /**
  * Checkpointer for workflow state persistence
- * Uses ioredis via constructor injection (no global redisClient dependency).
+ * Uses EventCache via constructor injection (no Redis dependency).
  */
 
-import type { Redis } from "ioredis";
+import { DomainEvent, EventCache } from "@kubegram/events";
+import { BaseWorkflowState } from "./workflow";
 
 // Checkpoint status interface
 export interface CheckpointStatus {
@@ -20,32 +21,42 @@ export interface CheckpointStatus {
 // Checkpoint metadata interface
 export type CheckpointMetadata = CheckpointStatus;
 
-/**
- * Redis checkpointer for workflow state management.
- * Accepts an ioredis client via the constructor — callers are responsible for
- * creating and connecting the Redis instance.
- *
- * Key layout:
- *   {prefix}:state:{threadId}    — full state snapshot
- *   {prefix}:metadata:{threadId} — combined metadata
- *   {prefix}:status:{threadId}   — lightweight status-only record
- *   {prefix}:state:threads        — SMEMBERS set of active thread IDs
- */
-export class RedisCheckpointer<T = unknown> {
-  private readonly statePrefix: string;
-  private readonly metadataPrefix: string;
-  private readonly statusPrefix: string;
-  private readonly threadsKey: string;
-
+export class CheckpointEvent<T extends BaseWorkflowState> extends DomainEvent<
+  CheckpointStatus | T
+> {
   constructor(
-    private readonly redis: Redis,
+    threadId: string,
+    type: "status" | "state",
+    data: CheckpointStatus | T,
     keyPrefix: string = "checkpoint",
   ) {
-    this.statePrefix = `${keyPrefix}:state:`;
-    this.metadataPrefix = `${keyPrefix}:metadata:`;
-    this.statusPrefix = `${keyPrefix}:status:`;
-    this.threadsKey = `${keyPrefix}:state:threads`;
+    super(
+      `${keyPrefix}:${type}`,
+      `${keyPrefix}:${type}:${threadId}`,
+      data,
+      threadId,
+    );
   }
+}
+
+/**
+ * EventCache-backed checkpointer for workflow state management.
+ * Accepts an EventCache instance via the constructor — callers are responsible
+ * for creating and configuring the EventCache.
+ *
+ * Key layout (event IDs):
+ *   {keyPrefix}:state:{threadId}   — full state snapshot
+ *   {keyPrefix}:status:{threadId}  — lightweight status-only record
+ *
+ * Event types:
+ *   {keyPrefix}:state   — used to filter state events
+ *   {keyPrefix}:status  — used to filter status events (listThreads)
+ */
+export class Checkpointer<T extends BaseWorkflowState> {
+  constructor(
+    private readonly eventCache: EventCache,
+    private readonly keyPrefix: string = "checkpoint",
+  ) {}
 
   /**
    * Save workflow state with metadata.
@@ -59,6 +70,7 @@ export class RedisCheckpointer<T = unknown> {
   ): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
+      const existingStatus = await this.getStatus(threadId);
 
       const stateData = {
         state,
@@ -72,39 +84,23 @@ export class RedisCheckpointer<T = unknown> {
         threadId,
         step,
         status,
-        createdAt: timestamp,
+        createdAt: existingStatus?.createdAt ?? timestamp,
         updatedAt: timestamp,
         totalSteps: metadata?.totalSteps,
         currentStep: metadata?.currentStep,
       };
 
-      // Three keys are written atomically via pipeline (same 24-hour TTL):
-      //  statePrefix:    full state blob — read by load() for workflow resumption.
-      //  metadataPrefix: same blob plus metadata — read by loadWithMetadata() for
-      //                  richer inspection without re-serialising the full state.
-      //  statusPrefix:   lightweight status record — read by getStatus() for polling.
-      const pipeline = this.redis.pipeline();
-      pipeline.set(
-        this.statePrefix + threadId,
-        JSON.stringify(stateData),
-        "EX",
-        86400,
+      await this.eventCache.add(
+        new CheckpointEvent(
+          threadId,
+          "state",
+          stateData as unknown as T,
+          this.keyPrefix,
+        ),
       );
-      pipeline.set(
-        this.metadataPrefix + threadId,
-        JSON.stringify(stateData),
-        "EX",
-        86400,
+      await this.eventCache.add(
+        new CheckpointEvent(threadId, "status", statusData, this.keyPrefix),
       );
-      pipeline.set(
-        this.statusPrefix + threadId,
-        JSON.stringify(statusData),
-        "EX",
-        86400,
-      );
-      pipeline.sadd(this.threadsKey, threadId);
-
-      await pipeline.exec();
     } catch (error) {
       console.error(`Failed to save checkpoint for thread ${threadId}:`, error);
       throw error;
@@ -116,9 +112,11 @@ export class RedisCheckpointer<T = unknown> {
    */
   async load(threadId: string): Promise<T | null> {
     try {
-      const data = await this.redis.get(this.statePrefix + threadId);
-      if (!data) return null;
-      return (JSON.parse(data) as { state: T }).state;
+      const event = await this.eventCache.get(
+        `${this.keyPrefix}:state:${threadId}`,
+      );
+      if (!event) return null;
+      return (event.data as { state: T }).state;
     } catch (error) {
       console.error(`Failed to load checkpoint for thread ${threadId}:`, error);
       return null;
@@ -137,9 +135,17 @@ export class RedisCheckpointer<T = unknown> {
     metadata?: unknown;
   } | null> {
     try {
-      const data = await this.redis.get(this.metadataPrefix + threadId);
-      if (!data) return null;
-      return JSON.parse(data);
+      const event = await this.eventCache.get(
+        `${this.keyPrefix}:state:${threadId}`,
+      );
+      if (!event) return null;
+      return event.data as {
+        state: T;
+        step: string;
+        status: CheckpointStatus["status"];
+        updatedAt: string;
+        error?: string;
+      };
     } catch (error) {
       console.error(
         `Failed to load checkpoint metadata for thread ${threadId}:`,
@@ -154,9 +160,11 @@ export class RedisCheckpointer<T = unknown> {
    */
   async getStatus(threadId: string): Promise<CheckpointStatus | null> {
     try {
-      const data = await this.redis.get(this.statusPrefix + threadId);
-      if (!data) return null;
-      return JSON.parse(data) as CheckpointStatus;
+      const event = await this.eventCache.get(
+        `${this.keyPrefix}:status:${threadId}`,
+      );
+      if (!event) return null;
+      return event.data as CheckpointStatus;
     } catch (error) {
       console.error(
         `Failed to get checkpoint status for thread ${threadId}:`,
@@ -177,56 +185,28 @@ export class RedisCheckpointer<T = unknown> {
   ): Promise<void> {
     try {
       const timestamp = new Date().toISOString();
-      const raw = await this.redis.get(this.statusPrefix + threadId);
-      let statusData: CheckpointStatus;
+      const existing = await this.getStatus(threadId);
 
-      if (raw) {
-        statusData = JSON.parse(raw);
-        statusData.status = status;
-        statusData.updatedAt = timestamp;
-        if (step) statusData.step = step;
-        if (error) statusData.error = error;
-      } else {
-        statusData = {
-          threadId,
-          step: step ?? "unknown",
-          status,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-        if (error) statusData.error = error;
-      }
+      const statusData: CheckpointStatus = existing
+        ? {
+            ...existing,
+            status,
+            updatedAt: timestamp,
+            ...(step && { step }),
+            ...(error && { error }),
+          }
+        : {
+            threadId,
+            step: step ?? "unknown",
+            status,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            ...(error && { error }),
+          };
 
-      await this.redis.set(
-        this.statusPrefix + threadId,
-        JSON.stringify(statusData),
-        "EX",
-        86400,
+      await this.eventCache.add(
+        new CheckpointEvent(threadId, "status", statusData, this.keyPrefix),
       );
-
-      // Keep metadata in sync if it exists
-      const metaExists = await this.redis.exists(
-        this.metadataPrefix + threadId,
-      );
-      if (metaExists) {
-        const meta = await this.loadWithMetadata(threadId);
-        if (meta) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (meta as any).status = status;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (meta as any).updatedAt = timestamp;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (step) (meta as any).step = step;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (error) (meta as any).error = error;
-          await this.redis.set(
-            this.metadataPrefix + threadId,
-            JSON.stringify(meta),
-            "EX",
-            86400,
-          );
-        }
-      }
     } catch (error) {
       console.error(
         `Failed to update checkpoint status for thread ${threadId}:`,
@@ -241,7 +221,12 @@ export class RedisCheckpointer<T = unknown> {
    */
   async listThreads(): Promise<string[]> {
     try {
-      return (await this.redis.smembers(this.threadsKey)) as string[];
+      const events = await this.eventCache.getEvents({
+        eventType: `${this.keyPrefix}:status`,
+      });
+      return [
+        ...new Set(events.map((e) => e.aggregateId).filter(Boolean)),
+      ] as string[];
     } catch (error) {
       console.error("Failed to list checkpoint threads:", error);
       return [];
@@ -253,13 +238,11 @@ export class RedisCheckpointer<T = unknown> {
    */
   async delete(threadId: string): Promise<boolean> {
     try {
-      const pipeline = this.redis.pipeline();
-      pipeline.del(this.statePrefix + threadId);
-      pipeline.del(this.metadataPrefix + threadId);
-      pipeline.del(this.statusPrefix + threadId);
-      pipeline.srem(this.threadsKey, threadId);
-      const results = await pipeline.exec();
-      return (results?.filter(([err]) => !err).length ?? 0) > 0;
+      const [r1, r2] = await Promise.all([
+        this.eventCache.remove(`${this.keyPrefix}:state:${threadId}`),
+        this.eventCache.remove(`${this.keyPrefix}:status:${threadId}`),
+      ]);
+      return r1 || r2;
     } catch (error) {
       console.error(
         `Failed to delete checkpoint for thread ${threadId}:`,
@@ -272,7 +255,7 @@ export class RedisCheckpointer<T = unknown> {
   /**
    * Remove expired checkpoints older than maxAge seconds (default: 7 days).
    *
-   * Iterates all tracked thread IDs via SMEMBERS — O(n) on active thread count.
+   * Iterates all tracked thread IDs — O(n) on active thread count.
    * Suitable for periodic maintenance tasks; do not call on hot paths.
    */
   async cleanup(maxAge: number = 604800): Promise<number> {

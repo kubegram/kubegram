@@ -1,149 +1,102 @@
 /**
  * Typed domain events for the code generation workflow.
  *
- * These classes extend DomainEvent and can be published directly to EventBus.
+ * These classes extend DomainEvent from @kubegram/events and can be
+ * published directly to EventBus.
  */
 
 import { v4 as uuidv4 } from "uuid";
+import { DomainEvent } from "@kubegram/events";
 
-/** JSON representation of a domain event */
-export interface DomainEventJSON {
-  id: string;
-  type: string;
-  occurredOn: string;
-  version: number;
-  aggregateId?: string;
-  metadata?: Record<string, unknown>;
+// ---------------------------------------------------------------------------
+// Data interfaces
+// ---------------------------------------------------------------------------
+
+interface CodegenStartedEventData {
+  jobId: string;
+  userId: string;
+  graphId: string;
+  graphData: unknown;
+  options: { provider?: string; model?: string };
 }
 
-/** Base interface for all domain events */
-export interface DomainEvent {
-  id: string;
-  type: string;
-  occurredOn: Date;
-  version: number;
-  aggregateId?: string;
-  metadata?: Record<string, unknown>;
-  toJSON(): DomainEventJSON;
+interface CodegenProgressEventData {
+  jobId: string;
+  step: string;
+  progress: number;
+  message: string;
 }
 
-/** Abstract base class for all domain events */
-abstract class BaseDomainEvent implements DomainEvent {
-  id: string;
-  type: string;
-  occurredOn: Date;
-  version: number;
-  aggregateId?: string;
-  metadata?: Record<string, unknown>;
-
-  constructor(
-    type: string,
-    aggregateId?: string,
-    metadata?: Record<string, unknown>,
-  ) {
-    this.id = uuidv4();
-    this.type = type;
-    this.occurredOn = new Date();
-    this.version = 1;
-    this.aggregateId = aggregateId;
-    this.metadata = metadata;
-  }
-
-  toJSON(): DomainEventJSON {
-    return {
-      id: this.id,
-      type: this.type,
-      occurredOn: this.occurredOn.toISOString(),
-      version: this.version,
-      aggregateId: this.aggregateId,
-      metadata: this.metadata,
-    };
-  }
+interface CodegenCompletedEventData {
+  jobId: string;
+  manifests: unknown[];
+  graphId: string;
+  processingTime: number;
 }
+
+interface CodegenFailedEventData {
+  jobId: string;
+  error: string;
+  step?: string;
+  retryable?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Event classes
+// ---------------------------------------------------------------------------
 
 /** Fired when a codegen job is accepted and enters the queue. */
-export class CodegenStartedEvent extends BaseDomainEvent {
+export class CodegenStartedEvent extends DomainEvent<CodegenStartedEventData> {
   constructor(
-    public readonly jobId: string,
-    public readonly userId: string,
-    public readonly graphId: string,
-    public readonly graphData: unknown,
-    public readonly options: { provider?: string; model?: string } = {},
+    jobId: string,
+    userId: string,
+    graphId: string,
+    graphData: unknown,
+    options: { provider?: string; model?: string } = {},
     aggregateId?: string,
   ) {
-    super("codegen.started", aggregateId ?? jobId, {
-      jobId,
-      userId,
-      graphId,
-      options,
-    });
-  }
-
-  override toJSON(): DomainEventJSON {
-    return {
-      ...super.toJSON(),
-      jobId: this.jobId,
-      userId: this.userId,
-      graphId: this.graphId,
-      graphData: this.graphData,
-      options: this.options,
-    } as DomainEventJSON;
+    super(
+      "codegen.started",
+      uuidv4(),
+      { jobId, userId, graphId, graphData, options },
+      aggregateId ?? jobId,
+    );
   }
 }
 
 /** Fired by the workflow at each step boundary to report incremental progress. */
-export class CodegenProgressEvent extends BaseDomainEvent {
+export class CodegenProgressEvent extends DomainEvent<CodegenProgressEventData> {
   constructor(
-    public readonly jobId: string,
-    public readonly step: string,
-    public readonly progress: number,
-    public readonly message: string,
+    jobId: string,
+    step: string,
+    progress: number,
+    message: string,
     aggregateId?: string,
   ) {
-    super("codegen.progress", aggregateId ?? jobId, {
-      jobId,
-      step,
-      progress,
-      message,
-    });
-  }
-
-  override toJSON(): DomainEventJSON {
-    return {
-      ...super.toJSON(),
-      jobId: this.jobId,
-      step: this.step,
-      progress: this.progress,
-      message: this.message,
-    } as DomainEventJSON;
+    super(
+      "codegen.progress",
+      uuidv4(),
+      { jobId, step, progress, message },
+      aggregateId ?? jobId,
+    );
   }
 }
 
 /** Fired when all manifests have been generated and validated successfully. */
-export class CodegenCompletedEvent extends BaseDomainEvent {
+export class CodegenCompletedEvent extends DomainEvent<CodegenCompletedEventData> {
   constructor(
-    public readonly jobId: string,
-    public readonly manifests: unknown[],
-    public readonly graphId: string,
-    public readonly processingTime: number,
+    jobId: string,
+    manifests: unknown[],
+    graphId: string,
+    processingTime: number,
     aggregateId?: string,
   ) {
-    super("codegen.completed", aggregateId ?? jobId, {
-      jobId,
-      graphId,
-      manifestCount: manifests.length,
-      processingTime,
-    });
-  }
-
-  override toJSON(): DomainEventJSON {
-    return {
-      ...super.toJSON(),
-      jobId: this.jobId,
-      manifests: this.manifests,
-      graphId: this.graphId,
-      processingTime: this.processingTime,
-    } as DomainEventJSON;
+    super(
+      "codegen.completed",
+      uuidv4(),
+      { jobId, manifests, graphId, processingTime },
+      aggregateId ?? jobId,
+    );
   }
 }
 
@@ -151,29 +104,19 @@ export class CodegenCompletedEvent extends BaseDomainEvent {
  * Fired when the workflow fails at any step.
  * `retryable` signals to the caller whether automatic retry is safe.
  */
-export class CodegenFailedEvent extends BaseDomainEvent {
+export class CodegenFailedEvent extends DomainEvent<CodegenFailedEventData> {
   constructor(
-    public readonly jobId: string,
-    public readonly error: string,
-    public readonly step?: string,
-    public readonly retryable?: boolean,
+    jobId: string,
+    error: string,
+    step?: string,
+    retryable?: boolean,
     aggregateId?: string,
   ) {
-    super("codegen.failed", aggregateId ?? jobId, {
-      jobId,
-      step,
-      error,
-      retryable,
-    });
-  }
-
-  override toJSON(): DomainEventJSON {
-    return {
-      ...super.toJSON(),
-      jobId: this.jobId,
-      error: this.error,
-      step: this.step,
-      retryable: this.retryable,
-    } as DomainEventJSON;
+    super(
+      "codegen.failed",
+      uuidv4(),
+      { jobId, error, step, retryable },
+      aggregateId ?? jobId,
+    );
   }
 }

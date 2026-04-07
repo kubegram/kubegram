@@ -1,6 +1,6 @@
 {
   "name": "@kubegram/kubegram-core",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
     "access": "public"
@@ -55,6 +55,7 @@
   "devDependencies": {
     "@types/node": "^24.10.13",
     "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.42.0",
     "@typescript-eslint/parser": "^8.42.0",
     "eslint": "^9.0.0",
@@ -68,10 +69,11 @@
     "@ai-sdk/google": "^3.0.43",
     "@ai-sdk/openai": "^3.0.41",
     "@boundaryml/baml": "^0.220.0",
-    "@kubegram/events": "^1.0.0",
+    "@kubegram/events": "^1.0.1",
     "ai": "^6.0.116",
     "ioredis": "^5.4.2",
     "uuid": "^11.1.0",
+    "ws": "^8.20.0",
     "zod": "^3.23.8"
   },
   "peerDependencies": {

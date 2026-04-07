@@ -10,10 +10,9 @@
 
 import { generateText } from "ai";
 import { v4 as uuidv4 } from "uuid";
-import type { Redis } from "ioredis";
-import type { EventBus } from "@kubegram/events";
+import { type EventCache, type EventBus } from "@kubegram/events";
 
-import { RedisCheckpointer } from "../types/checkpointer.js";
+import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
 import { createLLMProvider } from "../llm/providers.js";
 import type { LLMRouter } from "../llm/router.js";
@@ -72,12 +71,12 @@ export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
   private readonly eventBus: EventBus;
 
   constructor(
-    redis: Redis,
+    eventCache: EventCache,
     eventBus: EventBus,
     options?: { router?: LLMRouter },
   ) {
     super(
-      new RedisCheckpointer<PlanState>(redis, "plan"),
+      new Checkpointer<PlanState>(eventCache, "plan"),
       new WorkflowPubSub(eventBus),
     );
     this.router = options?.router;
@@ -275,28 +274,28 @@ export async function runPlanWorkflow(
   userRequest: string,
   threadId: string,
   context: WorkflowContext,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
   options: PlanWorkflowOptions,
 ): Promise<PlanWorkflowResult> {
-  const workflow = new PlanWorkflow(redis, eventBus);
+  const workflow = new PlanWorkflow(eventCache, eventBus);
   return workflow.run(userRequest, threadId, context, options);
 }
 
 export async function getPlanWorkflowStatus(
   threadId: string,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
 ): Promise<PlanState | null> {
-  const workflow = new PlanWorkflow(redis, eventBus);
+  const workflow = new PlanWorkflow(eventCache, eventBus);
   return workflow.getStatus(threadId);
 }
 
 export async function cancelPlanWorkflow(
   threadId: string,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
 ): Promise<boolean> {
-  const workflow = new PlanWorkflow(redis, eventBus);
+  const workflow = new PlanWorkflow(eventCache, eventBus);
   return workflow.cancel(threadId);
 }

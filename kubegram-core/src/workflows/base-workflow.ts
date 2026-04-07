@@ -11,7 +11,7 @@
  * Dependencies replaced: PubSub → WorkflowPubSub, checkpointer import path updated.
  */
 
-import { RedisCheckpointer } from "../types/checkpointer.js";
+import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
 import {
   BaseWorkflowStatus,
@@ -42,7 +42,7 @@ export abstract class BaseWorkflow<
   protected abstract readonly channelPrefix: string;
 
   constructor(
-    protected readonly checkpointer: RedisCheckpointer<State>,
+    protected readonly checkpointer: Checkpointer<State>,
     protected readonly pubsub: WorkflowPubSub,
   ) {}
 
@@ -173,6 +173,17 @@ export abstract class BaseWorkflow<
   protected getNextStep(_state: State, currentStep: Step): Step | null {
     const idx = this.steps.indexOf(currentStep);
     return idx >= 0 && idx < this.steps.length - 1 ? this.steps[idx + 1] : null;
+  }
+
+  protected injectStep(
+    _state: State,
+    currentStep: Step,
+    injectedStep: Step,
+  ): void {
+    const idx = this.steps.indexOf(currentStep);
+    if (idx >= 0 && idx < this.steps.length - 1) {
+      this.steps.splice(idx + 1, 0, injectedStep);
+    }
   }
 
   /** Whether to retry after a step failure. */

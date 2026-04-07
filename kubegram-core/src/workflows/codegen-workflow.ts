@@ -11,10 +11,9 @@
  *    replacing kuberag's internal singletons.
  */
 
-import type { Redis } from "ioredis";
-import type { EventBus } from "@kubegram/events";
+import { type EventCache, type EventBus } from "@kubegram/events";
 
-import { RedisCheckpointer } from "../types/checkpointer.js";
+import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
 import type { LLMRouter } from "../llm/router.js";
 import { buildClientRegistry } from "../llm/baml-registry.js";
@@ -102,12 +101,12 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
   private readonly eventBus: EventBus;
 
   constructor(
-    redis: Redis,
+    eventCache: EventCache,
     eventBus: EventBus,
     options?: { ragContextService?: RAGContextService; router?: LLMRouter },
   ) {
     super(
-      new RedisCheckpointer<CodegenState>(redis, "codegen"),
+      new Checkpointer<CodegenState>(eventCache, "codegen"),
       new WorkflowPubSub(eventBus),
     );
     this.ragContextService = options?.ragContextService;
@@ -646,29 +645,31 @@ export async function runCodegenWorkflow(
   graph: Graph,
   threadId: string,
   context: WorkflowContext,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
   options?: CodegenWorkflowOptions & { ragContextService?: RAGContextService },
 ): Promise<CodegenWorkflowResult> {
   const { ragContextService, ...workflowOptions } = options ?? {};
-  const workflow = new CodegenWorkflow(redis, eventBus, { ragContextService });
+  const workflow = new CodegenWorkflow(eventCache, eventBus, {
+    ragContextService,
+  });
   return workflow.run(graph, threadId, context, workflowOptions);
 }
 
 export async function getCodegenWorkflowStatus(
   threadId: string,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
 ): Promise<CodegenState | null> {
-  const workflow = new CodegenWorkflow(redis, eventBus);
+  const workflow = new CodegenWorkflow(eventCache, eventBus);
   return workflow.getStatus(threadId);
 }
 
 export async function cancelCodegenWorkflow(
   threadId: string,
-  redis: Redis,
+  eventCache: EventCache,
   eventBus: EventBus,
 ): Promise<boolean> {
-  const workflow = new CodegenWorkflow(redis, eventBus);
+  const workflow = new CodegenWorkflow(eventCache, eventBus);
   return workflow.cancel(threadId);
 }

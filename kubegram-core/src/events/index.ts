@@ -5,9 +5,6 @@
  * from both codegen and plan modules.
  */
 
-// Base domain event interfaces (from codegen module - shared definition)
-export type { DomainEvent, DomainEventJSON } from "./codegen.js";
-
 // Codegen events
 export {
   CodegenStartedEvent,
