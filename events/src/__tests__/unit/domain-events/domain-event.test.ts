@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   describe,
   it,
@@ -19,14 +20,17 @@ describe('DomainEvent', () => {
       const eventType = 'test.event';
       const aggregateId = 'test-aggregate';
       const metadata = { source: 'test' };
+      const data = { payload: 'test-data' };
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<typeof data> {
         constructor(
           type: string,
           aggregateId?: string,
-          metadata?: Record<string, unknown>
+          metadata?: Record<string, unknown>,
+          id?: string
         ) {
-          super(type, aggregateId, metadata);
+          const eventId = id ?? 'generated-id';
+          super(type, eventId, data, aggregateId, metadata);
         }
       }
 
@@ -38,12 +42,16 @@ describe('DomainEvent', () => {
       expect(event.id).toBeDefined();
       expect(event.occurredOn).toBeInstanceOf(Date);
       expect(event.version).toBe(1);
+      expect(event.data).toEqual(data);
     });
 
     it('should generate unique UUID for each event', () => {
-      class TestEvent extends DomainEvent {
+      const data = { test: true };
+
+      class TestEvent extends DomainEvent<typeof data> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, data);
         }
       }
 
@@ -59,9 +67,12 @@ describe('DomainEvent', () => {
     });
 
     it('should use current timestamp', () => {
-      class TestEvent extends DomainEvent {
+      const data = { test: true };
+
+      class TestEvent extends DomainEvent<typeof data> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, data);
         }
       }
 
@@ -76,9 +87,12 @@ describe('DomainEvent', () => {
     });
 
     it('should have default version 1', () => {
-      class TestEvent extends DomainEvent {
+      const data = { test: true };
+
+      class TestEvent extends DomainEvent<typeof data> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, data);
         }
       }
 
@@ -89,12 +103,11 @@ describe('DomainEvent', () => {
 
   describe('toJSON', () => {
     it('should serialize to correct JSON format', () => {
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event', 'test-aggregate', {
-            source: 'test',
-            priority: 'high',
-          });
+          const id = randomUUID();
+          const data = { source: 'test', priority: 'high' };
+          super('test.event', id, data, 'test-aggregate');
         }
       }
 
@@ -107,14 +120,15 @@ describe('DomainEvent', () => {
         occurredOn: event.occurredOn.toISOString(),
         aggregateId: 'test-aggregate',
         version: 1,
-        metadata: { source: 'test', priority: 'high' },
+        data: { source: 'test', priority: 'high' },
       });
     });
 
     it('should omit undefined properties', () => {
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event', undefined, undefined);
+          const id = randomUUID();
+          super('test.event', id, {});
         }
       }
 
@@ -130,9 +144,10 @@ describe('DomainEvent', () => {
     it('should serialize date to ISO string', () => {
       const testDate = new Date('2024-01-01T12:00:00.000Z');
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, {});
         }
       }
 
@@ -236,9 +251,11 @@ describe('DomainEventDispatcher', () => {
       dispatcher.register('test.event', handler1);
       dispatcher.register('test.event', handler2);
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event', 'test-aggregate', { data: 'test' });
+          const id = randomUUID();
+          const data = { test: 'data' };
+          super('test.event', id, data, 'test-aggregate', data);
         }
       }
 
@@ -254,9 +271,10 @@ describe('DomainEventDispatcher', () => {
 
       dispatcher.register('test.event', handler);
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('different.event');
+          const id = randomUUID();
+          super('different.event', id, {});
         }
       }
 
@@ -275,9 +293,10 @@ describe('DomainEventDispatcher', () => {
       dispatcher.register('test.event', handler2);
       dispatcher.register('test.event', handler3);
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, {});
         }
       }
 
@@ -297,9 +316,10 @@ describe('DomainEventDispatcher', () => {
       dispatcher.register('test.event', errorHandler);
       dispatcher.register('test.event', goodHandler);
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, {});
         }
       }
 
@@ -319,9 +339,10 @@ describe('DomainEventDispatcher', () => {
 
       dispatcher.register('test.event', handler);
 
-      class TestEvent extends DomainEvent {
+      class TestEvent extends DomainEvent<Record<string, unknown>> {
         constructor(id: number) {
-          super('test.event', undefined, { eventId: id });
+          const eventId = randomUUID();
+          super('test.event', eventId, { eventId: id });
         }
       }
 
@@ -342,15 +363,17 @@ describe('DomainEventDispatcher', () => {
       dispatcher.register('test.event', handler1);
       dispatcher.register('different.event', handler2);
 
-      class TestEvent1 extends DomainEvent {
+      class TestEvent1 extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('test.event');
+          const id = randomUUID();
+          super('test.event', id, {});
         }
       }
 
-      class TestEvent2 extends DomainEvent {
+      class TestEvent2 extends DomainEvent<Record<string, unknown>> {
         constructor() {
-          super('different.event');
+          const id = randomUUID();
+          super('different.event', id, {});
         }
       }
 

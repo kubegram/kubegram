@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   describe,
   it,
@@ -12,14 +13,15 @@ import {
   type EventDeserializer,
 } from '../../../domain-events/event-registry';
 
-class TestEvent extends DomainEvent {
+class TestEvent extends DomainEvent<Record<string, unknown>> {
   constructor(
     type: string,
     aggregateId?: string,
     metadata?: Record<string, unknown>,
     id?: string
   ) {
-    super(type, aggregateId, metadata, id);
+    const eventId = id ?? randomUUID();
+    super(type, eventId, { aggregateId, metadata }, aggregateId, metadata);
   }
 }
 
@@ -121,14 +123,15 @@ describe('EventRegistry', () => {
     let testJson: DomainEventJSON;
 
     beforeEach(() => {
-      TestEvent = class extends DomainEvent {
+      TestEvent = class extends DomainEvent<Record<string, unknown>> {
         constructor(
           type: string,
           aggregateId?: string,
           metadata?: Record<string, unknown>,
           id?: string
         ) {
-          super(type, aggregateId, metadata, id);
+          const eventId = id ?? randomUUID();
+          super(type, eventId, { aggregateId, metadata }, aggregateId, metadata);
         }
       };
 
@@ -138,6 +141,7 @@ describe('EventRegistry', () => {
         occurredOn: '2024-01-01T12:00:00.000Z',
         aggregateId: 'test-aggregate-456',
         version: 1,
+        data: {},
         metadata: {
           source: 'test-factory',
           priority: 'high',
@@ -278,26 +282,32 @@ describe('EventRegistry', () => {
   });
 
   describe('integration with domain events', () => {
-    class TestEvent extends DomainEvent {
+    class TestEvent extends DomainEvent<Record<string, unknown>> {
+      readonly testData: string;
+
       constructor(
         type: string,
         aggregateId?: string,
         metadata?: Record<string, unknown>,
         id?: string,
-        public readonly testData?: string
+        testData?: string
       ) {
-        super(type, aggregateId, metadata, id);
+        const eventId = id ?? randomUUID();
+        const data = { testData: testData || 'default', ...metadata };
+        super(type, eventId, data, aggregateId, metadata);
+        this.testData = testData || 'default';
       }
     }
 
     it('should work with actual domain event classes', () => {
       const deserializer: EventDeserializer = (json: DomainEventJSON) => {
+        const testData = (json.data as any)?.testData || 'default';
         return new TestEvent(
           json.type,
-          undefined,
+          json.aggregateId,
           json.metadata,
           json.id,
-          (json.metadata as any)?.testData || 'default'
+          testData
         );
       };
 
@@ -308,7 +318,7 @@ describe('EventRegistry', () => {
         type: 'test.event',
         occurredOn: '2024-01-01T00:00:00.000Z',
         version: 1,
-        metadata: { testData: 'integration value' },
+        data: { testData: 'integration value' },
       } as any;
 
       const result = registry.deserialize(json);
@@ -318,21 +328,18 @@ describe('EventRegistry', () => {
     });
 
     it('should handle complex metadata', () => {
-      class ComplexEvent extends DomainEvent {
-        constructor(
-          public readonly complexData: {
-            nested: {
-              value: string;
-              count: number;
-            };
-          }
-        ) {
-          super('complex.event', undefined, { complexData });
+      class ComplexEvent extends DomainEvent<Record<string, unknown>> {
+        readonly complexData: { nested: { value: string; count: number } };
+
+        constructor(complexData: { nested: { value: string; count: number } }) {
+          const id = randomUUID();
+          super('complex.event', id, { complexData });
+          this.complexData = complexData;
         }
       }
 
       const deserializer: EventDeserializer = (json: DomainEventJSON) => {
-        return new ComplexEvent((json.metadata as any)?.complexData);
+        return new ComplexEvent((json.data as any)?.complexData);
       };
 
       registry.register('complex.event', deserializer);
@@ -342,7 +349,7 @@ describe('EventRegistry', () => {
         type: 'complex.event',
         occurredOn: '2024-01-01T00:00:00.000Z',
         version: 1,
-        metadata: {
+        data: {
           complexData: {
             nested: {
               value: 'deep value',

@@ -127,14 +127,15 @@ export class EventFactory {
 /**
  * Test implementation of DomainEvent for testing purposes
  */
-class TestDomainEvent extends DomainEvent {
+class TestDomainEvent extends DomainEvent<Record<string, unknown>> {
   constructor(
     type: string,
     aggregateId?: string,
     metadata?: Record<string, unknown>,
     id?: string
   ) {
-    super(type, aggregateId, metadata, id);
+    const eventId = id ?? randomUUID();
+    super(type, eventId, metadata ?? {}, aggregateId, metadata);
   }
 }
 
