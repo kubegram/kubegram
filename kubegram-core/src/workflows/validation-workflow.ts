@@ -16,7 +16,6 @@
  *  - EventBus      →  WorkflowPubSub (event fan-out)
  */
 
-import { generateText } from "ai";
 import { type EventCache, type EventBus } from "@kubegram/events";
 import { v4 as uuidv4 } from "uuid";
 import { b } from "../baml_client/index.js";
@@ -24,7 +23,6 @@ import type { ValidationTestCaseOutput } from "../baml_client/types.js";
 
 import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
-import { createLLMProvider } from "../llm/providers.js";
 import type { Graph } from "../types/graph.js";
 import type { StepHandler, WorkflowContext } from "../types/workflow.js";
 
@@ -228,7 +226,9 @@ export class ValidationWorkflow extends BaseWorkflow<
     const bamlPaths = pathEntries.flatMap(([path, methodsObj]) => {
       if (!methodsObj || typeof methodsObj !== "object") return [];
       const methods = Object.keys(methodsObj as Record<string, unknown>)
-        .filter((m) => ["get", "post", "put", "delete", "patch"].includes(m.toLowerCase()))
+        .filter((m) =>
+          ["get", "post", "put", "delete", "patch"].includes(m.toLowerCase()),
+        )
         .map((m) => m.toUpperCase())
         .join(",");
       if (!methods) return [];
@@ -309,7 +309,9 @@ export class ValidationWorkflow extends BaseWorkflow<
 
         if (!res.ok) {
           const text = await res.text();
-          errors.push(`${testCase.method} ${testCase.path}: ${res.status} ${text}`);
+          errors.push(
+            `${testCase.method} ${testCase.path}: ${res.status} ${text}`,
+          );
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

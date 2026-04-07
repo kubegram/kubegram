@@ -56,7 +56,8 @@ export interface ToolDefinition {
   inputSchema: Record<string, unknown>;
   handler: (
     service: MCPToolServiceContext,
-    params: unknown,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    params: any,
     context: WorkflowContext,
   ) => Promise<MCPToolResult>;
 }
