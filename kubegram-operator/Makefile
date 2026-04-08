@@ -57,9 +57,20 @@ deploy-argocd: ## Deploy Argo CD locally for testing
 setup-argocd-test: ## Setup Argo CD with test app and token
 	./scripts/setup_argocd.sh
 
+.PHONY: test-unit
+test-unit: ## Run unit and integration tests (no cluster required).
+	./scripts/test-unit.sh
+
+.PHONY: validate-helm
+validate-helm: ## Validate Helm chart (dependency update + lint + template + dry-run).
+	./scripts/validate-helm.sh
+
+.PHONY: ci
+ci: validate-helm test-unit ## Full CI pipeline (helm validation + unit/integration tests). Run test-e2e separately — requires minikube.
+
 .PHONY: test-e2e
-test-e2e: ## Run E2E tests
-	go test ./tests/e2e/... -v
+test-e2e: ## Run E2E tests against minikube (requires minikube running). Env: IMG, NAMESPACE, RELEASE_NAME, CLEANUP.
+	./scripts/test-e2e.sh
 
 ##@ Build
 
