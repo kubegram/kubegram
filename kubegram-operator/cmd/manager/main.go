@@ -96,9 +96,29 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	// Controllers are initialized after the manager so we can use mgr.GetClient().
+	// The closures below are safe: the metrics server only starts inside mgr.Start(),
+	// which runs after all controller vars are set.
+	var validationProxy *controllers.ValidationProxyController
+	var sidecarInventory *controllers.SidecarInventoryController
+	var serviceDiscovery *controllers.ServiceDiscoveryController
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
+		Scheme: scheme,
+		Metrics: metricsserver.Options{
+			BindAddress: metricsAddr,
+			ExtraHandlers: map[string]http.Handler{
+				"/sidecar/validate": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					validationProxy.ServeHTTP(w, r)
+				}),
+				"/sidecar/inventory": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					sidecarInventory.ServeHTTP(w, r)
+				}),
+				"/service/discovery": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					serviceDiscovery.ServeHTTP(w, r)
+				}),
+			},
+		},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "kubegram-operator-leader-election",
@@ -208,6 +228,28 @@ func main() {
 	podReconciler := controllers.NewPodReadinessReconciler(mgr.GetClient(), mgr.GetScheme(), kubegramServerURL)
 	if err := podReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to set up pod readiness reconciler")
+		os.Exit(1)
+	}
+
+	// Register validation proxy — discovers sidecar pods and relays test cases from kubegram-server.
+	// Assigned to the var declared before manager creation; the ExtraHandlers closure above captures it.
+	validationProxy = controllers.NewValidationProxyController(mgr.GetClient(), mgr.GetScheme())
+	if err := validationProxy.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to set up validation proxy controller")
+		os.Exit(1)
+	}
+
+	// Register sidecar inventory controller — maintains a cluster-wide census of live sidecars.
+	sidecarInventory = controllers.NewSidecarInventoryController(mgr.GetClient(), mgr.GetScheme())
+	if err := sidecarInventory.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to set up sidecar inventory controller")
+		os.Exit(1)
+	}
+
+	// Register service discovery controller — probes sidecar-attached services for GraphQL/OpenAPI schemas.
+	serviceDiscovery = controllers.NewServiceDiscoveryController(mgr.GetClient(), mgr.GetScheme())
+	if err := serviceDiscovery.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to set up service discovery controller")
 		os.Exit(1)
 	}
 
