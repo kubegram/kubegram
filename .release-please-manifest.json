@@ -1,0 +1,5 @@
+{
+  "kubegram-operator": "0.1.0",
+  "kubegram-sidecar": "0.1.0",
+  "kubegram-cli": "1.0.0"
+}
