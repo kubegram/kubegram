@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "separate-pull-requests": true,
+  "pull-request-title-pattern": "chore: release ${component} ${version}",
+  "include-component-in-tag": true,
+  "packages": {
+    "kubegram-operator": {
+      "release-type": "go",
+      "component": "kubegram-operator",
+      "tag-prefix": "kubegram-operator/",
+      "changelog-path": "kubegram-operator/CHANGELOG.md"
+    },
+    "kubegram-sidecar": {
+      "release-type": "go",
+      "component": "kubegram-sidecar",
+      "tag-prefix": "kubegram-sidecar/",
+      "changelog-path": "kubegram-sidecar/CHANGELOG.md"
+    },
+    "kubegram-cli": {
+      "release-type": "go",
+      "component": "kubegram-cli",
+      "tag-prefix": "kubegram-cli/",
+      "changelog-path": "kubegram-cli/CHANGELOG.md",
+      "skip-github-release": true,
+      "extra-files": [
+        {
+          "type": "generic",
+          "path": "kubegram-cli/VERSION"
+        }
+      ]
+    }
+  }
+}
