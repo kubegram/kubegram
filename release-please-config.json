@@ -8,13 +8,15 @@
       "release-type": "go",
       "component": "kubegram-operator",
       "tag-prefix": "kubegram-operator/",
-      "changelog-path": "kubegram-operator/CHANGELOG.md"
+      "changelog-path": "kubegram-operator/CHANGELOG.md",
+      "bootstrap-sha": "f32c28ef19168deaf438ad94d2b3d15518cd8497"
     },
     "kubegram-sidecar": {
       "release-type": "go",
       "component": "kubegram-sidecar",
       "tag-prefix": "kubegram-sidecar/",
-      "changelog-path": "kubegram-sidecar/CHANGELOG.md"
+      "changelog-path": "kubegram-sidecar/CHANGELOG.md",
+      "bootstrap-sha": "f32c28ef19168deaf438ad94d2b3d15518cd8497"
     },
     "kubegram-cli": {
       "release-type": "go",
