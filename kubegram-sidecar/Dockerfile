@@ -1,12 +1,9 @@
-# Stage 1: Build — compile the Go binary and the eBPF C program
-FROM golang:1.24 AS builder
+# Stage 1: Build — cross-compile the Go binary natively (no QEMU)
+# tracer_bpfel.go is pre-generated and committed; bpf2go does not run here.
+FROM --platform=$BUILDPLATFORM golang:1.24 AS builder
 
-# Install clang + libbpf-dev for bpf2go eBPF compilation
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    clang \
-    libbpf-dev \
-    linux-headers-amd64 \
-  && rm -rf /var/lib/apt/lists/*
+ARG TARGETOS=linux
+ARG TARGETARCH
 
 WORKDIR /build
 
@@ -14,10 +11,9 @@ WORKDIR /build
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source and compile eBPF + Go binary
+# Copy source and cross-compile Go binary for the target platform
 COPY . .
-RUN go generate ./pkg/ebpf/...
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags="-s -w" -o /bin/sidecar ./cmd/sidecar
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -ldflags="-s -w" -o /bin/sidecar ./cmd/sidecar
 
 # Stage 2: Runtime — minimal Debian image with eBPF runtime dependencies
 FROM debian:bookworm-slim
