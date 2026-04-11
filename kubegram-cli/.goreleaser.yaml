@@ -2,10 +2,6 @@ version: 2
 
 project_name: kubegram
 
-before:
-  hooks:
-    - sh -c "cd kubegram-cli && go mod tidy"
-    - sh -c "cd kubegram-cli && go vet ./..."
 
 builds:
   - id: kubegram
