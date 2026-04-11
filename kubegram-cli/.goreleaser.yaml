@@ -2,10 +2,6 @@ version: 2
 
 project_name: kubegram
 
-# Strip the monorepo tag prefix so kubegram-cli/v1.2.3 → version 1.2.3
-git:
-  tag_prefix: "kubegram-cli/"
-
 before:
   hooks:
     - go mod tidy
