@@ -17,9 +17,6 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-# Install Delve for debugging (cross-compiled for target arch; GOBIN set so the path is predictable)
-RUN CGO_ENABLED=0 GOARCH=${TARGETARCH} GOBIN=/go/bin/target go install github.com/go-delve/delve/cmd/dlv@latest
-
 # Copy the go source
 COPY cmd/ cmd/
 COPY pkg/ pkg/
@@ -73,9 +70,6 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
 # Copy the binary
 # We copy the compiled binary from the builder stage.
 COPY --from=builder /workspace/manager .
-
-# Copy Delve debugger (built to /go/bin/target/ via GOBIN to ensure correct arch)
-COPY --from=builder /go/bin/target/dlv /usr/local/bin/
 
 # Use a non-root user for security
 USER 65532:65532
