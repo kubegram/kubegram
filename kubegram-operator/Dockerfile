@@ -1,7 +1,11 @@
 # Build Stage
 # We use a multi-stage build to keep the final image small.
 # The builder stage compiles the Go binary.
-FROM golang:1.24 AS builder
+# --platform=$BUILDPLATFORM runs the builder natively (no QEMU), then cross-compiles for the target.
+FROM --platform=$BUILDPLATFORM golang:1.24 AS builder
+
+ARG TARGETOS=linux
+ARG TARGETARCH
 
 WORKDIR /workspace
 
@@ -13,17 +17,17 @@ COPY go.sum go.sum
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
 
-# Install Delve for debugging
-RUN go install github.com/go-delve/delve/cmd/dlv@latest
+# Install Delve for debugging (cross-compiled for target arch; GOBIN set so the path is predictable)
+RUN CGO_ENABLED=0 GOARCH=${TARGETARCH} GOBIN=/go/bin/target go install github.com/go-delve/delve/cmd/dlv@latest
 
 # Copy the go source
 COPY cmd/ cmd/
 COPY pkg/ pkg/
 
 # Build
-# We build a statically linked binary.
+# We build a statically linked binary, cross-compiled for the target platform.
 # Added gcflags to disable optimizations/inlining for better debugging
-RUN CGO_ENABLED=0 GOOS=linux go build -gcflags="all=-N -l" -a -o manager cmd/manager/main.go
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -gcflags="all=-N -l" -a -o manager cmd/manager/main.go
 
 # Final Stage
 # We use a slim Debian image for the runtime environment.
@@ -50,8 +54,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl
-# We download the stable release of kubectl.
-RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+# We download the stable release of kubectl for the target architecture.
+ARG TARGETARCH
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/${TARGETARCH}/kubectl" && \
     chmod +x kubectl && \
     mv kubectl /usr/local/bin/
 
@@ -69,8 +74,8 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
 # We copy the compiled binary from the builder stage.
 COPY --from=builder /workspace/manager .
 
-# Copy Delve debugger
-COPY --from=builder /go/bin/dlv /usr/local/bin/
+# Copy Delve debugger (built to /go/bin/target/ via GOBIN to ensure correct arch)
+COPY --from=builder /go/bin/target/dlv /usr/local/bin/
 
 # Use a non-root user for security
 USER 65532:65532
