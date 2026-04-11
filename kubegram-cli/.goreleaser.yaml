@@ -2,10 +2,6 @@ version: 2
 
 project_name: kubegram
 
-# Monorepo tag prefix — GoReleaser v2 strips this to get the semver version
-monorepo:
-  tag_prefix: "kubegram-cli/"
-
 before:
   hooks:
     - go mod tidy

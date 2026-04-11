@@ -29,6 +29,14 @@ jobs:
           cache: true
           cache-dependency-path: kubegram-cli/go.sum
 
+      - name: Create semver tag alias
+        id: version
+        run: |
+          TAG="${{ github.ref_name }}"
+          SEMVER="v${TAG#kubegram-cli/v}"
+          git tag "$SEMVER"
+          echo "tag=$SEMVER" >> $GITHUB_OUTPUT
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
@@ -37,7 +45,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
+          GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.tag }}
 
   build-and-push-docker:
     name: Build and Push Docker Image
