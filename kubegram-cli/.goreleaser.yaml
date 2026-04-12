@@ -88,4 +88,5 @@ release:
     name: kubegram
   draft: false
   prerelease: auto
+  replace_existing_artifacts: true
 
