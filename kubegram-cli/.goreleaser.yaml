@@ -62,13 +62,6 @@ changelog:
       - Merge pull request
       - Merge branch
 
-release:
-  github:
-    owner: kubegram
-    name: kubegram
-  draft: false
-  prerelease: auto
-
 brews:
   - name: kubegram
     ids:
@@ -88,3 +81,11 @@ brews:
       system "#{bin}/kubegram", "version"
     install: |
       bin.install "kubegram"
+
+release:
+  github:
+    owner: kubegram
+    name: kubegram
+  draft: false
+  prerelease: auto
+
