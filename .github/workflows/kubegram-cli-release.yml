@@ -34,7 +34,7 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           SEMVER="v${TAG#kubegram-cli/v}"
-          git tag "$SEMVER"
+          git tag -f "$SEMVER"
           echo "tag=$SEMVER" >> $GITHUB_OUTPUT
 
       - name: Run GoReleaser
