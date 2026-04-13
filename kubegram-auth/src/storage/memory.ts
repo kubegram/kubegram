@@ -1,10 +1,12 @@
-import type { AuthStorage } from '../types';
+import type { AuthStorage } from "../types";
 
 export interface MemoryStorageOptions {
   maxSize?: number;
 }
 
-export function createMemoryStorage(options?: MemoryStorageOptions): AuthStorage {
+export function createMemoryStorage(
+  options?: MemoryStorageOptions,
+): AuthStorage {
   const cache = new Map<string, { value: string; expiry: number }>();
   const maxSize = options?.maxSize ?? 1000;
 

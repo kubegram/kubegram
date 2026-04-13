@@ -1,10 +1,13 @@
-import type { AuthStorage } from '../types';
+import type { AuthStorage } from "../types";
 
 interface RedisClient {
   get(key: string): Promise<string | null>;
   set(key: string, value: string, mode?: string, ttl?: number): Promise<void>;
   del(key: string): Promise<number>;
-  scanStream(options: { match: string; count: number }): AsyncIterable<string[]>;
+  scanStream(options: {
+    match: string;
+    count: number;
+  }): AsyncIterable<string[]>;
   mget(...keys: string[]): Promise<(string | null)[]>;
 }
 
@@ -19,12 +22,10 @@ interface CacheEntry {
   expiry?: number;
 }
 
-export function createLruRedisStorage(opts: LruRedisStorageOptions): AuthStorage {
-  const {
-    redis,
-    keyPrefix = 'openauth',
-    lruMax = 5000,
-  } = opts;
+export function createLruRedisStorage(
+  opts: LruRedisStorageOptions,
+): AuthStorage {
+  const { redis, keyPrefix = "openauth", lruMax = 5000 } = opts;
 
   const lru = new Map<string, CacheEntry>();
 
@@ -78,7 +79,7 @@ export function createLruRedisStorage(opts: LruRedisStorageOptions): AuthStorage
 
       const serialized = JSON.stringify(entry);
       if (ttl) {
-        await redis.set(redisKey(key), serialized, 'EX', ttl);
+        await redis.set(redisKey(key), serialized, "EX", ttl);
       } else {
         await redis.set(redisKey(key), serialized);
       }

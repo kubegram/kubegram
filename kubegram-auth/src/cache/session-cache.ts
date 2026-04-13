@@ -1,6 +1,6 @@
 /**
  * Options for creating a SessionCache instance.
- * 
+ *
  * @property maxSize - Maximum number of entries in L1 memory cache (default: 1000)
  * @property ttl - Default TTL for cache entries in milliseconds (default: 300000 = 5 min)
  * @property storage - Optional L2 persistent storage adapter
@@ -14,7 +14,7 @@ export interface SessionCacheOptions {
 /**
  * Interface for L2 persistent storage.
  * Implement this to use custom storage backends (Redis, database, etc.)
- * 
+ *
  * @property get - Retrieve a value by key
  * @property set - Store a value with optional TTL (in seconds)
  * @property delete - Remove a value by key
@@ -36,10 +36,10 @@ interface CacheEntry {
 
 /**
  * Two-layer session cache with L1 (memory) and optional L2 (storage).
- * 
+ *
  * Implements LRU eviction policy for memory cache and provides
  * optional write-through to persistent storage.
- * 
+ *
  * @example
  * ```typescript
  * const cache = createSessionCache({
@@ -51,7 +51,7 @@ interface CacheEntry {
  *     delete: async (key) => redis.del(key)
  *   }
  * });
- * 
+ *
  * await cache.set('session:abc', '{"user":"123"}', 3600);
  * const data = await cache.get('session:abc');
  * await cache.delete('session:abc');
@@ -60,22 +60,22 @@ interface CacheEntry {
 export class SessionCache {
   /** L1: In-memory cache map */
   private cache: Map<string, CacheEntry> = new Map();
-  
+
   /** L1: Access order for LRU eviction (oldest first) */
   private accessOrder: string[] = [];
-  
+
   /** L2: Optional persistent storage */
   private storage?: SessionCacheStorage;
-  
+
   /** L1: Maximum entries before eviction */
   private readonly maxSize: number;
-  
+
   /** L1: Default TTL in milliseconds */
   private readonly ttl: number;
 
   /**
    * Creates a new SessionCache instance.
-   * 
+   *
    * @param options - Configuration options
    */
   constructor(options: SessionCacheOptions = {}) {
@@ -120,10 +120,10 @@ export class SessionCache {
 
   /**
    * Retrieve a value from cache.
-   * 
+   *
    * Checks L1 memory first, then falls back to L2 storage.
    * Updates access order on cache hit.
-   * 
+   *
    * @param key - Cache key
    * @returns Cached value or null if not found/expired
    */
@@ -133,7 +133,7 @@ export class SessionCache {
     if (cached) {
       if (this.isExpired(cached)) {
         this.cache.delete(key);
-        this.accessOrder = this.accessOrder.filter(k => k !== key);
+        this.accessOrder = this.accessOrder.filter((k) => k !== key);
         if (this.storage) {
           await this.storage.delete(key).catch(() => {});
         }
@@ -166,10 +166,10 @@ export class SessionCache {
 
   /**
    * Store a value in cache.
-   * 
+   *
    * Writes to L1 immediately. If L2 storage is configured,
    * also writes through to persistent storage.
-   * 
+   *
    * @param key - Cache key
    * @param value - Value to store (JSON string)
    * @param ttl - Optional TTL in milliseconds (uses default if not provided)
@@ -199,14 +199,14 @@ export class SessionCache {
 
   /**
    * Delete a value from cache.
-   * 
+   *
    * Removes from both L1 and L2 (if configured).
-   * 
+   *
    * @param key - Cache key to delete
    */
   async delete(key: string): Promise<void> {
     this.cache.delete(key);
-    this.accessOrder = this.accessOrder.filter(k => k !== key);
+    this.accessOrder = this.accessOrder.filter((k) => k !== key);
 
     if (this.storage) {
       try {
@@ -229,15 +229,17 @@ export class SessionCache {
 
 /**
  * Factory function to create a SessionCache instance.
- * 
+ *
  * @param options - Configuration options
  * @returns Configured SessionCache
- * 
+ *
  * @example
  * ```typescript
  * const cache = createSessionCache({ maxSize: 500, ttl: 60000 });
  * ```
  */
-export function createSessionCache(options?: SessionCacheOptions): SessionCache {
+export function createSessionCache(
+  options?: SessionCacheOptions,
+): SessionCache {
   return new SessionCache(options);
 }

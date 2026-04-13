@@ -1,4 +1,4 @@
-import type { AuthStorage } from '../types';
+import type { AuthStorage } from "../types";
 
 export interface RedisStorageOptions {
   prefix?: string;
@@ -13,9 +13,9 @@ export interface RedisClient {
 
 export function createRedisStorage(
   redis: RedisClient,
-  options?: RedisStorageOptions
+  options?: RedisStorageOptions,
 ): AuthStorage {
-  const prefix = options?.prefix ?? 'openauth:';
+  const prefix = options?.prefix ?? "openauth:";
   const defaultTtl = options?.defaultTtl ?? 86400;
 
   return {
@@ -24,12 +24,7 @@ export function createRedisStorage(
     },
 
     async set(key: string, value: string, ttl?: number): Promise<void> {
-      await redis.set(
-        `${prefix}${key}`,
-        value,
-        'EX',
-        ttl ?? defaultTtl
-      );
+      await redis.set(`${prefix}${key}`, value, "EX", ttl ?? defaultTtl);
     },
 
     async delete(key: string): Promise<void> {
