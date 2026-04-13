@@ -43,7 +43,7 @@ class Kubegram < Formula
   end
 
   test do
-    system "\#{bin}/kubegram", "version"
+    system "#{bin}/kubegram", "version"
   end
 end
 """

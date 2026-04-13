@@ -71,6 +71,8 @@ jobs:
           python3 .github/scripts/update-homebrew.py
 
           cd tap
+          git remote set-url origin \
+            "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/kubegram/homebrew-tap.git"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
           git add Formula/kubegram.rb
