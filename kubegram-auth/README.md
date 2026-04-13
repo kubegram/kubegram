@@ -148,4 +148,4 @@ const session = await sm.validateSession(sessionId);
 
 ## License
 
-BUSL-1.1
+MIT
