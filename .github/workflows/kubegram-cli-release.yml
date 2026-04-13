@@ -37,25 +37,48 @@ jobs:
           git tag -f "$SEMVER"
           echo "tag=$SEMVER" >> $GITHUB_OUTPUT
 
-      - name: Verify homebrew token
-        run: |
-          if [ -z "$HOMEBREW_TAP_GITHUB_TOKEN" ]; then
-            echo "HOMEBREW_TAP_GITHUB_TOKEN is empty — secret may be missing or misnamed"
-            exit 1
-          fi
-          echo "HOMEBREW_TAP_GITHUB_TOKEN is set (length: ${#HOMEBREW_TAP_GITHUB_TOKEN})"
-        env:
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "~> v2"
-          args: release --config kubegram-cli/.goreleaser.yaml --clean
+          args: release --config kubegram-cli/.goreleaser.yaml --clean --skip=homebrew
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           GORELEASER_CURRENT_TAG: ${{ steps.version.outputs.tag }}
+
+      - name: Update Homebrew formula
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          VERSION_NUM="${VERSION#v}"
+
+          CHECKSUMS=$(gh release download "$VERSION" \
+            --repo kubegram/kubegram \
+            --pattern "kubegram_checksums.txt" \
+            --output -)
+
+          get_sha() { echo "$CHECKSUMS" | grep "$1" | awk '{print $1}'; }
+
+          git clone \
+            "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/kubegram/homebrew-tap.git" \
+            tap
+
+          VERSION_NUM="$VERSION_NUM" \
+          BASE="https://github.com/kubegram/kubegram/releases/download/kubegram-cli%2F${VERSION}" \
+          DARWIN_AMD64="$(get_sha "kubegram_${VERSION_NUM}_darwin_amd64.tar.gz")" \
+          DARWIN_ARM64="$(get_sha "kubegram_${VERSION_NUM}_darwin_arm64.tar.gz")" \
+          LINUX_AMD64="$(get_sha  "kubegram_${VERSION_NUM}_linux_amd64.tar.gz")" \
+          LINUX_ARM64="$(get_sha  "kubegram_${VERSION_NUM}_linux_arm64.tar.gz")" \
+          python3 .github/scripts/update-homebrew.py
+
+          cd tap
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Formula/kubegram.rb
+          git commit -m "Update kubegram to ${VERSION_NUM}"
+          git push
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-push-docker:
     name: Build and Push Docker Image
