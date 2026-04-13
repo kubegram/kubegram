@@ -37,6 +37,16 @@ jobs:
           git tag -f "$SEMVER"
           echo "tag=$SEMVER" >> $GITHUB_OUTPUT
 
+      - name: Verify homebrew token
+        run: |
+          if [ -z "$HOMEBREW_TAP_GITHUB_TOKEN" ]; then
+            echo "HOMEBREW_TAP_GITHUB_TOKEN is empty — secret may be missing or misnamed"
+            exit 1
+          fi
+          echo "HOMEBREW_TAP_GITHUB_TOKEN is set (length: ${#HOMEBREW_TAP_GITHUB_TOKEN})"
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
