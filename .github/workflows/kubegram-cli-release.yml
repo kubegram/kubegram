@@ -147,31 +147,3 @@ jobs:
             VERSION=${{ steps.version.outputs.version }}
             GIT_COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
-
-  publish-go-package:
-    name: Publish to Go Package Registry
-    runs-on: ubuntu-latest
-    needs: release
-    permissions:
-      contents: read
-
-    steps:
-      - name: Extract version from tag
-        id: version
-        run: |
-          TAG="${{ github.ref_name }}"
-          VERSION="${TAG#kubegram-cli/v}"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Set up Go 1.24
-        uses: actions/setup-go@v5
-        with:
-          go-version: "1.24"
-
-      - name: Publish to proxy.golang.org
-        run: |
-          # Trigger Go proxy to cache the new version
-          # GOPROXY=proxy.golang.org ensures we use the public proxy
-          go list -m github.com/kubegram/kubegram-cli@v${{ steps.version.outputs.version }}
-        env:
-          GOPROXY: proxy.golang.org
