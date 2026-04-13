@@ -19,8 +19,8 @@
     "clean": "rm -rf dist",
     "prebuild": "bun run clean",
     "prepublishOnly": "bun run build",
-    "lint": "eslint src/**/*.ts --ignore-pattern '**/__tests__/**' --ignore-pattern '**/*.test.ts' --no-warn-ignored",
-    "lint:fix": "eslint src/**/*.ts --ignore-pattern '**/__tests__/**' --ignore-pattern '**/*.test.ts' --no-warn-ignored --fix",
+    "lint": "eslint src/**/*.ts --no-warn-ignored",
+    "lint:fix": "eslint src/**/*.ts --no-warn-ignored --fix",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
     "type-check": "tsc --noEmit",
@@ -47,7 +47,13 @@
   "homepage": "https://github.com/kubegram/kubegram/tree/main/kubegram-auth#readme",
   "devDependencies": {
     "@types/node": "^24.10.13",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "hono": "^4.11.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.2"
   },
   "dependencies": {
