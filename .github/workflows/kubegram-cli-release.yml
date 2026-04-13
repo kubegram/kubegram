@@ -58,27 +58,36 @@ jobs:
 
           get_sha() { echo "$CHECKSUMS" | grep "$1" | awk '{print $1}'; }
 
-          git clone \
-            "https://x-access-token:${HOMEBREW_TAP_GITHUB_TOKEN}@github.com/kubegram/homebrew-tap.git" \
-            tap
-
-          VERSION_NUM="$VERSION_NUM" \
-          BASE="https://github.com/kubegram/kubegram/releases/download/kubegram-cli%2F${VERSION}" \
-          DARWIN_AMD64="$(get_sha "kubegram_${VERSION_NUM}_darwin_amd64.tar.gz")" \
-          DARWIN_ARM64="$(get_sha "kubegram_${VERSION_NUM}_darwin_arm64.tar.gz")" \
-          LINUX_AMD64="$(get_sha  "kubegram_${VERSION_NUM}_linux_amd64.tar.gz")" \
-          LINUX_ARM64="$(get_sha  "kubegram_${VERSION_NUM}_linux_arm64.tar.gz")" \
+          export VERSION_NUM
+          export BASE="https://github.com/kubegram/kubegram/releases/download/kubegram-cli%2F${VERSION}"
+          export DARWIN_AMD64="$(get_sha "kubegram_${VERSION_NUM}_darwin_amd64.tar.gz")"
+          export DARWIN_ARM64="$(get_sha "kubegram_${VERSION_NUM}_darwin_arm64.tar.gz")"
+          export LINUX_AMD64="$(get_sha  "kubegram_${VERSION_NUM}_linux_amd64.tar.gz")"
+          export LINUX_ARM64="$(get_sha  "kubegram_${VERSION_NUM}_linux_arm64.tar.gz")"
+          export OUTPUT_FILE="/tmp/kubegram.rb"
           python3 .github/scripts/update-homebrew.py
 
-          cd tap
-          git config --local credential.helper ""
-          git config --local "http.https://github.com/.extraheader" \
-            "Authorization: token ${HOMEBREW_TAP_GITHUB_TOKEN}"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add Formula/kubegram.rb
-          git commit -m "Update kubegram to ${VERSION_NUM}"
-          git push
+          # Get the current file SHA if it exists (required by the GitHub API for updates)
+          EXISTING_SHA=$(GH_TOKEN="$HOMEBREW_TAP_GITHUB_TOKEN" \
+            gh api /repos/kubegram/homebrew-tap/contents/Formula/kubegram.rb \
+            --jq .sha 2>/dev/null || true)
+
+          CONTENT=$(base64 -w 0 /tmp/kubegram.rb)
+
+          if [ -n "$EXISTING_SHA" ]; then
+            GH_TOKEN="$HOMEBREW_TAP_GITHUB_TOKEN" gh api \
+              --method PUT \
+              /repos/kubegram/homebrew-tap/contents/Formula/kubegram.rb \
+              -f message="Update kubegram to ${VERSION_NUM}" \
+              -f content="$CONTENT" \
+              -f sha="$EXISTING_SHA"
+          else
+            GH_TOKEN="$HOMEBREW_TAP_GITHUB_TOKEN" gh api \
+              --method PUT \
+              /repos/kubegram/homebrew-tap/contents/Formula/kubegram.rb \
+              -f message="Update kubegram to ${VERSION_NUM}" \
+              -f content="$CONTENT"
+          fi
         env:
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
