@@ -146,6 +146,7 @@ const session = await sm.validateSession(sessionId);
 - `ErrorCallback` - OAuth error callback
 - `SessionManagerOptions` - Session manager options
 
+
 ## License
 
 MIT
