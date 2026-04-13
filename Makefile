@@ -14,7 +14,8 @@
 	act-core-release act-auth-release act-cli-release-dry \
 	act-operator-dry act-operator-live act-sidecar-dry act-sidecar-live \
 	act-deploy-dry act-validate act-lint act-test act-list act-help \
-	ci-install-events ci-verify-build-events
+	ci-install-events ci-verify-build-events \
+	ci-install-kubegram-auth ci-verify-build-kubegram-auth
 
 help:
 	@echo ""
@@ -322,6 +323,9 @@ ci-all-kubegram-core: ci-install-kubegram-core ci-typecheck-kubegram-core ci-lin
 	@echo "✅ All kubegram-core CI checks passed"
 
 # kubegram-auth CI steps
+ci-install-kubegram-auth:
+	cd kubegram-auth && bun install --frozen-lockfile
+
 ci-typecheck-kubegram-auth:
 	cd kubegram-auth && bun run type-check
 
@@ -331,11 +335,18 @@ ci-lint-kubegram-auth:
 ci-build-kubegram-auth:
 	cd kubegram-auth && bun run build
 
+ci-verify-build-kubegram-auth:
+	@if [ ! -d "kubegram-auth/dist" ]; then \
+	  echo "Build failed - dist directory not found"; \
+	  exit 1; \
+	fi
+	@echo "Build successful - dist directory created"
+
 ci-publish-kubegram-auth:
 	cd kubegram-auth && bun publish
 
 # Run all kubegram-auth CI steps
-ci-all-kubegram-auth: ci-typecheck-kubegram-auth ci-lint-kubegram-auth ci-build-kubegram-auth
+ci-all-kubegram-auth: ci-install-kubegram-auth ci-typecheck-kubegram-auth ci-lint-kubegram-auth ci-build-kubegram-auth ci-verify-build-kubegram-auth
 	@echo "✅ All kubegram-auth CI checks passed"
 
 ## CLI build targets
