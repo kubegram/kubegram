@@ -30,7 +30,7 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: make ci-install
+        run: make ci-install-kubegram-auth
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GH_TOKEN }}
 
@@ -44,13 +44,7 @@ jobs:
         run: make ci-build-kubegram-auth
 
       - name: Verify build output
-        working-directory: kubegram-auth
-        run: |
-          if [ ! -d "dist" ]; then
-            echo "Build failed - dist directory not found"
-            exit 1
-          fi
-          echo "Build successful - dist directory created"
+        run: make ci-verify-build-kubegram-auth
 
       - name: Check if version changed
         id: version-check
