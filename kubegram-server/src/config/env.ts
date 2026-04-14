@@ -1,5 +1,7 @@
 import { SecretsManager } from './secrets';
 
+export type ServerMode = 'ha' | 'single' | 'cluster';
+
 export const config = {
     port: parseInt(process.env.PORT || '8090', 10),
     nodeEnv: process.env.NODE_ENV || 'development',
@@ -35,6 +37,13 @@ export const config = {
     // ArgoCD integration: server URL and API token for triggering syncs
     argocdServerUrl: process.env.ARGOCD_SERVER_URL || '',
     argocdToken: process.env.ARGOCD_TOKEN || '',
+    // Server mode: 'ha' for HA mode, 'single' for single node mode
+    serverMode: (process.env.SERVER_MODE || 'single') as ServerMode,
+    // LLM provider API keys (used by kubegram-core workflows)
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+    openaiApiKey: process.env.OPENAI_API_KEY || '',
+    googleApiKey: process.env.GOOGLE_API_KEY || '',
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
 };
 
 export default config;

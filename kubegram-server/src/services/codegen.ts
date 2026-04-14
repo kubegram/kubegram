@@ -5,24 +5,16 @@
  * Handles project metadata storage, job management, and RAG system integration.
  */
 
-import {
-  graphqlSdk,
-  type GraphInput,
-  type JobStatus,
-  type GenerateCodeInput,
-} from '@/clients/rag-client';
-
-// Local extension of GenerateCodeInput to include context field
-interface ExtendedGenerateCodeInput extends GenerateCodeInput {
-  context?: string[];
-}
+import type { GraphInput } from '@/clients/rag-client';
 import { cleanGraphInput } from '@/utils/graph-input-cleaner';
+import { mapToWorkflowGraph } from '@/utils/graph-mapper';
+import { workflowService } from '@/services/workflow';
+import type { WorkflowContext, CodegenWorkflowOptions } from '@kubegram/kubegram-core';
 import { db } from '@/db';
-import { projects, generationJobs, users, teams } from '@/db/schema';
-import { eq, and, or } from 'drizzle-orm';
+import { projects, generationJobs, users } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import { CodegenError } from '@/errors/codegen';
 import logger from '@/utils/logger';
-import { withRetry } from '@/utils/retry';
 import config from '@/config/env';
 import type { WebSocketContext } from '@/routes/api/v1/graph/types';
 import type { Context } from 'hono';
@@ -211,53 +203,51 @@ export class CodegenService {
   }
 
   /**
-   * Initialize code generation with RAG system
-   * 
+   * Initialize code generation using kubegram-core workflow.
+   * Generates a server-side jobId, starts the workflow in the background,
+   * and returns immediately so the caller can store job metadata and respond.
+   *
    * @param config - Code generation configuration
-   * @returns Promise<{jobId: string; projectId: number}> - Job info
+   * @returns { jobId, step, status, projectId }
    */
   async initializeCodeGeneration(config: {
     graph: GraphInput;
     project: any;
     llmConfig?: any;
     context?: string[];
-  }): Promise<JobStatus & { projectId: number }> {
-    return await CodegenError.withRetry(async () => {
-      try {
-        // Initializing with original graph to print in debug logs if needed, but using cleaned input for mutation
-        const cleanGraph = cleanGraphInput(config.graph);
+  }): Promise<{ jobId: string; step: string; status: string; projectId: number }> {
+    const cleanGraph = cleanGraphInput(config.graph);
 
-        const input: ExtendedGenerateCodeInput = {
-          graph: cleanGraph,
-          llmConfig: config.llmConfig ? {
-            ...config.llmConfig,
-            provider: config.llmConfig.provider?.toLowerCase(),
-          } : undefined,
-          context: config.context
-        };
+    // Generate job ID server-side; used as both the workflow threadId and DB uuid
+    const jobId = crypto.randomUUID();
 
-        const result = await graphqlSdk.InitializeCodeGen({
-          input
-        });
+    // Map to kubegram-core Graph, anchoring the graph ID to the jobId
+    const coreGraph = mapToWorkflowGraph(cleanGraph as any, jobId);
 
-        if (result.errors?.length) {
-          throw new Error(`GraphQL errors: ${result.errors.map((e: Error) => e.message).join(', ')}`);
-        }
+    const workflowContext: WorkflowContext = {
+      threadId: jobId,
+      jobId,
+      userId: String(config.graph.userId ?? ''),
+      companyId: String(config.graph.companyId ?? ''),
+      userContext: config.context ?? [],
+    };
 
-        if (!result.data?.initializeCodeGen) {
-          throw new Error('No data returned from initializeCodeGen mutation');
-        }
+    const workflowOptions: CodegenWorkflowOptions = {
+      modelProvider: config.llmConfig?.provider as any,
+      modelName: config.llmConfig?.model,
+      enableRAG: false,
+      enableValidation: true,
+    };
 
-        const jobStatus = result.data.initializeCodeGen;
+    await workflowService.initialize();
+    await workflowService.startCodegen(coreGraph, jobId, workflowContext, workflowOptions);
 
-        return {
-          ...jobStatus,
-          projectId: config.project?.id ? parseInt(config.project.id) : 0
-        };
-      } catch (error) {
-        throw error;
-      }
-    }, config.graph as any);
+    return {
+      jobId,
+      step: 'getOrCreateGraph',
+      status: 'running',
+      projectId: config.project?.id ? parseInt(config.project.id) : 0,
+    };
   }
 
   /**
@@ -303,38 +293,39 @@ export class CodegenService {
   }
 
   /**
-   * Get current job status from RAG system
-   * 
-   * @param jobId - Job UUID
-   * @returns Promise<JobStatus> - Current job status
+   * Get current job status from the kubegram-core EventCache (live workflow state)
+   * or fall back to the DB record for completed / old jobs.
+   *
+   * @param jobId - Job UUID (= workflow threadId)
+   * @returns { jobId, step, status }
    */
-  async getJobStatus(jobId: string): Promise<JobStatus> {
-    return await withRetry(async () => {
-      const result = await graphqlSdk.JobStatus({
-        input: { jobId }
-      });
+  async getJobStatus(jobId: string): Promise<{ jobId: string; step: string; status: string }> {
+    await workflowService.initialize();
+    const workflowState = await workflowService.getStatus(jobId);
 
-      if (result.errors?.length) {
-        throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`);
-      }
+    if (workflowState) {
+      return {
+        jobId,
+        step: workflowState.currentStep,
+        status: workflowState.status,
+      };
+    }
 
-      if (!result.data?.jobStatus) {
-        throw new Error('No data returned from jobStatus query');
-      }
+    // EventCache expired or job never started via workflow — fall back to DB
+    const [job] = await db.select()
+      .from(generationJobs)
+      .where(eq(generationJobs.uuid, jobId))
+      .limit(1);
 
-      return result.data.jobStatus;
-    }, {
-      maxRetries: 3,
-      isRetryable: (error) => {
-        // Retry on server errors and timeouts
-        return error.response?.status >= 500 ||
-          /network|timeout|connection/i.test(error.message);
-      }
-    });
+    if (!job) {
+      throw new CodegenError('Job not found', { jobId } as any);
+    }
+
+    return { jobId, step: job.status, status: job.status };
   }
 
   async getJobResults(
-    c: Context,
+    _c: Context,
     jobId: string,
     userId: number
   ): Promise<any> {
@@ -343,123 +334,11 @@ export class CodegenService {
       throw new CodegenError('Job not found', { jobId } as any);
     }
 
-    return await withRetry(async () => {
-      const result = await graphqlSdk.GenerateCode({
-        jobId: jobId
-      });
-
-      if (result.errors?.length) {
-        throw new Error(`GraphQL errors: ${result.errors.map(e => e.message).join(', ')}`);
-      }
-
-      if (!result.data?.generatedCode) {
-        throw new Error('No data returned from generateCode query');
-      }
-
-      return result.data.generatedCode;
-    }, {
-      maxRetries: 3,
-      isRetryable: (error) => {
-        return error.response?.status >= 500 ||
-          /network|timeout|connection/i.test(error.message);
-      }
-    });
-  }
-
-  /**
-   * Update job progress in database
-   * 
-   * @param jobId - Job UUID
-   * @param generatedCode - Generated code data
-   */
-  private async updateJobProgress(jobId: string, generatedCode: any) {
-    try {
-      const progress = Math.min((generatedCode.nodes?.length || 0) * 10, 100); // Simple progress calculation
-
-      await db.update(generationJobs)
-        .set({
-          status: 'running',
-          progress: progress,
-          resultData: JSON.stringify(generatedCode),
-          updatedAt: new Date()
-        })
-        .where(eq(generationJobs.uuid, jobId));
-
-      logger.info('Updated job progress', { jobId, progress });
-    } catch (error) {
-      console.error('Failed to update job progress:', error);
+    if (job.status !== 'completed' || !job.resultData) {
+      throw new CodegenError('Results not yet available', { jobId } as any, { isServerError: false });
     }
-  }
 
-  /**
-   * Update job status in database
-   * 
-   * @param jobId - Job UUID
-   * @param status - New job status
-   */
-  private async updateJobStatus(jobId: string, status: string) {
-    try {
-      const updateData: any = {
-        status,
-        updatedAt: new Date()
-      };
-
-      if (status === 'completed') {
-        updateData.completedAt = new Date();
-        updateData.progress = 100;
-      }
-
-      await db.update(generationJobs)
-        .set(updateData)
-        .where(eq(generationJobs.uuid, jobId));
-
-      logger.info('Updated job status', { jobId, status });
-    } catch (error) {
-      console.error('Failed to update job status:', error);
-    }
-  }
-
-  /**
-   * Send updates to WebSocket client
-   * 
-   * @param c - Hono context with WebSocket
-   * @param generatedCode - Generated code data
-   */
-  private sendWebSocketUpdate(c: any, generatedCode: any) {
-    if (c.ws?.send) {
-      c.ws.send(JSON.stringify({
-        type: 'update',
-        data: generatedCode
-      }));
-    }
-  }
-
-  /**
-   * Send error to WebSocket client
-   * 
-   * @param c - Hono context with WebSocket
-   * @param error - Error object
-   */
-  private sendWebSocketError(c: any, error: Error) {
-    if (c.ws?.send) {
-      c.ws.send(JSON.stringify({
-        type: 'error',
-        error: error.message
-      }));
-    }
-  }
-
-  /**
-   * Send completion signal to WebSocket client
-   * 
-   * @param c - Hono context with WebSocket
-   */
-  private sendWebSocketComplete(c: any) {
-    if (c.ws?.send) {
-      c.ws.send(JSON.stringify({
-        type: 'complete'
-      }));
-    }
+    return JSON.parse(job.resultData);
   }
 
   /**
@@ -523,11 +402,14 @@ export class CodegenService {
   }
 
   /**
-   * Cleanup WebSocket subscription
+   * Cleanup WebSocket subscription and cancel the running workflow (if any).
    *
    * @param jobId - Job ID to cleanup
    */
   async cleanupSubscription(jobId: string) {
+    // Cancel the kubegram-core workflow if it is still running
+    workflowService.initialize().then(() => workflowService.cancel(jobId)).catch(() => {});
+
     const wsContext = this.activeSubscriptions.get(jobId);
     if (wsContext) {
       if (wsContext.unsubscribe) {
@@ -543,10 +425,8 @@ export class CodegenService {
 
   /**
    * Generate UUID for graph ID
-   * 
-   * @returns string - Generated UUID
    */
   private generateGraphId(): string {
-    return `graph_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `graph_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 }

@@ -7,13 +7,7 @@
 
 import { Hono } from 'hono';
 import * as v from 'valibot';
-import {
-  graphqlSdk,
-  type GraphInput,
-  type JobStatus,
-  type GeneratedCodeGraph,
-  type GraphType
-} from '@/clients/rag-client';
+import { type GraphType } from '@/clients/rag-client';
 import { db } from '@/db';
 import { generationJobs, projects, users } from '@/db/schema';
 import { eq, inArray, desc } from 'drizzle-orm';
@@ -24,7 +18,6 @@ import {
   CodeGenerationRequestSchema,
   CodeGenerationResponseSchema,
   JobStatusResponseSchema,
-  type WebSocketContext
 } from './types';
 import logger from '@/utils/logger';
 import { type AuthContext } from '@/middleware/auth';
