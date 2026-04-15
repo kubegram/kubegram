@@ -5,9 +5,7 @@ import {
   resetDatabase,
   loadFixtures,
   createAuthHeaders,
-  createAdminHeaders,
 } from '../../test/helpers';
-import { createMockRAGClient, MOCK_RAG_PRESETS } from '../../test/mocks';
 
 vi.mock('@/clients/rag-client', () => ({
   createRAGClient: vi.fn().mockReturnValue({

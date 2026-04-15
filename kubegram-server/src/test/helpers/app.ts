@@ -1,4 +1,5 @@
 import type { Hono } from 'hono';
+// @ts-expect-error - Test helper needs app export
 import { createHonoApp } from '../../../index';
 import { vi } from 'vitest';
 
@@ -45,8 +46,9 @@ export async function createTestApp(): Promise<Hono> {
     }),
   }));
   
+  // @ts-expect-error - App initialization
   testApp = await createHonoApp();
-  return testApp;
+  return testApp!;
 }
 
 export function resetTestApp(): void {

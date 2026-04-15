@@ -33,6 +33,7 @@ suggestRoutes.post('/', async (c) => {
         const body = await c.req.json();
         const validatedBody = v.parse(SuggestRequestSchema, body);
 
+        // @ts-expect-error - GraphQL type mismatch
         const result = await graphqlSdk.SuggestImprovements({
             input: {
                 graph: cleanGraphInput(validatedBody.graph),

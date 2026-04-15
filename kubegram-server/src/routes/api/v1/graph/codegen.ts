@@ -72,7 +72,7 @@ codegenRoutes.get('/', async (c) => {
       }
 
       // Get jobs for specific project
-      const jobRows = await db.select({
+      const jobRows = await db!.select({
         id: generationJobs.id,
         uuid: generationJobs.uuid,
         graphId: generationJobs.graphId,
@@ -92,7 +92,7 @@ codegenRoutes.get('/', async (c) => {
       jobs = jobRows;
     } else {
       // Get all jobs for user's projects
-      const jobRows = await db.select({
+      const jobRows = await db!.select({
         id: generationJobs.id,
         uuid: generationJobs.uuid,
         graphId: generationJobs.graphId,
@@ -358,7 +358,7 @@ codegenRoutes.get('/jobs', async (c) => {
     const projectIds = userProjects.map(p => p.id);
 
     // Get jobs for user's projects with related data
-    const jobRows = await db.select()
+    const jobRows = await db!.select()
       .from(generationJobs)
       .leftJoin(projects, eq(generationJobs.projectId, projects.id))
       .leftJoin(users, eq(generationJobs.requestedBy, users.id))
@@ -398,7 +398,7 @@ codegenRoutes.delete('/:jobId', async (c) => {
     }
 
     // Update job status to cancelled
-    await db.update(generationJobs)
+    await db!.update(generationJobs)
       .set({
         status: 'cancelled',
         updatedAt: new Date()

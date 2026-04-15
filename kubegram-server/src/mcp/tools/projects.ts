@@ -1,13 +1,12 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { getRepositories } from '@/repositories';
 import { GraphPermissions } from '@/services/permissions';
 import { mcpJson, mcpError } from '@/mcp/types';
 import type { AuthContext } from '@/middleware/auth';
 
 export function registerProjectTools(server: McpServer, auth: AuthContext): void {
+  const repos = getRepositories();
   const userId = parseInt(auth.user.id);
 
   server.registerTool(
@@ -36,13 +35,9 @@ export function registerProjectTools(server: McpServer, auth: AuthContext): void
       const canAccess = await GraphPermissions.canAccessProject(userId, id);
       if (!canAccess) return mcpError('Project not found or access denied');
 
-      const [project] = await db
-        .select()
-        .from(projects)
-        .where(and(eq(projects.id, id), isNull(projects.deletedAt)))
-        .limit(1);
+      const project = await repos.projects.findById(id);
 
-      if (!project) return mcpError('Project not found');
+      if (!project || project.deletedAt) return mcpError('Project not found');
       return mcpJson(project);
     }
   );
@@ -62,10 +57,7 @@ export function registerProjectTools(server: McpServer, auth: AuthContext): void
       if (!auth.user.teamId) return mcpError('User has no team assigned');
       const teamId = auth.user.teamId;
 
-      const [project] = await db
-        .insert(projects)
-        .values({ name, graphId, graphMeta, teamId, createdBy: userId })
-        .returning();
+      const project = await repos.projects.create({ name, graphId, graphMeta, teamId, createdBy: userId });
 
       return mcpJson(project);
     }
@@ -86,11 +78,7 @@ export function registerProjectTools(server: McpServer, auth: AuthContext): void
       const canAccess = await GraphPermissions.canAccessProject(userId, id);
       if (!canAccess) return mcpError('Project not found or access denied');
 
-      const [updated] = await db
-        .update(projects)
-        .set({ ...(name && { name }), ...(graphMeta && { graphMeta }), updatedAt: new Date() })
-        .where(eq(projects.id, id))
-        .returning();
+      const updated = await repos.projects.update(id, { ...(name && { name }), ...(graphMeta && { graphMeta }) });
 
       if (!updated) return mcpError('Project not found');
       return mcpJson(updated);
@@ -110,10 +98,7 @@ export function registerProjectTools(server: McpServer, auth: AuthContext): void
       const canAccess = await GraphPermissions.canAccessProject(userId, id);
       if (!canAccess) return mcpError('Project not found or access denied');
 
-      await db
-        .update(projects)
-        .set({ deletedAt: new Date() })
-        .where(eq(projects.id, id));
+      await repos.projects.softDelete(id);
 
       return mcpJson({ success: true, id });
     }

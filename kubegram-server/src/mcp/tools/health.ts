@@ -15,15 +15,17 @@ export function registerHealthTools(server: McpServer, _auth: AuthContext): void
     async () => {
       let dbHealthy = false;
       try {
-        await db.execute(sql`SELECT 1`);
-        dbHealthy = true;
+        if (db) {
+          await db.execute(sql`SELECT 1`);
+          dbHealthy = true;
+        }
       } catch {
         // db is unhealthy
       }
 
       return mcpJson({
         server: 'ok',
-        database: dbHealthy ? 'ok' : 'error',
+        database: db ? (dbHealthy ? 'ok' : 'error') : 'unavailable',
         timestamp: new Date().toISOString(),
       });
     }

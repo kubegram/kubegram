@@ -143,7 +143,7 @@ export function registerCodegenTools(server: McpServer, auth: AuthContext): void
       const hasPermission = await GraphPermissions.canAccessJob(userId, jobId);
       if (!hasPermission) return mcpError('Job not found or access denied');
 
-      await db
+      await db!
         .update(generationJobs)
         .set({ status: 'cancelled', updatedAt: new Date() })
         .where(eq(generationJobs.uuid, jobId));

@@ -1,9 +1,7 @@
 import { Hono } from 'hono';
 import * as v from 'valibot';
-import { db } from '@/db';
-import { users, teams, organizations } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 
+import { getUserCompanyId } from '@/services/entity-resolver';
 import { GraphSchema } from './types';
 import { type AuthContext } from '@/middleware/auth';
 import { graphqlSdk } from '@/clients/rag-client';
@@ -14,40 +12,6 @@ type Variables = {
 };
 
 const crudRoutes = new Hono<{ Variables: Variables }>();
-
-/**
- * Helper to get company ID for the authenticated user
- */
-async function getUserCompanyId(userId: number): Promise<string> {
-    const [user] = await db.select()
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
-
-    if (!user?.teamId) {
-        throw new Error('User does not belong to a valid company context');
-    }
-
-    const [team] = await db.select()
-        .from(teams)
-        .where(eq(teams.id, user.teamId))
-        .limit(1);
-
-    if (!team?.organizationId) {
-        throw new Error('User does not belong to a valid company context');
-    }
-
-    const [org] = await db.select()
-        .from(organizations)
-        .where(eq(organizations.id, team.organizationId))
-        .limit(1);
-
-    if (!org?.companyId) {
-        throw new Error('User does not belong to a valid company context');
-    }
-
-    return org.companyId;
-}
 
 /**
  * POST /api/public/v1/graph/crud

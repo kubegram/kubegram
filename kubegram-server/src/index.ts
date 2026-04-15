@@ -18,6 +18,15 @@ if (config.enableHA) {
   await redisClient.connect();
 }
 
+import { testDatabaseConnection, db } from './db';
+import { initializeRepositories } from './repositories';
+
+const dbAvailable = config.hasDatabaseUrl && db && (await testDatabaseConnection());
+if (!dbAvailable) {
+  logger.warn('No DB connection — falling back to EventCache. Set ENABLE_HA=true for Redis-backed persistence.');
+}
+await initializeRepositories(!dbAvailable);
+
 // Graceful shutdown
 const shutdown = async () => {
   logger.info('Shutting down...');

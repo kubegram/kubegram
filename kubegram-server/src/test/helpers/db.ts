@@ -18,16 +18,22 @@ export function getTestDbClient() {
 
 export async function resetDatabase(): Promise<void> {
   const testClient = getTestDbClient();
-  
+
+  // Drop all existing tables first
   await testClient.unsafe(`
     DO $$ DECLARE
       r RECORD;
     BEGIN
       FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
-        EXECUTE 'DELETE FROM ' || quote_ident(r.tablename);
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
       END LOOP;
     END $$;
   `);
+
+  // Run schema migration to create tables
+  const migrationPath = resolve(__dirname, '../../../drizzle/0000_tearful_shiver_man.sql');
+  const migrationSql = readFileSync(migrationPath, 'utf-8');
+  await testClient.unsafe(migrationSql);
 }
 
 export async function loadFixtures(): Promise<void> {

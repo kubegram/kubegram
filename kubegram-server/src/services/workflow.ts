@@ -104,7 +104,7 @@ export class WorkflowService {
       .then(async (result) => {
         try {
           if (result.success && result.generatedCode) {
-            await db
+            await db!
               .update(generationJobs)
               .set({
                 status: 'completed',
@@ -116,7 +116,7 @@ export class WorkflowService {
               .where(eq(generationJobs.uuid, jobId));
             logger.info('Codegen workflow completed', { jobId });
           } else {
-            await db
+            await db!
               .update(generationJobs)
               .set({
                 status: 'failed',
@@ -138,7 +138,7 @@ export class WorkflowService {
         const message = error instanceof Error ? error.message : String(error);
         logger.error('Unhandled codegen workflow error', { jobId, error: message });
         try {
-          await db
+          await db!
             .update(generationJobs)
             .set({
               status: 'failed',

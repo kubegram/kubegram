@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { Hono } from 'hono';
 import { getTestDbClient, resetDatabase, loadFixtures } from '../../test/helpers/db';
 
 describe('Database Integration Tests', () => {
@@ -18,7 +17,7 @@ describe('Database Integration Tests', () => {
       
       const testCompany = result.find((c: any) => c.name === 'Test Company Inc');
       expect(testCompany).toBeDefined();
-      expect(testCompany.tokens).toBe(1000);
+      expect(testCompany!!.tokens).toBe(1000);
     });
 
     it('should have organizations table populated', async () => {
@@ -66,7 +65,7 @@ describe('Database Integration Tests', () => {
       
       const completedJob = result.find((j: any) => j.status === 'completed');
       expect(completedJob).toBeDefined();
-      expect(completedJob.progress).toBe(100);
+      expect(completedJob!!.progress).toBe(100);
     });
 
     it('should have sessions table populated', async () => {
@@ -82,14 +81,14 @@ describe('Database Integration Tests', () => {
     it('should link users to teams', async () => {
       const db = getTestDbClient();
       const result = await db`
-        SELECT u.id, u.email, u."teamId", t.name as team_name
+        SELECT u.id, u.email, u.team_id as "teamId", t.name as team_name
         FROM users u
-        LEFT JOIN teams t ON u."teamId" = t.id
+        LEFT JOIN teams t ON u.team_id = t.id
         ORDER BY u.id
       `;
       
-      expect(result[0].team_name).toBe('Platform Team');
-      expect(result[2].team_name).toBe('Backend Team');
+      expect(result[0].teamName).toBe('Platform Team');
+      expect(result[2].teamName).toBe('Backend Team');
     });
 
     it('should link organizations to companies', async () => {
@@ -97,10 +96,10 @@ describe('Database Integration Tests', () => {
       const result = await db`
         SELECT o.name as org_name, c.name as company_name
         FROM organizations o
-        JOIN companies c ON o."companyId" = c.id
+        JOIN companies c ON o.company_id = c.id
       `;
       
-      expect(result[0].company_name).toBe('Test Company Inc');
+      expect(result[0].companyName).toBe('Test Company Inc');
     });
 
     it('should link teams to organizations', async () => {
@@ -108,10 +107,10 @@ describe('Database Integration Tests', () => {
       const result = await db`
         SELECT t.name as team_name, o.name as org_name
         FROM teams t
-        JOIN organizations o ON t."organizationId" = o.id
+        JOIN organizations o ON t.organization_id = o.id
       `;
       
-      expect(result[0].org_name).toBe('Engineering');
+      expect(result[0].orgName).toBe('Engineering');
     });
   });
 
@@ -128,7 +127,7 @@ describe('Database Integration Tests', () => {
       const db = getTestDbClient();
       
       await db`INSERT INTO organizations (name) VALUES ('Orphan Org')`;
-      const result = await db`SELECT * FROM organizations WHERE "companyId" IS NULL`;
+      const result = await db`SELECT * FROM organizations WHERE company_id IS NULL`;
       
       expect(result).toBeDefined();
       expect(result.length).toBe(1);

@@ -10,7 +10,7 @@ import { redisClient } from '../state/redis';
 
 async function ensureUserHasTeam(userId: number, userName: string): Promise<{ teamId: number, organizationId: number, companyId: string }> {
   try {
-    const existingUsers = await db.select()
+    const existingUsers = await db!.select()
       .from(users)
       .where(eq(users.id, userId))
       .limit(1);
@@ -22,7 +22,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const user = existingUsers[0];
 
     if (user.teamId) {
-      const teamResult = await db.select()
+      const teamResult = await db!.select()
         .from(teams)
         .where(eq(teams.id, user.teamId))
         .limit(1);
@@ -37,7 +37,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
         throw new Error('Team has no associated organization');
       }
 
-      const orgResult = await db.select()
+      const orgResult = await db!.select()
         .from(organizations)
         .where(eq(organizations.id, team.organizationId))
         .limit(1);
@@ -52,7 +52,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
         throw new Error('Organization has no associated company');
       }
 
-      const companyResult = await db.select()
+      const companyResult = await db!.select()
         .from(companies)
         .where(eq(companies.id, organization.companyId))
         .limit(1);
@@ -73,7 +73,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const uuid = randomUUID();
     const sanitizedUserName = userName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
 
-    const newCompanyResult = await db.insert(companies)
+    const newCompanyResult = await db!.insert(companies)
       .values({
         name: `company-${sanitizedUserName}-${uuid}`
       })
@@ -82,7 +82,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const companyId = newCompanyResult[0].id;
     logger.info('Created placeholder company', { companyId, userId });
 
-    const newOrgResult = await db.insert(organizations)
+    const newOrgResult = await db!.insert(organizations)
       .values({
         name: `org-${sanitizedUserName}-${uuid}`,
         companyId: companyId
@@ -92,7 +92,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const organizationId = newOrgResult[0].id;
     logger.info('Created placeholder organization', { organizationId, companyId, userId });
 
-    const newTeamResult = await db.insert(teams)
+    const newTeamResult = await db!.insert(teams)
       .values({
         name: `team-${sanitizedUserName}-${uuid}`,
         organizationId: organizationId
@@ -102,7 +102,7 @@ async function ensureUserHasTeam(userId: number, userName: string): Promise<{ te
     const teamId = newTeamResult[0].id;
     logger.info('Created placeholder team', { teamId, organizationId, userId });
 
-    await db.update(users)
+    await db!.update(users)
       .set({
         teamId: teamId,
         updatedAt: new Date()
@@ -254,7 +254,7 @@ const app = createAuthApp({
         throw new Error('Could not get email from OAuth provider');
       }
 
-      const existingUsers = await db.select()
+      const existingUsers = await db!.select()
         .from(users)
         .where(eq(users.email, email))
         .limit(1);
@@ -265,7 +265,7 @@ const app = createAuthApp({
         const user = existingUsers[0];
         userId = user.id;
 
-        await db.update(users)
+        await db!.update(users)
           .set({
             name,
             avatarUrl,
@@ -284,7 +284,7 @@ const app = createAuthApp({
 
         logger.info('Updated existing user', { email, userId });
       } else {
-        const newUserResult = await db.insert(users)
+        const newUserResult = await db!.insert(users)
           .values({
             name,
             email,

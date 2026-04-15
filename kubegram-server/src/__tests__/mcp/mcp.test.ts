@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import {
   getTestClient,
-  createAuthHeaders,
   createAdminHeaders,
   createMemberHeaders,
 } from '../../test/helpers';

@@ -1,35 +1,33 @@
 import { Hono } from 'hono';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { getRepositories } from '@/repositories';
 
 const app = new Hono();
 
-// GET /projects
 app.get('/', async (c) => {
-    const items = await db.select().from(projects);
+    const repos = getRepositories();
+    const items = await repos.projects.findAll();
     return c.json(items);
 });
 
-// GET /projects/:id
 app.get('/:id', async (c) => {
-    const id = c.req.param('id');
-    const items = await db.select().from(projects).where(eq(projects.id, parseInt(id))).limit(1);
-    if (items.length === 0) {
+    const id = parseInt(c.req.param('id'));
+    const repos = getRepositories();
+    const item = await repos.projects.findById(id);
+    if (!item) {
         return c.notFound();
     }
-    return c.json(items[0]);
+    return c.json(item);
 });
 
-// POST /projects
 app.post('/', async (c) => {
+    const repos = getRepositories();
     try {
         const body = await c.req.json();
-        const [item] = await db.insert(projects).values({
+        const item = await repos.projects.create({
             name: body.name,
             graphId: body.graphId,
             graphMeta: body.graphMeta ? JSON.stringify(body.graphMeta) : undefined
-        }).returning();
+        });
         return c.json(item, 201);
     } catch (e) {
         console.error(e);
@@ -37,18 +35,12 @@ app.post('/', async (c) => {
     }
 });
 
-// PUT /projects/:id
 app.put('/:id', async (c) => {
-    const id = c.req.param('id');
+    const id = parseInt(c.req.param('id'));
+    const repos = getRepositories();
     try {
         const body = await c.req.json();
-        const [item] = await db.update(projects).set({
-            name: body.name,
-            graphId: body.graphId,
-            graphMeta: body.graphMeta ? JSON.stringify(body.graphMeta) : undefined,
-            updatedAt: new Date()
-        }).where(eq(projects.id, parseInt(id))).returning();
-
+        const item = await repos.projects.update(id, body);
         if (!item) {
             return c.notFound();
         }
@@ -59,10 +51,10 @@ app.put('/:id', async (c) => {
     }
 });
 
-// DELETE /projects/:id
 app.delete('/:id', async (c) => {
-    const id = c.req.param('id');
-    await db.delete(projects).where(eq(projects.id, parseInt(id)));
+    const id = parseInt(c.req.param('id'));
+    const repos = getRepositories();
+    await repos.projects.delete(id);
     return c.body(null, 204);
 });
 

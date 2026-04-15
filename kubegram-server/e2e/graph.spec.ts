@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const ADMIN_AUTH = { extraHTTPHeaders: { Cookie: 'session=session-admin-001' } };
+const ADMIN_AUTH = { headers: { Cookie: 'session=session-admin-001' } };
 
 test.describe('Graph Code Generation E2E Tests', () => {
   test('should require auth for codegen endpoints', async ({ request }) => {
@@ -11,7 +11,7 @@ test.describe('Graph Code Generation E2E Tests', () => {
   test('should list codegen jobs', async ({ request }) => {
     const response = await request.get('/api/public/v1/graph/codegen', ADMIN_AUTH);
     expect([200, 401, 403]).toContain(response.status());
-    
+
     if (response.status() === 200) {
       const body = await response.json();
       expect(body).toHaveProperty('jobs');
@@ -53,7 +53,7 @@ test.describe('Graph Code Generation E2E Tests', () => {
   test('should list all jobs for user', async ({ request }) => {
     const response = await request.get('/api/public/v1/graph/codegen/jobs', ADMIN_AUTH);
     expect([200, 401, 403]).toContain(response.status());
-    
+
     if (response.status() === 200) {
       const body = await response.json();
       expect(body).toHaveProperty('jobs');
@@ -71,9 +71,8 @@ test.describe('Graph Planning E2E Tests', () => {
 
   test('should initialize planning', async ({ request }) => {
     const response = await request.post('/api/public/v1/graph/plan', {
-      ...ADMIN_AUTH,
       headers: {
-        ...ADMIN_AUTH.extraHTTPHeaders,
+        ...ADMIN_AUTH.headers,
         'X-Kubegram-Team-Id': '1',
       },
       data: {
@@ -85,7 +84,7 @@ test.describe('Graph Planning E2E Tests', () => {
         },
       },
     });
-    
+
     expect([201, 400, 401, 403, 500]).toContain(response.status());
   });
 
@@ -110,9 +109,8 @@ test.describe('Graph Validation E2E Tests', () => {
 
   test('should initialize validation', async ({ request }) => {
     const response = await request.post('/api/public/v1/graph/validate', {
-      ...ADMIN_AUTH,
       headers: {
-        ...ADMIN_AUTH.extraHTTPHeaders,
+        ...ADMIN_AUTH.headers,
         'X-Kubegram-Team-Id': '1',
       },
       data: {
@@ -124,7 +122,7 @@ test.describe('Graph Validation E2E Tests', () => {
         },
       },
     });
-    
+
     expect([201, 400, 401, 403, 500]).toContain(response.status());
   });
 
@@ -149,9 +147,8 @@ test.describe('Graph Suggestions E2E Tests', () => {
 
   test('should get AI suggestions', async ({ request }) => {
     const response = await request.post('/api/public/v1/graph/suggest', {
-      ...ADMIN_AUTH,
       headers: {
-        ...ADMIN_AUTH.extraHTTPHeaders,
+        ...ADMIN_AUTH.headers,
         'X-Kubegram-Team-Id': '1',
       },
       data: {
@@ -163,7 +160,7 @@ test.describe('Graph Suggestions E2E Tests', () => {
         },
       },
     });
-    
+
     expect([200, 400, 401, 403, 500]).toContain(response.status());
   });
 });
@@ -183,7 +180,7 @@ test.describe('Graph CRUD E2E Tests', () => {
 test.describe('Code Generation Workflow E2E Tests', () => {
   test('full codegen workflow', async ({ request }) => {
     const projectName = `E2E Test Project ${Date.now()}`;
-    
+
     const createProjectResponse = await request.post('/api/public/v1/projects', {
       ...ADMIN_AUTH,
       data: {
@@ -192,14 +189,13 @@ test.describe('Code Generation Workflow E2E Tests', () => {
         graphMeta: JSON.stringify({ nodes: 5, edges: 3 }),
       },
     });
-    
+
     if (createProjectResponse.status() === 201) {
       const project = await createProjectResponse.json();
-      
+
       const codegenResponse = await request.post('/api/public/v1/graph/codegen', {
-        ...ADMIN_AUTH,
         headers: {
-          ...ADMIN_AUTH.extraHTTPHeaders,
+          ...ADMIN_AUTH.headers,
           'X-Kubegram-Team-Id': '1',
         },
         data: {
@@ -219,16 +215,15 @@ test.describe('Code Generation Workflow E2E Tests', () => {
           },
         },
       });
-      
+
       expect([201, 400, 401, 403, 500]).toContain(codegenResponse.status());
     }
   });
 
   test('validation workflow', async ({ request }) => {
     const validationResponse = await request.post('/api/public/v1/graph/validate', {
-      ...ADMIN_AUTH,
       headers: {
-        ...ADMIN_AUTH.extraHTTPHeaders,
+        ...ADMIN_AUTH.headers,
         'X-Kubegram-Team-Id': '1',
       },
       data: {
@@ -243,7 +238,7 @@ test.describe('Code Generation Workflow E2E Tests', () => {
         },
       },
     });
-    
+
     expect([201, 400, 401, 403, 500]).toContain(validationResponse.status());
   });
 });

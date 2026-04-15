@@ -1,73 +1,60 @@
 import { Hono } from 'hono';
-import { db } from '@/db';
-import { teams, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { getRepositories } from '@/repositories';
 
 const app = new Hono();
 
 // GET /teams or GET /teams?userId=123
 app.get('/', async (c) => {
+    const repos = getRepositories();
     const userId = c.req.query('userId');
 
-    // If userId query parameter is provided, look up team by user
     if (userId) {
         const userIdNum = parseInt(userId);
         if (isNaN(userIdNum)) {
             return c.json({ error: 'Invalid userId parameter' }, 400);
         }
 
-        // Find user and their teamId
-        const userResult = await db.select()
-            .from(users)
-            .where(eq(users.id, userIdNum))
-            .limit(1);
-
-        if (userResult.length === 0) {
+        const user = await repos.users.findById(userIdNum);
+        if (!user) {
             return c.json({ error: 'User not found' }, 404);
         }
-
-        const user = userResult[0];
         if (!user.teamId) {
             return c.json({ error: 'User has no team assigned' }, 404);
         }
 
-        // Get the team
-        const teamResult = await db.select()
-            .from(teams)
-            .where(eq(teams.id, user.teamId))
-            .limit(1);
-
-        if (teamResult.length === 0) {
+        const team = await repos.teams.findById(user.teamId);
+        if (!team) {
             return c.json({ error: 'Team not found' }, 404);
         }
 
-        return c.json(teamResult[0]);
+        return c.json(team);
     }
 
-    // Default behavior: return all teams
-    const allTeams = await db.select().from(teams);
+    const allTeams = await repos.teams.findAll();
     return c.json(allTeams);
 });
 
 // GET /teams/:id
 app.get('/:id', async (c) => {
-    const id = c.req.param('id');
-    const team = await db.select().from(teams).where(eq(teams.id, parseInt(id))).limit(1);
-    if (team.length === 0) {
+    const id = parseInt(c.req.param('id'));
+    const repos = getRepositories();
+    const team = await repos.teams.findById(id);
+    if (!team) {
         return c.json({ error: 'Team not found' }, 404);
     }
-    return c.json(team[0]);
+    return c.json(team);
 });
 
 // POST /teams
 app.post('/', async (c) => {
+    const repos = getRepositories();
     try {
         const body = await c.req.json();
-        const newTeam = await db.insert(teams).values({
+        const newTeam = await repos.teams.create({
             name: body.name,
             organizationId: body.organizationID,
-        }).returning();
-        return c.json(newTeam[0], 201);
+        });
+        return c.json(newTeam, 201);
     } catch (e) {
         return c.json({ error: 'Invalid request' }, 400);
     }
@@ -75,23 +62,15 @@ app.post('/', async (c) => {
 
 // PUT /teams/:id
 app.put('/:id', async (c) => {
-    const id = c.req.param('id');
+    const id = parseInt(c.req.param('id'));
+    const repos = getRepositories();
     try {
         const body = await c.req.json();
-        const updatedTeam = await db.update(teams)
-            .set({
-                name: body.name,
-                organizationId: body.organizationID,
-                updatedAt: new Date(),
-            })
-            .where(eq(teams.id, parseInt(id)))
-            .returning();
-
-        if (updatedTeam.length === 0) {
+        const updated = await repos.teams.update(id, body);
+        if (!updated) {
             return c.json({ error: 'Team not found' }, 404);
         }
-
-        return c.json(updatedTeam[0]);
+        return c.json(updated);
     } catch (e) {
         return c.json({ error: 'Invalid request' }, 400);
     }
@@ -99,8 +78,9 @@ app.put('/:id', async (c) => {
 
 // DELETE /teams/:id
 app.delete('/:id', async (c) => {
-    const id = c.req.param('id');
-    await db.delete(teams).where(eq(teams.id, parseInt(id)));
+    const id = parseInt(c.req.param('id'));
+    const repos = getRepositories();
+    await repos.teams.delete(id);
     return c.body(null, 204);
 });
 

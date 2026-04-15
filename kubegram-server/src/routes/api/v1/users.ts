@@ -1,28 +1,26 @@
 import { Hono } from 'hono';
-import { db } from '@/db';
-import { users } from '@/db/schema';
+import { getRepositories } from '@/repositories';
 import { requireAuth } from '@/middleware/auth';
 
 const app = new Hono();
 
-// GET /users/me - Get current authenticated user
 app.get('/me', async (c) => {
     const auth = await requireAuth(c);
     if (auth instanceof Response) return auth;
     return c.json(auth.user);
 });
 
-// GET /users (list all users - according to swagger)
 app.get('/', async (c) => {
-    const allUsers = await db.select().from(users);
+    const repos = getRepositories();
+    const allUsers = await repos.users.findAll();
     return c.json(allUsers);
 });
 
-// POST /users
 app.post('/', async (c) => {
+    const repos = getRepositories();
     try {
         const body = await c.req.json();
-        const newUser = await db.insert(users).values({
+        const newUser = await repos.users.create({
             name: body.name,
             email: body.email,
             avatarUrl: body.avatar_url,
@@ -30,8 +28,8 @@ app.post('/', async (c) => {
             provider: body.provider,
             providerId: body.provider_id,
             teamId: body.teamID,
-        }).returning();
-        return c.json(newUser[0], 201);
+        });
+        return c.json(newUser, 201);
     } catch (e) {
         return c.json({ error: 'Invalid request' }, 400);
     }

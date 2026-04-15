@@ -28,6 +28,7 @@ import { eq, and } from 'drizzle-orm';
 import { sidecarRegistry } from '@/services/sidecar-registry';
 import { db } from '@/db';
 import { projects } from '@/db/schema';
+import { getRepositories } from '@/repositories';
 import * as argocdService from '@/services/argocd';
 import config from '@/config/env';
 import logger from '@/utils/logger';
@@ -261,12 +262,9 @@ internalRoutes.post('/github/pr-merged', async (c) => {
     }
 
     // Look up the project linked to this GitHub repository
-    const result = await db.select()
-      .from(projects)
-      .where(and(eq(projects.githubOwner, body.owner), eq(projects.githubRepo, body.repo)))
-      .limit(1);
-
-    const project = result[0];
+    const repos = getRepositories();
+    const all = await repos.projects.findAll();
+    const project = all.find(p => p.githubOwner === body.owner && p.githubRepo === body.repo);
 
     if (!project?.argocdAppName) {
       logger.info('No ArgoCD app configured for merged PR repo — skipping sync', {

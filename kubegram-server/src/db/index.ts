@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
 
-const connectionString = process.env.DATABASE_URL!;
+const connectionString = process.env.DATABASE_URL ?? '';
 
 // Alternative configuration for strict mode compatibility
 const clientOptions = {
@@ -18,11 +18,24 @@ const clientOptions = {
   connect_timeout: 10,
 };
 
-export const client = postgres(connectionString, clientOptions);
+export let client: ReturnType<typeof postgres> | null = null;
+export let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
-export const db = drizzle(client, { 
-  schema,
-  // Explicit settings for strict mode compatibility
-  logger: process.env.NODE_ENV === 'development',
-  casing: 'camelCase'
-});
+if (connectionString) {
+  client = postgres(connectionString, clientOptions);
+  db = drizzle(client, {
+    schema,
+    logger: process.env.NODE_ENV === 'development',
+    casing: 'camelCase',
+  });
+}
+
+export async function testDatabaseConnection(): Promise<boolean> {
+  if (!client) return false;
+  try {
+    await client`SELECT 1`;
+    return true;
+  } catch {
+    return false;
+  }
+}

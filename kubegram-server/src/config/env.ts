@@ -22,6 +22,7 @@ export const config = {
     oktaDomain: process.env.OKTA_DOMAIN || '',
     // Database configuration
     databaseUrl: process.env.DATABASE_URL || 'postgresql://localhost:5432/kubegram',
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
     // Redis configuration
     redisHost: process.env.REDIS_HOST || 'localhost',
     redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),

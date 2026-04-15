@@ -36,3 +36,10 @@ lerna-debug.log*
 
 # Bun
 .bun/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/

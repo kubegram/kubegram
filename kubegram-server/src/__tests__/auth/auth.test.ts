@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import {
   getTestClient,
   getTestDbClient,
@@ -7,8 +7,6 @@ import {
   createAuthHeaders,
   createAdminHeaders,
   createMemberHeaders,
-  TEST_USERS,
-  TEST_SESSIONS,
 } from '../../test/helpers';
 import { sessionFactory } from '../../test/factories';
 

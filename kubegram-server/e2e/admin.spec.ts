@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-const ADMIN_AUTH = { extraHTTPHeaders: { Cookie: 'session=session-admin-001' } };
-const MANAGER_AUTH = { extraHTTPHeaders: { Cookie: 'session=session-manager-001' } };
-const MEMBER_AUTH = { extraHTTPHeaders: { Cookie: 'session=member1-001' } };
+const ADMIN_AUTH = { headers: { Cookie: 'session=session-admin-001' } };
+const MANAGER_AUTH = { headers: { Cookie: 'session=session-manager-001' } };
+const MEMBER_AUTH = { headers: { Cookie: 'session=member1-001' } };
 
 test.describe('Admin Operators E2E Tests', () => {
   test('should require auth for operators list', async ({ request }) => {
@@ -13,7 +13,7 @@ test.describe('Admin Operators E2E Tests', () => {
   test('admin should list operators', async ({ request }) => {
     const response = await request.get('/api/v1/admin/operators', ADMIN_AUTH);
     expect([200, 401, 403]).toContain(response.status());
-    
+
     if (response.status() === 200) {
       const body = await response.json();
       expect(body.operators).toBeDefined();
@@ -40,7 +40,7 @@ test.describe('Admin Operators E2E Tests', () => {
         mcpEndpoint: 'http://operator:8080',
       },
     });
-    
+
     expect([200, 201, 400, 401, 500]).toContain(response.status());
   });
 
@@ -74,7 +74,7 @@ test.describe('Admin Operator Tokens E2E Tests', () => {
   test('admin should list tokens', async ({ request }) => {
     const response = await request.get('/api/v1/admin/operator-tokens', ADMIN_AUTH);
     expect([200, 401, 403]).toContain(response.status());
-    
+
     if (response.status() === 200) {
       const body = await response.json();
       expect(body.tokens).toBeDefined();
@@ -91,13 +91,13 @@ test.describe('Admin Operator Tokens E2E Tests', () => {
     const response = await request.post('/api/v1/admin/operator-tokens', {
       ...ADMIN_AUTH,
       data: {
-        companyId: '11111111-1111-1111-1111-111111111111',
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
         label: 'E2E Test Token',
       },
     });
-    
+
     expect([201, 400, 401, 403]).toContain(response.status());
-    
+
     if (response.status() === 201) {
       const body = await response.json();
       expect(body.token).toBeDefined();
@@ -138,7 +138,7 @@ test.describe('LLM Providers E2E Tests', () => {
         model: 'gpt-4',
       },
     });
-    
+
     expect([201, 400, 401, 403, 500]).toContain(response.status());
   });
 });
@@ -146,15 +146,15 @@ test.describe('LLM Providers E2E Tests', () => {
 test.describe('Admin Workflow E2E Tests', () => {
   test('full operator lifecycle', async ({ request }) => {
     const operatorId = `workflow-operator-${Date.now()}`;
-    
+
     const createTokenResponse = await request.post('/api/v1/admin/operator-tokens', {
       ...ADMIN_AUTH,
       data: { label: 'Workflow Test Token' },
     });
-    
+
     if (createTokenResponse.status() === 201) {
       const { token } = await createTokenResponse.json();
-      
+
       const registerResponse = await request.post('/api/v1/admin/operators/register', {
         headers: { Authorization: `Bearer ${token}` },
         data: {
@@ -163,9 +163,9 @@ test.describe('Admin Workflow E2E Tests', () => {
           mcpEndpoint: 'http://operator:8080',
         },
       });
-      
+
       expect([200, 201]).toContain(registerResponse.status());
-      
+
       const listResponse = await request.get('/api/v1/admin/operators', ADMIN_AUTH);
       if (listResponse.status() === 200) {
         const body = await listResponse.json();
@@ -178,19 +178,19 @@ test.describe('Admin Workflow E2E Tests', () => {
     const createResponse = await request.post('/api/v1/admin/operator-tokens', {
       ...ADMIN_AUTH,
       data: {
-        companyId: '11111111-1111-1111-1111-111111111111',
+        companyId: '550e8400-e29b-41d4-a716-446655440000',
         label: 'Temporary Token',
       },
     });
-    
+
     if (createResponse.status() === 201) {
       const { token } = await createResponse.json();
-      
+
       const verifyResponse = await request.post('/api/v1/admin/operators/register', {
         headers: { Authorization: `Bearer ${token}` },
         data: { clusterId: `temp-cluster-${Date.now()}` },
       });
-      
+
       expect([200, 201]).toContain(verifyResponse.status());
     }
   });

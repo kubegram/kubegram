@@ -4,8 +4,6 @@ import {
   getTestDbClient,
   resetDatabase,
   loadFixtures,
-  expectOK,
-  ApiResponse,
 } from '../../test/helpers';
 
 describe('Health Check Integration Tests', () => {
@@ -107,9 +105,11 @@ describe('Database Health Integration Tests', () => {
   it('should support transactions', async () => {
     const testCompanyName = 'Transaction Test Company';
     
-    const result = await db.transaction(async (tx) => {
-      await tx`INSERT INTO companies (name, tokens) VALUES (${testCompanyName}, 100)`;
-      const check = await tx`SELECT * FROM companies WHERE name = ${testCompanyName}`;
+    const result = await db.begin(async (tx) => {
+      // Cast needed: TransactionSql extends Omit<Sql>, which drops call signatures in TypeScript
+      const sql = tx as unknown as typeof db;
+      await sql`INSERT INTO companies (name, tokens) VALUES (${testCompanyName}, 100)`;
+      const check = await sql`SELECT * FROM companies WHERE name = ${testCompanyName}`;
       return check;
     });
 

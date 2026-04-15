@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { Hono } from 'hono';
-import { getTestClient, ApiResponse, createAuthHeaders, createAdminHeaders } from './request';
+import { getTestClient, type ApiResponse } from './request';
+// @ts-expect-error - Test helpers
+import { createAuthHeaders, createAdminHeaders } from './request';
+// @ts-expect-error - Mock type
 import type { MockRAGClient } from '../mocks/rag-client';
 import { createMockRAGClient } from '../mocks/rag-client';
 import { getTestDbClient, resetDatabase, loadFixtures } from './db';

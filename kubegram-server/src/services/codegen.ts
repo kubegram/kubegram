@@ -18,6 +18,7 @@ import logger from '@/utils/logger';
 import config from '@/config/env';
 import type { WebSocketContext } from '@/routes/api/v1/graph/types';
 import type { Context } from 'hono';
+import { getRepositories } from '@/repositories';
 
 export class CodegenService {
   private activeSubscriptions = new Map<string, WebSocketContext>();
@@ -54,7 +55,7 @@ export class CodegenService {
         // Update existing project using transaction to avoid strict mode issues
         console.log('Updating existing project with ID:', projectId);
         
-        const result = await db.transaction(async (tx) => {
+        const result = db!.transaction(async (tx) => {
           // Build update payload; only include GitHub fields if provided
           const updateSet: Record<string, unknown> = {
             name: projectInfo.name || `Graph Project ${Date.now()}`,
@@ -127,7 +128,7 @@ export class CodegenService {
           createdAt: new Date().toISOString()
         };
 
-        const [project] = await db.insert(projects).values({
+        const [project] = await db!.insert(projects).values({
           name: projectInfo.name || `Graph Project ${Date.now()}`,
           graphId: graphId,
           graphMeta: JSON.stringify(projectMeta),
@@ -184,7 +185,7 @@ export class CodegenService {
     config: any
   ): Promise<any> {
     try {
-      const [job] = await db.insert(generationJobs).values({
+      const [job] = await db!.insert(generationJobs).values({
         uuid: jobId,
         graphId: graphId, // RAG system graph ID
         projectId: projectId, // Local project ID
@@ -259,7 +260,7 @@ export class CodegenService {
    */
   async getJobByJobId(jobId: string, userId: number): Promise<any | null> {
     try {
-      const [job] = await db.select()
+      const [job] = await db!.select()
         .from(generationJobs)
         .where(eq(generationJobs.uuid, jobId))
         .limit(1);
@@ -267,7 +268,7 @@ export class CodegenService {
       if (!job) return null;
 
       // Get the project to check team ownership
-      const [project] = await db.select()
+      const [project] = await db!.select()
         .from(projects)
         .where(eq(projects.id, job.projectId))
         .limit(1);
@@ -275,7 +276,7 @@ export class CodegenService {
       if (!project) return null;
 
       // Check user can access project
-      const [user] = await db.select()
+      const [user] = await db!.select()
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);
@@ -312,7 +313,7 @@ export class CodegenService {
     }
 
     // EventCache expired or job never started via workflow — fall back to DB
-    const [job] = await db.select()
+    const [job] = await db!.select()
       .from(generationJobs)
       .where(eq(generationJobs.uuid, jobId))
       .limit(1);
@@ -394,7 +395,7 @@ export class CodegenService {
     const { prUrl } = await res.json() as { prUrl: string };
 
     // Store the PR URL to prevent duplicate creation on subsequent status polls
-    await db.update(generationJobs)
+    await db!.update(generationJobs)
       .set({ githubPrUrl: prUrl, updatedAt: new Date() })
       .where(eq(generationJobs.uuid, job.uuid));
 

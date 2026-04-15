@@ -1,7 +1,6 @@
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
-import { config } from 'dotenv';
+import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 
-config({ path: '.env.test' });
+// Note: vitest loads .env.test automatically via vitest config
 
 import { db, resetDatabase, loadFixtures, closeDatabase } from './helpers/db';
 import { clearMocks, setupGlobalMocks } from './mocks';
@@ -17,10 +16,10 @@ afterAll(async () => {
   await closeDatabase();
 });
 
-beforeEach(() => {
+beforeEach(function () {
   vi.clearAllMocks();
 });
 
-afterEach(async () => {
+afterEach(async function () {
   vi.resetAllMocks();
 });

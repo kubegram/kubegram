@@ -9,13 +9,15 @@
 	dev-github-app build-github-app test-github-app lint-github-app typecheck-github-app \
 	build-core test-core lint-core typecheck-core \
 	build-auth lint-auth typecheck-auth \
-	build-all test-all lint-all typecheck-all check-all \
+	build-all test-all lint-all typecheck-all check-all test-all-full \
 	act-pr-validation act-common-release act-events-release \
 	act-core-release act-auth-release act-cli-release-dry \
 	act-operator-dry act-operator-live act-sidecar-dry act-sidecar-live \
 	act-deploy-dry act-validate act-lint act-test act-list act-help \
 	ci-install-events ci-verify-build-events \
-	ci-install-kubegram-auth ci-verify-build-kubegram-auth
+	ci-install-kubegram-auth ci-verify-build-kubegram-auth \
+	ci-install-kubegram-server ci-typecheck-kubegram-server ci-lint-kubegram-server ci-test-kubegram-server ci-all-kubegram-server \
+	ci-install-kubegram-server
 
 help:
 	@echo ""
@@ -78,6 +80,7 @@ help:
 	@echo "  ci-all-events            Run all events CI steps"
 	@echo "  ci-all-kubegram-core     Run all kubegram-core CI steps"
 	@echo "  ci-all-kubegram-auth     Run all kubegram-auth CI steps"
+	@echo "  ci-all-kubegram-server   Run all kubegram-server CI steps"
 	@echo "  ci-publish-common        Publish @kubegram/common-ts"
 	@echo "  ci-publish-events        Publish @kubegram/common-events"
 	@echo "  ci-publish-kubegram-core Publish @kubegram/kubegram-core"
@@ -349,6 +352,23 @@ ci-publish-kubegram-auth:
 ci-all-kubegram-auth: ci-install-kubegram-auth ci-typecheck-kubegram-auth ci-lint-kubegram-auth ci-build-kubegram-auth ci-verify-build-kubegram-auth
 	@echo "✅ All kubegram-auth CI checks passed"
 
+# kubegram-server CI steps
+ci-install-kubegram-server:
+	cd kubegram-server && bun install --frozen-lockfile
+
+ci-typecheck-kubegram-server:
+	cd kubegram-server && bun run typecheck
+
+ci-lint-kubegram-server:
+	cd kubegram-server && bun run lint
+
+ci-test-kubegram-server:
+	cd kubegram-server && bun run test:ci
+
+# Run all kubegram-server CI steps
+ci-all-kubegram-server: ci-install-kubegram-server ci-typecheck-kubegram-server ci-lint-kubegram-server
+	@echo "✅ All kubegram-server CI checks passed"
+
 ## CLI build targets
 build-cli:
 	cd kubegram-cli && make build
@@ -466,6 +486,9 @@ typecheck-auth:
 build-all: build-core build-auth build-kuberag build-server build-ui build-github-app
 
 test-all: test-core test-kuberag test-server test-github-app
+
+test-all-full: test-all
+	cd kubegram-server && bun run test:ci
 
 lint-all: lint-core lint-auth lint-kuberag lint-server lint-ui lint-github-app
 

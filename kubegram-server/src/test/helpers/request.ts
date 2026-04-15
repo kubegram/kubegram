@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
+// @ts-expect-error - Test helper needs app export
 import { createHonoApp } from '../../index';
 
 export interface RequestOptions {
+  method?: string;
   headers?: Record<string, string>;
   query?: Record<string, string | undefined>;
   body?: unknown;

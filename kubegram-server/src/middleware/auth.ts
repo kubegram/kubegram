@@ -1,8 +1,6 @@
 import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
-import { db } from "../db/index";
-import { users } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { getRepositories } from "../repositories";
 import type { UserSubject } from "../auth/openauth";
 import { createSessionManager } from '@kubegram/kubegram-auth';
 import * as v from "valibot";
@@ -30,17 +28,14 @@ const sessionManager = createSessionManager({
         return null;
       }
 
-      const userRecords = await db.select()
-        .from(users)
-        .where(eq(users.id, parsedId))
-        .limit(1);
+      const repos = getRepositories();
+      const dbUser = await repos.users.findById(parsedId);
 
-      if (!userRecords.length) {
+      if (!dbUser) {
         logger.error('User not found for token subject', { userId: parsedId });
         return null;
       }
 
-      const dbUser = userRecords[0];
       return {
         id: dbUser.id.toString(),
         email: dbUser.email,
@@ -53,17 +48,14 @@ const sessionManager = createSessionManager({
     },
 
     onValidateSession: async (user: AuthenticatedUser) => {
-      const userRecords = await db.select()
-        .from(users)
-        .where(eq(users.email, user.id))
-        .limit(1);
+      const repos = getRepositories();
+      const dbUser = await repos.users.findOne({ where: { email: user.id } });
 
-      if (!userRecords.length) {
+      if (!dbUser) {
         logger.error('User not found for session subject', { subject: user.id });
         return null;
       }
 
-      const dbUser = userRecords[0];
       return {
         id: dbUser.id.toString(),
         email: dbUser.email,

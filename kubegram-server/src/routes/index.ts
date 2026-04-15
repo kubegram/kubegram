@@ -16,7 +16,7 @@ const apiRoutes = new Hono();
 
 // Route mappings
 apiRoutes.route('/v1/admin', adminRoutes);
-apiRoutes.route('/v1/public', publicV1Routes);
+apiRoutes.route('/public/v1', publicV1Routes);
 apiRoutes.route('/v1', tokensRoutes);
 apiRoutes.route('/v1/users', usersRoutes);
 apiRoutes.route('/v1/providers', providersRoutes);

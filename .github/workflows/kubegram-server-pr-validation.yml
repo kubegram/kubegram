@@ -23,6 +23,8 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run ESLint
         run: bun run lint
@@ -69,6 +71,8 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Wait for PostgreSQL
         uses: ikalnytskyi/action-wait-for@v1
@@ -174,6 +178,8 @@ jobs:
 
       - name: Install dependencies
         run: bun install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Playwright
         run: bunx playwright install --with-deps chromium
