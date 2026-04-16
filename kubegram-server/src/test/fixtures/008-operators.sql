@@ -1,0 +1,2 @@
+-- Test operators (placeholder for future tests)
+-- No data needed for current test suite
