@@ -81,7 +81,7 @@ export function createAuthApp(options: AuthOptions): AuthApp {
   });
 
   return {
-    handle: (app as any).handle.bind(app),
+    handle: (app as any).fetch.bind(app),
   };
 }
 
