@@ -7,7 +7,7 @@ node_modules/
 coverage/
 
 # Production build
-public/
+/public/
 dist/
 
 # Environment variables
