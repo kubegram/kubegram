@@ -68,7 +68,7 @@ export function createMockKuberagClient(overrides?: {
   planJobId?: string;
   validationJobId?: string;
 }) {
-  const { codegenJobId = 'mock-codegen-job-001', planJobId = 'mock-plan-job-001', validationJobId = 'mock-validation-job-001' } = overrides || {};
+  const { codegenJobId = 'mock-codegen-job-001' } = overrides || {};
 
   return createMockHttpClient([
     {

@@ -2,7 +2,7 @@ import type { EventCache } from '@kubegram/events';
 import { EntityRecord } from '@/db/entity-record';
 import { IdGenerator } from '@/db/id-generator';
 import type { CompanyCertificate, NewCompanyCertificate } from '@/db/schema';
-import type { BaseRepository, FindOptions } from '../base';
+import type { FindOptions } from '../base';
 import type { CompanyCertificateRepository } from '../index';
 
 const TYPE = 'certificate';

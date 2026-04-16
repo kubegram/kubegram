@@ -53,7 +53,7 @@ honoApp.route('/oauth', app as any);
 
 // Static files
 // Explicitly serve logo.png to ensure it works
-honoApp.get('/logo.png', async (c) => {
+honoApp.get('/logo.png', async (_c) => {
   const file = Bun.file('./public/logo.png');
   return new Response(file, {
     headers: {

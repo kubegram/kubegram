@@ -128,7 +128,7 @@ export const userFactory = {
   },
 
   createMultiple: (count: number, overrides: Partial<UserInsert> = {}): UserInsert[] => {
-    return Array.from({ length: count }, (_, i) =>
+    return Array.from({ length: count }, () =>
       userFactory.create({
         ...overrides,
         email: `test${generateId()}@example.com`,
@@ -149,10 +149,10 @@ export const projectFactory = {
   }),
 
   createMultiple: (count: number, overrides: Partial<ProjectInsert> = {}): ProjectInsert[] => {
-    return Array.from({ length: count }, (_, i) =>
+    return Array.from({ length: count }, (_, index) =>
       projectFactory.create({
         ...overrides,
-        name: overrides.name || `Project ${i + 1}`,
+        name: overrides.name || `Project ${index + 1}`,
       })
     );
   },

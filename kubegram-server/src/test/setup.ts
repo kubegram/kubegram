@@ -2,7 +2,7 @@ import { beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 
 // Note: vitest loads .env.test automatically via vitest config
 
-import { db, resetDatabase, loadFixtures, closeDatabase } from './helpers/db';
+import { resetDatabase, loadFixtures, closeDatabase } from './helpers/db';
 import { clearMocks, setupGlobalMocks } from './mocks';
 
 beforeAll(async () => {

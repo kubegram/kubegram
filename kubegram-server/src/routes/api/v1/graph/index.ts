@@ -8,10 +8,8 @@
 import { Hono } from 'hono';
 import { requireAuthMiddleware } from '@/middleware/auth';
 import { parseJsonFields } from '@/middleware/parse-json-fields';
-import codegen from './codegen';
-import crud from './crud';
-import codegenRoutes from './codegen'; // Renamed from 'codegen' to 'codegenRoutes'
-import crudRoutes from './crud';     // Renamed from 'crud' to 'crudRoutes'
+import codegenRoutes from './codegen';
+import crudRoutes from './crud';
 import planRoutes from './plan';      // Added import for planRoutes
 import validationRoutes from './validation';
 import suggestRoutes from './suggest';

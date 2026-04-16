@@ -56,7 +56,7 @@ app.post('/', async (c) => {
             tokens: body.tokens ?? 0,
         });
         return c.json(newCompany, 201);
-    } catch (error) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });
@@ -72,7 +72,7 @@ app.put('/:id', async (c) => {
             return c.json({ error: 'Company not found' }, 404);
         }
         return c.json(updated);
-    } catch (error) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });

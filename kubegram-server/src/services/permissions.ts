@@ -17,7 +17,7 @@ export class GraphPermissions {
   static async canAccessProject(
     userId: number,
     projectId: number,
-    requiredPermission: GraphPermission = GraphPermission.READ
+    _requiredPermission: GraphPermission = GraphPermission.READ
   ): Promise<boolean> {
     try {
       const repos = getRepositories();

@@ -12,11 +12,9 @@ import { sessionFactory } from '../../test/factories';
 
 describe('Auth API Integration Tests', () => {
   let client: ReturnType<typeof getTestClient>;
-  let db: ReturnType<typeof getTestDbClient>;
 
   beforeAll(async () => {
     client = getTestClient();
-    db = getTestDbClient();
     await client.init();
     await resetDatabase();
     await loadFixtures();

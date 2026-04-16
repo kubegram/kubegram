@@ -4,12 +4,11 @@ import {
   getTestDbClient,
   resetDatabase,
   loadFixtures,
-  createAuthHeaders,
   createAdminHeaders,
   createManagerHeaders,
   createMemberHeaders,
 } from '../../test/helpers';
-import { operatorTokenFactory, operatorFactory } from '../../test/factories';
+import { operatorTokenFactory } from '../../test/factories';
 
 describe('Admin Operators API Integration Tests', () => {
   let client: ReturnType<typeof getTestClient>;
@@ -187,11 +186,9 @@ describe('Admin Operators API Integration Tests', () => {
 
 describe('Admin Operator Tokens API Integration Tests', () => {
   let client: ReturnType<typeof getTestClient>;
-  let db: ReturnType<typeof getTestDbClient>;
 
   beforeAll(async () => {
     client = getTestClient();
-    db = getTestDbClient();
     await client.init();
     await resetDatabase();
     await loadFixtures();

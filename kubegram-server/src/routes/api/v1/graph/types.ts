@@ -6,11 +6,6 @@
  */
 
 import * as v from 'valibot';
-import type {
-  GraphInput,
-  JobStatus,
-  GeneratedCodeGraph
-} from '@/clients/rag-client';
 
 // Request/Response Schemas
 export const GraphSchema = v.object({

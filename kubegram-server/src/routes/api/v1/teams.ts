@@ -55,7 +55,7 @@ app.post('/', async (c) => {
             organizationId: body.organizationID,
         });
         return c.json(newTeam, 201);
-    } catch (e) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });
@@ -71,7 +71,7 @@ app.put('/:id', async (c) => {
             return c.json({ error: 'Team not found' }, 404);
         }
         return c.json(updated);
-    } catch (e) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });

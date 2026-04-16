@@ -1,7 +1,7 @@
 import type { EventCache } from '@kubegram/events';
 import { EntityRecord } from '@/db/entity-record';
 import type { Company, NewCompany } from '@/db/schema';
-import type { BaseRepository, FindOptions } from '../base';
+import type { FindOptions } from '../base';
 import type { CompanyRepository } from '../index';
 
 const TYPE = 'company';

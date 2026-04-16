@@ -18,7 +18,6 @@ import logger from '@/utils/logger';
 import config from '@/config/env';
 import type { WebSocketContext } from '@/routes/api/v1/graph/types';
 import type { Context } from 'hono';
-import { getRepositories } from '@/repositories';
 
 export class CodegenService {
   private activeSubscriptions = new Map<string, WebSocketContext>();
@@ -196,7 +195,7 @@ export class CodegenService {
       }).returning();
 
       return job;
-    } catch (error) {
+    } catch {
       throw new CodegenError('Failed to store job metadata', config.graph, {
         isServerError: false
       });

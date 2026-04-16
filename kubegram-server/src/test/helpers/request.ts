@@ -131,18 +131,18 @@ export function resetTestClient(): void {
   testClient = null;
 }
 
-export async function createAuthenticatedRequest(user: keyof typeof import('./auth').TEST_USERS = 'admin') {
+export async function createAuthenticatedRequest(_user: keyof typeof import('./auth').TEST_USERS = 'admin') {
   const client = getTestClient();
   await client.init();
   return client;
 }
 
-export function createRequestWithSession(session: string) {
+export function createRequestWithSession(_session: string) {
   const client = getTestClient();
   return client;
 }
 
-export function createRequestWithBearer(token: string) {
+export function createRequestWithBearer(_token: string) {
   const client = getTestClient();
   return client;
 }

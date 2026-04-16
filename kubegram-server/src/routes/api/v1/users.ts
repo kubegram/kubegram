@@ -30,7 +30,7 @@ app.post('/', async (c) => {
             teamId: body.teamID,
         });
         return c.json(newUser, 201);
-    } catch (e) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });

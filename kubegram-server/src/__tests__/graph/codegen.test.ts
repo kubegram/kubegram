@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import {
   getTestClient,
-  getTestDbClient,
   resetDatabase,
   loadFixtures,
   createAuthHeaders,
@@ -28,11 +27,9 @@ vi.mock('@/clients/rag-client', () => ({
 
 describe('Graph Code Generation Integration Tests', () => {
   let client: ReturnType<typeof getTestClient>;
-  let db: ReturnType<typeof getTestDbClient>;
 
   beforeAll(async () => {
     client = getTestClient();
-    db = getTestDbClient();
     await client.init();
     await resetDatabase();
     await loadFixtures();

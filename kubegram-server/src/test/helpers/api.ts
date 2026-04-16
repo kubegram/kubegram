@@ -1,5 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
-import { Hono } from 'hono';
+import { describe, it, expect } from 'vitest';
 import { getTestClient, type ApiResponse } from './request';
 // @ts-expect-error - Test helpers
 import { createAuthHeaders, createAdminHeaders } from './request';

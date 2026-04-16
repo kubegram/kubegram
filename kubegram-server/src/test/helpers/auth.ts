@@ -1,5 +1,7 @@
 import { vi } from 'vitest';
-import type { Context, Variables } from 'hono';
+import type { Context } from 'hono';
+
+type Variables = { auth: MockAuthContext };
 
 export interface MockAuthContext {
   user: {
@@ -129,7 +131,7 @@ export function mockRequireRole(role: string) {
   });
 }
 
-export function mockRequireAnyRole(roles: string[]) {
+export function mockRequireAnyRole(_roles: string[]) {
   return vi.fn().mockImplementation(async (c: Context<{ Variables: Variables }>, next: () => Promise<void>) => {
     c.set('auth', createMockAuthContext('manager'));
     await next();

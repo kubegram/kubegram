@@ -16,8 +16,8 @@ app.post('/organizations', async (c) => {
             companyId: body.spec.companyID
         });
         return c.json(org, 201);
-    } catch (e) {
-        console.error(e);
+    } catch (_e) {
+        console.error(_e);
         return c.json({ error: 'Invalid request' }, 400);
     }
 });
@@ -36,7 +36,7 @@ app.put('/organizations/:id', async (c) => {
             return c.json({ error: 'Not Found' }, 404);
         }
         return c.json(org);
-    } catch (e) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });
@@ -61,7 +61,7 @@ app.post('/teams', async (c) => {
             organizationId: body.spec.organizationID
         });
         return c.json(team, 201);
-    } catch (e) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });
@@ -80,7 +80,7 @@ app.put('/teams/:id', async (c) => {
             return c.json({ error: 'Not Found' }, 404);
         }
         return c.json(team);
-    } catch (e) {
+    } catch {
         return c.json({ error: 'Invalid request' }, 400);
     }
 });

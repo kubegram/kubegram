@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll  } from 'vitest';
 import {
   getTestClient,
-  getTestDbClient,
   resetDatabase,
   loadFixtures,
 } from '../../test/helpers';
@@ -9,11 +8,9 @@ import { companyFactory } from '../../test/factories';
 
 describe('Companies API Integration Tests', () => {
   let client: ReturnType<typeof getTestClient>;
-  let db: ReturnType<typeof getTestDbClient>;
 
   beforeAll(async () => {
     client = getTestClient();
-    db = getTestDbClient();
     await client.init();
     await resetDatabase();
     await loadFixtures();
@@ -181,11 +178,9 @@ describe('Companies API Integration Tests', () => {
 
 describe('Organizations API Integration Tests', () => {
   let client: ReturnType<typeof getTestClient>;
-  let db: ReturnType<typeof getTestDbClient>;
 
   beforeAll(async () => {
     client = getTestClient();
-    db = getTestDbClient();
     await client.init();
     await resetDatabase();
     await loadFixtures();

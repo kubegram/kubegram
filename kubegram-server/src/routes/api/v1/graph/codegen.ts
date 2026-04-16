@@ -253,7 +253,7 @@ codegenRoutes.get('/:jobId/status', async (c) => {
 
     const normalizedStatus = normalizeJobStatus(status.status);
     const canonicalStatus = normalizedStatus ?? status.status;
-    let responseData: any = { ...status, status: canonicalStatus };
+    const responseData: any = { ...status, status: canonicalStatus };
 
     // If job is complete, fetch results
     if (canonicalStatus === JOB_STATUS.COMPLETED) {

@@ -24,10 +24,7 @@
  */
 
 import { Hono } from 'hono';
-import { eq, and } from 'drizzle-orm';
 import { sidecarRegistry } from '@/services/sidecar-registry';
-import { db } from '@/db';
-import { projects } from '@/db/schema';
 import { getRepositories } from '@/repositories';
 import * as argocdService from '@/services/argocd';
 import config from '@/config/env';

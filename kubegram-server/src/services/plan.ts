@@ -4,14 +4,9 @@ import {
     type PlanJobStatus,
     type PlanResult,
 } from '@/clients/rag-client';
-import { db } from '@/db';
-import { generationJobs, projects, users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import { CodegenError } from '@/errors/codegen'; // Reusing CodegenError for now
 import { cleanGraphInput } from '@/utils/graph-input-cleaner';
 import logger from '@/utils/logger';
 import { withRetry } from '@/utils/retry';
-import type { Context } from 'hono';
 
 export class PlanService {
 

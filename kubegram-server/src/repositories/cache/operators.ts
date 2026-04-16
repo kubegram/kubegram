@@ -2,7 +2,7 @@ import type { EventCache } from '@kubegram/events';
 import { EntityRecord } from '@/db/entity-record';
 import { IdGenerator } from '@/db/id-generator';
 import type { Operator, NewOperator } from '@/db/schema';
-import type { BaseRepository, FindOptions } from '../base';
+import type { FindOptions } from '../base';
 import type { OperatorRepository } from '../index';
 
 const TYPE = 'operator';
