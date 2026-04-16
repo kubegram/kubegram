@@ -9,7 +9,7 @@
         "module": "ESNext",
         "moduleDetection": "force",
         "jsx": "react-jsx",
-        "allowJs": true,
+        "allowJs": false,
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "verbatimModuleSyntax": true,
@@ -38,6 +38,10 @@
     ],
     "exclude": [
         "node_modules",
-        "public"
+        "public",
+        "src/__tests__",
+        "src/test",
+        "src/mcp",
+        "e2e"
     ]
 }

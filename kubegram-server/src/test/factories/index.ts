@@ -64,7 +64,7 @@ export const companyFactory = {
     const company = companyFactory.create(overrides);
     const organization = organizationFactory.create({ companyId: company.id });
     const team = teamFactory.create({ organizationId: organization.id });
-    const user = userFactory.create({ teamId: team.id, companyId: company.id });
+    const user = userFactory.create({ teamId: team.id });
 
     return { company, organization, team, user };
   },
