@@ -1,6 +1,6 @@
 {
   "name": "kubegram-server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Bun server with SSR and API routes for Kubegram",
   "type": "module",
   "scripts": {
