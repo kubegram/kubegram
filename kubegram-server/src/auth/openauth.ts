@@ -64,7 +64,7 @@ const issuerApp = issuer({
   subjects,
   providers,
   storage: storage as any,
-  select: async (options, req) => {
+  select: async (_options, _req) => {
     const React = await import('react');
     const { renderToStaticMarkup } = await import('react-dom/server');
     const { ProviderSelect } = await import('./ui');
