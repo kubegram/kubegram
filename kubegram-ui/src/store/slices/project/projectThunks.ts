@@ -21,12 +21,9 @@ export const fetchProjectsThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/fetchProjects',
-  async (_, { getState, rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const projects = await projectApi.fetchProjects(token || undefined);
+      const projects = await projectApi.fetchProjects();
       return projects;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch projects';
@@ -44,12 +41,9 @@ export const fetchProjectByIdThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/fetchProjectById',
-  async (projectId, { dispatch, getState, rejectWithValue }) => {
+  async (projectId, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.fetchProjectById(projectId, token || undefined);
+      const project = await projectApi.fetchProjectById(projectId);
       if (project) {
         dispatch(setProject(project));
       }
@@ -70,12 +64,9 @@ export const createProjectThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/createProject',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.createProject(input, token || undefined);
+      const project = await projectApi.createProject(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -94,12 +85,9 @@ export const updateProjectThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/updateProject',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.updateProject(input, token || undefined);
+      const project = await projectApi.updateProject(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -118,12 +106,9 @@ export const deleteProjectThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/deleteProject',
-  async (projectId, { dispatch, getState, rejectWithValue }) => {
+  async (projectId, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      await projectApi.deleteProject(projectId, token || undefined);
+      await projectApi.deleteProject(projectId);
       dispatch(clearProject());
       return projectId;
     } catch (error) {
@@ -142,12 +127,9 @@ export const saveProjectGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/saveProjectGraph',
-  async ({ projectId, graph }, { dispatch, getState, rejectWithValue }) => {
+  async ({ projectId, graph }, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.saveProjectGraph(projectId, graph, token || undefined);
+      const project = await projectApi.saveProjectGraph(projectId, graph);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -170,12 +152,9 @@ export const addNodeToGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/addNodeToGraph',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.addNodeToGraph(input, token || undefined);
+      const project = await projectApi.addNodeToGraph(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -194,12 +173,9 @@ export const updateNodeInGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/updateNodeInGraph',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.updateNodeInGraph(input, token || undefined);
+      const project = await projectApi.updateNodeInGraph(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -218,12 +194,9 @@ export const removeNodeFromGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/removeNodeFromGraph',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.removeNodeFromGraph(input, token || undefined);
+      const project = await projectApi.removeNodeFromGraph(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -246,12 +219,9 @@ export const addEdgeToGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/addEdgeToGraph',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.addEdgeToGraph(input, token || undefined);
+      const project = await projectApi.addEdgeToGraph(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -270,12 +240,9 @@ export const updateEdgeInGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/updateEdgeInGraph',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.updateEdgeInGraph(input, token || undefined);
+      const project = await projectApi.updateEdgeInGraph(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {
@@ -294,12 +261,9 @@ export const removeEdgeFromGraphThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'project/removeEdgeFromGraph',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const project = await projectApi.removeEdgeFromGraph(input, token || undefined);
+      const project = await projectApi.removeEdgeFromGraph(input);
       dispatch(setProject(project));
       return project;
     } catch (error) {

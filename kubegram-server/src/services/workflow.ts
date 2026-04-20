@@ -20,9 +20,14 @@ import {
   runCodegenWorkflow,
   getCodegenWorkflowStatus,
   cancelCodegenWorkflow,
+  runPlanWorkflow,
+  getPlanWorkflowStatus,
+  cancelPlanWorkflow,
   type Graph,
   type WorkflowContext,
   type CodegenWorkflowOptions,
+  type PlanWorkflowOptions,
+  type PlanWorkflowResult,
 } from '@kubegram/kubegram-core';
 import { redisClient } from '@/state/redis';
 import { db } from '@/db';
@@ -36,6 +41,11 @@ export class WorkflowService {
   private eventCache!: EventCache;
   private eventBus!: EventBus;
   private initialized = false;
+
+  // Plan job tracking (in-process fallback path)
+  private readonly localPlanJobs = new Set<string>();
+  private readonly planJobResults = new Map<string, PlanWorkflowResult>();
+  private readonly planJobErrors = new Map<string, string>();
 
   private constructor() {}
 
@@ -170,6 +180,75 @@ export class WorkflowService {
    */
   async cancel(threadId: string): Promise<boolean> {
     return cancelCodegenWorkflow(threadId, this.eventCache, this.eventBus);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Plan workflow (in-process fallback when KubeRAG is unreachable)
+  // ---------------------------------------------------------------------------
+
+  isLocalJob(jobId: string): boolean {
+    return this.localPlanJobs.has(jobId);
+  }
+
+  /**
+   * Starts a plan workflow in the background.
+   * Returns immediately; result is stored in planJobResults on completion.
+   */
+  startPlan(
+    userRequest: string,
+    graph: Graph,
+    jobId: string,
+    context: WorkflowContext,
+    options: PlanWorkflowOptions,
+  ): void {
+    this.localPlanJobs.add(jobId);
+
+    const promise = runPlanWorkflow(
+      userRequest,
+      jobId,
+      context,
+      this.eventCache,
+      this.eventBus,
+      options,
+    );
+
+    promise
+      .then((result) => {
+        this.planJobResults.set(jobId, result);
+        if (result.success) {
+          logger.info('Plan workflow completed', { jobId });
+        } else {
+          this.planJobErrors.set(jobId, result.error ?? 'Plan workflow failed');
+          logger.warn('Plan workflow failed', { jobId, error: result.error });
+        }
+      })
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        this.planJobErrors.set(jobId, message);
+        logger.error('Unhandled plan workflow error', { jobId, error: message });
+      });
+  }
+
+  async getPlanStatus(threadId: string): Promise<{ jobId: string; status: string; step: string; error?: string }> {
+    if (this.planJobErrors.has(threadId)) {
+      return { jobId: threadId, status: 'failed', step: 'completed', error: this.planJobErrors.get(threadId) };
+    }
+    if (this.planJobResults.has(threadId)) {
+      return { jobId: threadId, status: 'completed', step: 'completed' };
+    }
+    const state = await getPlanWorkflowStatus(threadId, this.eventCache, this.eventBus);
+    if (state) {
+      return { jobId: threadId, status: state.status, step: state.currentStep };
+    }
+    return { jobId: threadId, status: 'pending', step: 'queued' };
+  }
+
+  async getPlanResults(threadId: string): Promise<PlanWorkflowResult | null> {
+    return this.planJobResults.get(threadId) ?? null;
+  }
+
+  async cancelPlan(threadId: string): Promise<boolean> {
+    return cancelPlanWorkflow(threadId, this.eventCache, this.eventBus);
   }
 }
 

@@ -23,12 +23,9 @@ export const fetchTeamsThunk = createAsyncThunk<
     { rejectValue: string; state: RootState }
 >(
     'team/fetchTeams',
-    async (_, { dispatch, getState, rejectWithValue }) => {
+    async (_, { dispatch, rejectWithValue }) => {
         try {
-            const state = getState();
-            const token = state.oauth.accessToken;
-
-            const teams = await teamApi.fetchTeams(token || undefined);
+            const teams = await teamApi.fetchTeams();
             dispatch(setTeams(teams));
             return teams;
         } catch (error) {
@@ -47,12 +44,9 @@ export const fetchTeamByIdThunk = createAsyncThunk<
     { rejectValue: string; state: RootState }
 >(
     'team/fetchTeamById',
-    async (teamId, { getState, rejectWithValue }) => {
+    async (teamId, { rejectWithValue }) => {
         try {
-            const state = getState();
-            const token = state.oauth.accessToken;
-
-            const team = await teamApi.fetchTeamById(teamId, token || undefined);
+            const team = await teamApi.fetchTeamById(teamId);
             return team;
         } catch (error) {
             const message = error instanceof Error ? error.message : 'Failed to fetch team';
@@ -70,12 +64,9 @@ export const createTeamThunk = createAsyncThunk<
     { rejectValue: string; state: RootState }
 >(
     'team/createTeam',
-    async (input, { dispatch, getState, rejectWithValue }) => {
+    async (input, { dispatch, rejectWithValue }) => {
         try {
-            const state = getState();
-            const token = state.oauth.accessToken;
-
-            const team = await teamApi.createTeam(input, token || undefined);
+            const team = await teamApi.createTeam(input);
             dispatch(addTeam(team));
             return team;
         } catch (error) {
@@ -94,12 +85,9 @@ export const updateTeamThunk = createAsyncThunk<
     { rejectValue: string; state: RootState }
 >(
     'team/updateTeam',
-    async (input, { dispatch, getState, rejectWithValue }) => {
+    async (input, { dispatch, rejectWithValue }) => {
         try {
-            const state = getState();
-            const token = state.oauth.accessToken;
-
-            const team = await teamApi.updateTeam(input, token || undefined);
+            const team = await teamApi.updateTeam(input);
             dispatch(updateTeamAction({ id: input.id, updates: team }));
             return team;
         } catch (error) {
@@ -118,12 +106,9 @@ export const deleteTeamThunk = createAsyncThunk<
     { rejectValue: string; state: RootState }
 >(
     'team/deleteTeam',
-    async (teamId, { dispatch, getState, rejectWithValue }) => {
+    async (teamId, { rejectWithValue, dispatch }) => {
         try {
-            const state = getState();
-            const token = state.oauth.accessToken;
-
-            await teamApi.deleteTeam(teamId, token || undefined);
+            await teamApi.deleteTeam(teamId);
             dispatch(deleteTeamAction(teamId));
             return teamId;
         } catch (error) {

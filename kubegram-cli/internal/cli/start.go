@@ -12,33 +12,114 @@ import (
 
 	"github.com/kubegram/kubegram-cli/internal/compose"
 	"github.com/kubegram/kubegram-cli/internal/health"
+	"github.com/kubegram/kubegram-cli/internal/server"
 )
 
 func newStartCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start the local Kubegram runtime",
-		Long: `Start all Kubegram services locally using Docker Compose.
+		Long: `Start the kubegram-server locally.
 
-kubegram start locates the docker-compose.yml by walking up from the current
-directory (just like git finds .git). Override with --compose-file.
+By default, kubegram start downloads a self-contained kubegram-server binary
+(bundled with the UI) and runs it directly — no Docker required. The server
+uses an in-process cache so it works without PostgreSQL or Redis.
 
-Services started:
-  • kubegram-server  — API Gateway + Auth      (port 8090)
-  • kuberag          — RAG + LLM workflows     (port 8665)
-  • PostgreSQL        — User/project data       (port 5433)
-  • Redis             — Cache + pub/sub         (port 6379)
-  • Dgraph            — Graph + vector DB       (port 8080)`,
+Use --docker to start the full stack (kubegram-server, kuberag, PostgreSQL,
+Redis, Dgraph) via Docker Compose instead.`,
 		RunE: runStart,
 	}
 
 	cmd.Flags().Int("port", 0, "override kubegram-server port (default from config: 8090)")
-	cmd.Flags().String("compose-file", "", "path to docker-compose.yml (auto-detected if not set)")
+	cmd.Flags().Bool("docker", false, "use Docker Compose to start the full service stack")
+	cmd.Flags().String("server-version", "", "kubegram-server version to download (default: latest)")
+	cmd.Flags().String("compose-file", "", "path to docker-compose.yml (--docker mode only; auto-detected if not set)")
 
 	return cmd
 }
 
 func runStart(cmd *cobra.Command, args []string) error {
+	useDocker, _ := cmd.Flags().GetBool("docker")
+	if useDocker {
+		return runDockerStart(cmd, args)
+	}
+	return runBinaryStart(cmd, args)
+}
+
+// runBinaryStart downloads (if needed) and runs the kubegram-server standalone binary.
+func runBinaryStart(cmd *cobra.Command, _ []string) error {
+	port := viper.GetInt("server.port")
+	if override, _ := cmd.Flags().GetInt("port"); override != 0 {
+		port = override
+	}
+
+	version := viper.GetString("server.version")
+	if override, _ := cmd.Flags().GetString("server-version"); override != "" {
+		version = override
+	}
+
+	bold := color.New(color.Bold)
+	bold.Println("\nStarting Kubegram server...")
+
+	if !server.IsInstalled() {
+		fmt.Printf("  kubegram-server not found locally — installing version %s\n", version)
+		if err := server.Install(version); err != nil {
+			return fmt.Errorf("failed to install kubegram-server: %w\n\nTip: use --docker to start via Docker Compose instead", err)
+		}
+	}
+
+	if server.IsRunning() {
+		green := color.New(color.FgGreen)
+		green.Printf("  kubegram-server is already running on port %d\n", port)
+		fmt.Printf("\n  UI  http://localhost:%d\n", port)
+		return nil
+	}
+
+	env := []string{
+		fmt.Sprintf("PORT=%d", port),
+		"NODE_ENV=production",
+		"ENABLE_HA=false",
+	}
+	if secret := os.Getenv("JWT_SECRET"); secret != "" {
+		env = append(env, "JWT_SECRET="+secret)
+	} else {
+		env = append(env, "JWT_SECRET=kubegram-local-dev-secret")
+	}
+
+	pid, err := server.Start(port, env)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("  Started (PID %d)\n", pid)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	if err := health.WaitForServices(ctx, []health.Service{
+		{
+			Name: "kubegram-server",
+			URL:  fmt.Sprintf("http://localhost:%d/api/public/v1/healthz/live", port),
+		},
+	}); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: health check did not pass: %v\n", err)
+		fmt.Fprintln(os.Stderr, "The server may still be starting. Check ~/.kubegram/server/ for logs.")
+		return nil
+	}
+
+	fmt.Println()
+	green := color.New(color.FgGreen, color.Bold)
+	green.Println("Kubegram is running!")
+	fmt.Println()
+	fmt.Printf("  UI    http://localhost:%d\n", port)
+	fmt.Printf("  API   http://localhost:%d/api/public/v1\n", port)
+	fmt.Println()
+	fmt.Println("Stop server: kubegram stop")
+
+	return nil
+}
+
+// runDockerStart is the original Docker Compose-based start (now behind --docker).
+func runDockerStart(cmd *cobra.Command, _ []string) error {
 	port := viper.GetInt("server.port")
 	if override, _ := cmd.Flags().GetInt("port"); override != 0 {
 		port = override
@@ -52,21 +133,18 @@ func runStart(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 1. Verify Docker is running.
 	fmt.Println("Checking Docker daemon...")
 	if err := compose.CheckDaemon(ctx); err != nil {
 		return err
 	}
 
-	// 2. Start services.
 	bold := color.New(color.Bold)
-	bold.Println("\nStarting Kubegram services...")
+	bold.Println("\nStarting Kubegram services (Docker Compose)...")
 
 	if err := compose.Up(ctx, compose.Options{ComposeFile: composeFile}); err != nil {
 		return err
 	}
 
-	// 3. Poll health endpoints.
 	fmt.Println()
 	healthCtx, healthCancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer healthCancel()
@@ -88,7 +166,6 @@ func runStart(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// 4. Print banner.
 	fmt.Println()
 	green := color.New(color.FgGreen, color.Bold)
 	green.Println("Kubegram is running!")

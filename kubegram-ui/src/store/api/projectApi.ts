@@ -84,10 +84,10 @@ export interface UpdateProjectInput {
  * Note: Returned projects contain empty/placeholder graphs to avoid N+1 fetches.
  * Use fetchProjectById to get full graph data.
  */
-export const fetchProjects = async (token?: string): Promise<Project[]> => {
+export const fetchProjects = async (): Promise<Project[]> => {
     const response = await apiClient.get<BackendProject[]>(
         '/api/v1/public/projects',
-        token ? getApiConfig(token) : undefined
+        getApiConfig()
     );
 
     return response.data.map((bp: BackendProject) => ({
@@ -105,12 +105,12 @@ export const fetchProjects = async (token?: string): Promise<Project[]> => {
 /**
  * Fetch a single project by ID with full graph data
  */
-export const fetchProjectById = async (projectId: string, token?: string): Promise<Project | null> => {
+export const fetchProjectById = async (projectId: string): Promise<Project | null> => {
     try {
         // 1. Fetch Project
         const projectResponse = await apiClient.get<BackendProject>(
             `/api/v1/public/projects/${projectId}`,
-            token ? getApiConfig(token) : undefined
+            getApiConfig()
         );
         const bp = projectResponse.data;
 
@@ -120,7 +120,7 @@ export const fetchProjectById = async (projectId: string, token?: string): Promi
             try {
                 const graphResponse = await apiClient.get<{ graph: BackendGraph }>(
                     `/api/v1/public/graph/crud/${bp.graphId}`,
-                    token ? getApiConfig(token) : undefined
+                    getApiConfig()
                 );
                 graph = mapBackendGraphToFrontend(graphResponse.data.graph);
             } catch (e) {
@@ -153,7 +153,7 @@ export const fetchProjectById = async (projectId: string, token?: string): Promi
  * 1. Create Graph
  * 2. Create Project with graphId
  */
-export const createProject = async (input: CreateProjectInput, token?: string): Promise<Project> => {
+export const createProject = async (input: CreateProjectInput): Promise<Project> => {
     // 1. Create Graph
     let graphId = '';
     let createdGraph: CanvasGraph | null = null;
@@ -181,7 +181,7 @@ export const createProject = async (input: CreateProjectInput, token?: string): 
                     name: graphInput.name || input.name + ' Infra',
                     description: graphInput.description || `Graph for project ${input.name}`,
                 },
-                token ? getApiConfig(token) : undefined
+                getApiConfig()
             );
             createdGraph = mapBackendGraphToFrontend(graphRes.data.graph);
             graphId = createdGraph.id;
@@ -200,7 +200,7 @@ export const createProject = async (input: CreateProjectInput, token?: string): 
             graphId: graphId,
             graphMeta: '{}'
         },
-        token ? getApiConfig(token) : undefined
+        getApiConfig()
     );
     const bp = projectRes.data;
 
@@ -214,12 +214,12 @@ export const createProject = async (input: CreateProjectInput, token?: string): 
 /**
  * Update an existing project
  */
-export const updateProject = async (input: UpdateProjectInput, token?: string): Promise<Project> => {
+export const updateProject = async (input: UpdateProjectInput): Promise<Project> => {
     // 1. Update Project details
     const projectRes = await apiClient.put<BackendProject>(
         `/api/v1/public/projects/${input.id.toString()}`,
         { name: input.name },
-        token ? getApiConfig(token) : undefined
+        getApiConfig()
     );
     const bp = projectRes.data;
 
@@ -239,7 +239,7 @@ export const updateProject = async (input: UpdateProjectInput, token?: string): 
                 const graphRes = await apiClient.put<{ graph: BackendGraph }>(
                     `/api/v1/public/graph/crud/${graphId}`,
                     { graph: payload },
-                    token ? getApiConfig(token) : undefined
+                    getApiConfig()
                 );
                 updatedGraph = mapBackendGraphToFrontend(graphRes.data.graph);
             } catch (e) {
@@ -268,10 +268,10 @@ export const updateProject = async (input: UpdateProjectInput, token?: string): 
 /**
  * Delete a project by ID
  */
-export const deleteProject = async (projectId: string, token?: string): Promise<boolean> => {
+export const deleteProject = async (projectId: string): Promise<boolean> => {
     await apiClient.delete(
         `/api/v1/public/projects/${projectId}`,
-        token ? getApiConfig(token) : undefined
+        getApiConfig()
     );
     return true;
 };
@@ -279,7 +279,7 @@ export const deleteProject = async (projectId: string, token?: string): Promise<
 /**
  * Save project graph
  */
-export const saveProjectGraph = async (projectId: string, graph: CanvasGraph | GraphQL.Graph, token?: string): Promise<Project> => {
+export const saveProjectGraph = async (projectId: string, graph: CanvasGraph | GraphQL.Graph): Promise<Project> => {
     // 1. Determine Graph ID
     let graphId = (graph as any).id;
     let backendProject: BackendProject | null = null;
@@ -288,7 +288,7 @@ export const saveProjectGraph = async (projectId: string, graph: CanvasGraph | G
         // Fetch project to get graphId
         const projectRes = await apiClient.get<BackendProject>(
             `/api/v1/public/projects/${projectId}`,
-            token ? getApiConfig(token) : undefined
+            getApiConfig()
         );
         backendProject = projectRes.data;
         graphId = backendProject.graphId;
@@ -303,7 +303,7 @@ export const saveProjectGraph = async (projectId: string, graph: CanvasGraph | G
     const graphRes = await apiClient.put<{ graph: BackendGraph }>(
         `/api/v1/public/graph/crud/${graphId}`,
         { graph: payload },
-        token ? getApiConfig(token) : undefined
+        getApiConfig()
     );
     const updatedGraph = mapBackendGraphToFrontend(graphRes.data.graph);
 
@@ -313,7 +313,7 @@ export const saveProjectGraph = async (projectId: string, graph: CanvasGraph | G
     if (!backendProject) {
         const projectRes = await apiClient.get<BackendProject>(
             `/api/v1/public/projects/${projectId}`,
-            token ? getApiConfig(token) : undefined
+            getApiConfig()
         );
         backendProject = projectRes.data;
     }
@@ -348,9 +348,9 @@ export interface RemoveNodeInput {
 /**
  * Add a node to the project graph
  */
-export const addNodeToGraph = async (input: AddNodeInput, token?: string): Promise<Project> => {
+export const addNodeToGraph = async (input: AddNodeInput): Promise<Project> => {
     // 1. Fetch current project
-    const project = await fetchProjectById(input.projectId, token);
+    const project = await fetchProjectById(input.projectId);
     if (!project) throw new Error(`Project ${input.projectId} not found`);
 
     const graph = project.graph as any; // Cast for manipulation
@@ -360,15 +360,15 @@ export const addNodeToGraph = async (input: AddNodeInput, token?: string): Promi
     graph.nodes.push(input.node);
 
     // 3. Save graph
-    return saveProjectGraph(input.projectId, graph, token);
+    return saveProjectGraph(input.projectId, graph);
 };
 
 /**
  * Update a node in the project graph
  */
-export const updateNodeInGraph = async (input: UpdateNodeInput, token?: string): Promise<Project> => {
+export const updateNodeInGraph = async (input: UpdateNodeInput): Promise<Project> => {
     // 1. Fetch current project
-    const project = await fetchProjectById(input.projectId, token);
+    const project = await fetchProjectById(input.projectId);
     if (!project) throw new Error(`Project ${input.projectId} not found`);
 
     const graph = project.graph as any;
@@ -383,15 +383,15 @@ export const updateNodeInGraph = async (input: UpdateNodeInput, token?: string):
     }
 
     // 3. Save graph
-    return saveProjectGraph(input.projectId, graph, token);
+    return saveProjectGraph(input.projectId, graph);
 };
 
 /**
  * Remove a node from the project graph
  */
-export const removeNodeFromGraph = async (input: RemoveNodeInput, token?: string): Promise<Project> => {
+export const removeNodeFromGraph = async (input: RemoveNodeInput): Promise<Project> => {
     // 1. Fetch current project
-    const project = await fetchProjectById(input.projectId, token);
+    const project = await fetchProjectById(input.projectId);
     if (!project) throw new Error(`Project ${input.projectId} not found`);
 
     const graph = project.graph as any;
@@ -405,7 +405,7 @@ export const removeNodeFromGraph = async (input: RemoveNodeInput, token?: string
     // For manual helper here, let's just remove node.
 
     // 3. Save graph
-    return saveProjectGraph(input.projectId, graph, token);
+    return saveProjectGraph(input.projectId, graph);
 };
 
 // ============================================================================
@@ -433,9 +433,9 @@ export interface RemoveEdgeInput {
 /**
  * Add an edge to the project graph
  */
-export const addEdgeToGraph = async (input: AddEdgeInput, token?: string): Promise<Project> => {
+export const addEdgeToGraph = async (input: AddEdgeInput): Promise<Project> => {
     // 1. Fetch current project
-    const project = await fetchProjectById(input.projectId, token);
+    const project = await fetchProjectById(input.projectId);
     if (!project) throw new Error(`Project ${input.projectId} not found`);
 
     const graph = project.graph as any;
@@ -445,15 +445,15 @@ export const addEdgeToGraph = async (input: AddEdgeInput, token?: string): Promi
     graph.arrows.push(input.edge);
 
     // 3. Save graph
-    return saveProjectGraph(input.projectId, graph, token);
+    return saveProjectGraph(input.projectId, graph);
 };
 
 /**
  * Update an edge in the project graph
  */
-export const updateEdgeInGraph = async (input: UpdateEdgeInput, token?: string): Promise<Project> => {
+export const updateEdgeInGraph = async (input: UpdateEdgeInput): Promise<Project> => {
     // 1. Fetch current project
-    const project = await fetchProjectById(input.projectId, token);
+    const project = await fetchProjectById(input.projectId);
     if (!project) throw new Error(`Project ${input.projectId} not found`);
 
     const graph = project.graph as any;
@@ -470,15 +470,15 @@ export const updateEdgeInGraph = async (input: UpdateEdgeInput, token?: string):
     }
 
     // 3. Save graph
-    return saveProjectGraph(input.projectId, graph, token);
+    return saveProjectGraph(input.projectId, graph);
 };
 
 /**
  * Remove an edge from the project graph
  */
-export const removeEdgeFromGraph = async (input: RemoveEdgeInput, token?: string): Promise<Project> => {
+export const removeEdgeFromGraph = async (input: RemoveEdgeInput): Promise<Project> => {
     // 1. Fetch current project
-    const project = await fetchProjectById(input.projectId, token);
+    const project = await fetchProjectById(input.projectId);
     if (!project) throw new Error(`Project ${input.projectId} not found`);
 
     const graph = project.graph as any;
@@ -489,5 +489,5 @@ export const removeEdgeFromGraph = async (input: RemoveEdgeInput, token?: string
     }
 
     // 3. Save graph
-    return saveProjectGraph(input.projectId, graph, token);
+    return saveProjectGraph(input.projectId, graph);
 };
