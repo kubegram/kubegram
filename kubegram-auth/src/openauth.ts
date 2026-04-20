@@ -14,6 +14,8 @@ import { createMemoryStorage } from './storage/memory.js';
 
 export interface AuthApp {
   handle(req: IncomingMessage | Request): Promise<Response>;
+  /** Raw Hono app — use with honoApp.route('/oauth', app.hono) for proper prefix mounting */
+  hono: any;
 }
 
 export interface AuthOptions {
@@ -82,6 +84,7 @@ export function createAuthApp(options: AuthOptions): AuthApp {
 
   return {
     handle: (app as any).fetch.bind(app),
+    hono: app as any,
   };
 }
 

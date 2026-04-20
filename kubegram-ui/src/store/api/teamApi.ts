@@ -1,7 +1,6 @@
 
-// import { graphqlSdk } from '@/lib/graphql-client';
 import type { Team, Project } from '@/types/canvas';
-import { apiClient, getApiConfig } from '@/lib/api/axiosClient';
+import { apiClient } from '@/lib/api/axiosClient';
 
 /**
  * Team API Service
@@ -21,24 +20,19 @@ export interface UpdateTeamInput {
 
 /**
  * Fetch all teams for the current user
+ * Session cookie is sent automatically via axios withCredentials
  */
-export const fetchTeams = async (token?: string): Promise<Team[]> => {
-    const response = await apiClient.get<Team[]>(
-        '/api/v1/public/teams',
-        token ? getApiConfig(token) : undefined
-    );
+export const fetchTeams = async (): Promise<Team[]> => {
+    const response = await apiClient.get<Team[]>('/api/v1/public/teams');
     return response.data;
 };
 
 /**
  * Fetch a single team by ID
  */
-export const fetchTeamById = async (teamId: string, token?: string): Promise<Team | null> => {
+export const fetchTeamById = async (teamId: string): Promise<Team | null> => {
     try {
-        const response = await apiClient.get<Team>(
-            `/api/v1/public/teams/${teamId}`,
-            token ? getApiConfig(token) : undefined
-        );
+        const response = await apiClient.get<Team>(`/api/v1/public/teams/${teamId}`);
         return response.data;
     } catch (error: any) {
         if (error.response?.status === 404) {
@@ -51,12 +45,9 @@ export const fetchTeamById = async (teamId: string, token?: string): Promise<Tea
 /**
  * Fetch team by user ID
  */
-export const fetchTeamByUserId = async (userId: string, token?: string): Promise<Team | null> => {
+export const fetchTeamByUserId = async (userId: string): Promise<Team | null> => {
     try {
-        const response = await apiClient.get<Team>(
-            `/api/v1/public/teams?userId=${userId}`,
-            token ? getApiConfig(token) : undefined
-        );
+        const response = await apiClient.get<Team>(`/api/v1/public/teams?userId=${userId}`);
         return response.data;
     } catch (error: any) {
         if (error.response?.status === 404) {
@@ -69,35 +60,24 @@ export const fetchTeamByUserId = async (userId: string, token?: string): Promise
 /**
  * Create a new team
  */
-export const createTeam = async (input: CreateTeamInput, token?: string): Promise<Team> => {
-    const response = await apiClient.post<Team>(
-        '/api/v1/public/teams',
-        { name: input.name },
-        token ? getApiConfig(token) : undefined
-    );
+export const createTeam = async (input: CreateTeamInput): Promise<Team> => {
+    const response = await apiClient.post<Team>('/api/v1/public/teams', { name: input.name });
     return response.data;
 };
 
 /**
  * Update an existing team
  */
-export const updateTeam = async (input: UpdateTeamInput, token?: string): Promise<Team> => {
-    const response = await apiClient.put<Team>(
-        `/api/v1/public/teams/${input.id}`,
-        { name: input.name },
-        token ? getApiConfig(token) : undefined
-    );
+export const updateTeam = async (input: UpdateTeamInput): Promise<Team> => {
+    const response = await apiClient.put<Team>(`/api/v1/public/teams/${input.id}`, { name: input.name });
     return response.data;
 };
 
 /**
  * Delete a team by ID
  */
-export const deleteTeam = async (teamId: string, token?: string): Promise<boolean> => {
-    await apiClient.delete(
-        `/api/v1/public/teams/${teamId}`,
-        token ? getApiConfig(token) : undefined
-    );
+export const deleteTeam = async (teamId: string): Promise<boolean> => {
+    await apiClient.delete(`/api/v1/public/teams/${teamId}`);
     return true;
 };
 

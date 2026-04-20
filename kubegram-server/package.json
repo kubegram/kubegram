@@ -58,6 +58,7 @@
     "hono": "^4.11.7",
     "ioredis": "^5.4.2",
     "lru-cache": "^11.2.5",
+    "otpauth": "^9.5.0",
     "postgres": "^3.4.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

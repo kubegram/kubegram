@@ -16,12 +16,12 @@ import BlogListPage from './pages/BlogListPage';
 import BlogPage from './pages/BlogPage';
 import AboutPage from './pages/AboutPage';
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/LoginPage';
-import OAuthCallback from './components/OAuthCallback';
 import LoginModal from './components/LoginModal';
 import { logout, clearError } from './store/slices/oauth/oauthSlice';
+import { checkAuthStatus, fetchUserContext, fetchAvailableProviders } from './store/slices/oauth/oauthThunks';
 import ProtectedRoute from './components/ProtectedRoute';
 import OAuthProviderInfo from './pages/OAuthProviderInfo';
+import OAuthCallbackPage from './pages/OAuthCallbackPage';
 import ReportsPage from './pages/ReportsPage';
 import { CodegenTestPage, PlanTestPage } from './pages/test';
 import JsonCanvasPage from './pages/JsonCanvasPage';
@@ -204,8 +204,22 @@ const AppContent: React.FC = () => {
   const location = useLocation();
   const isSidebarCollapsed = useAppSelector((state) => state.ui.isSidebarCollapsed);
   const isHeaderCollapsed = useAppSelector((state) => state.ui.isHeaderCollapsed);
+  const { user, isAuthenticated } = useAppSelector((state) => state.oauth);
 
-  /* 
+  // Check auth status and fetch available providers on app load
+  useEffect(() => {
+    dispatch(checkAuthStatus() as any);
+    dispatch(fetchAvailableProviders() as any);
+  }, [dispatch]);
+
+  // Fetch user context when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      dispatch(fetchUserContext(user.id) as any);
+    }
+  }, [dispatch, isAuthenticated, user?.id]);
+
+  /*
    * Determine if we should show the full-screen layout logic (Landing, Docs, Blog, About).
    * Basically anything that isn't the main "App" area.
    */
@@ -245,17 +259,6 @@ const AppContent: React.FC = () => {
         }}
       >
         <Routes>
-          {/* Authentication Routes */}
-          <Route
-            path="/login"
-            element={
-              <ProtectedRoute requireAuth={false}>
-                <LoginPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/auth/callback" element={<OAuthCallback />} />
-
           {/* Default route to Landing Page */}
           <Route path="/" element={<LandingPage />} />
 
@@ -330,6 +333,9 @@ const AppContent: React.FC = () => {
           <Route path="/about" element={<BlogLayout />}>
             <Route index element={<AboutPage />} />
           </Route>
+
+          {/* OAuth Callback - handles PKCE code exchange */}
+          <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
 
           {/* OAuth Provider Info - Public */}
           <Route path="/oauth-providers" element={<OAuthProviderInfo />} />

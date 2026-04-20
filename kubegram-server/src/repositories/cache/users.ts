@@ -45,9 +45,8 @@ export class CacheUserRepository implements UserRepository {
     const id = data.id ?? IdGenerator.nextId(TYPE);
     const now = new Date();
     const record: User = {
+      ...data,
       id,
-      name: data.name,
-      email: data.email,
       avatarUrl: data.avatarUrl ?? null,
       role: data.role ?? 'team_member',
       provider: data.provider ?? null,

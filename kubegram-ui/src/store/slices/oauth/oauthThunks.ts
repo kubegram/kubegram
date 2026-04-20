@@ -1,104 +1,115 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { OAuthProvider } from './types';
-import { openAuthApi } from '../../api/openauth';
-import { fetchCurrentUser } from '../../api/userApi';
+import type { OAuthProvider, User, AuthProvider } from './types';
 import { fetchTeamByUserId } from '../../api/teamApi';
 import { fetchOrganizationByTeamId } from '../../api/organizationApi';
 import { fetchCompanyByOrganizationId } from '../../api/companyApi';
+import { fetchAuthProviders } from '../../api/userApi';
 import { setCurrentTeam } from '../team/teamSlice';
 import { setCurrentOrganization } from '../organization/organizationSlice';
 import { setCurrentCompany } from '../company/companySlice';
+import { authClient, CALLBACK_URL } from '@/lib/auth/client';
 
-// Helper to get current origin for callback URL
-const getCallbackUrl = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin + '/auth/callback';
-  }
-  return 'http://localhost:8090/auth/callback';
-};
+// Use relative URL in development to leverage Vite proxy (avoids CORS)
+// Use full URL in production
+const getApiUrl = (): string => import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8090');
 
 export const initiateLogin = createAsyncThunk(
   'oauth/initiateLogin',
-  async (provider: OAuthProvider, { rejectWithValue }) => {
+  async (provider: OAuthProvider | null, { rejectWithValue }) => {
     try {
-      const callbackUrl = getCallbackUrl();
-
-      // Save current path for reuse after login, excluding auth routes
-      if (typeof window !== 'undefined') {
-        const currentPath = window.location.pathname + window.location.search;
-        if (!currentPath.includes('/login') && !currentPath.includes('/auth/callback')) {
-          localStorage.setItem('oauth_redirect_path', currentPath);
-        }
+      const currentPath = window.location.pathname + window.location.search;
+      if (!currentPath.includes('/oauth/callback')) {
+        localStorage.setItem('oauth_redirect_path', currentPath);
       }
 
-      // Initiate OAuth flow using OpenAuth
-      const result = await openAuthApi.initiateLogin(provider, callbackUrl);
+      // For password provider or provider selection page, redirect directly to backend
+      // The backend handles these with server-rendered forms
+      const apiUrl = getApiUrl();
+      if (!provider || provider === 'password') {
+        const redirectUrl = provider
+          ? `${apiUrl}/oauth/${provider}/authorize`
+          : `${apiUrl}/oauth/authorize`;
+        window.location.href = redirectUrl;
+        return { initiated: true };
+      }
 
-      return result; // The page will navigate away via OpenAuth redirect
+      // For OAuth providers (github, google, etc.), use PKCE client-side flow
+      const { url, challenge } = await authClient.authorize(
+        CALLBACK_URL,
+        'code',
+        {
+          pkce: true,
+          provider,
+        }
+      );
+
+      sessionStorage.setItem('pkce_challenge', JSON.stringify(challenge));
+      window.location.href = url;
+
+      return { initiated: true };
     } catch (error: unknown) {
       return rejectWithValue((error as Error).message || 'Failed to initiate login');
     }
   }
 );
 
-export const handleCallback = createAsyncThunk(
-  'oauth/handleCallback',
-  async ({ code }: { provider: string; code: string; state?: string }, { rejectWithValue }) => {
+export const fetchAvailableProviders = createAsyncThunk(
+  'oauth/fetchAvailableProviders',
+  async (_, { rejectWithValue }): Promise<AuthProvider[]> => {
     try {
-      const callbackUrl = getCallbackUrl();
-
-      // Exchange authorization code for tokens using OpenAuth
-      const tokens = await openAuthApi.exchangeCodeForTokens(callbackUrl, code);
-
-      // TODO: Get user information from backend using access token
-      // For now, we'll need to create a user object from OAuth provider info
-      // This will need to be implemented based on your backend user endpoint
-
-      // Temporary user object - this should be replaced with actual user data from your backend
-      // We don't get user info from the token exchange directly
-      // The OAuthCallback component will handle fetching the user if needed
-      const user = await fetchCurrentUser(tokens.accessToken);
-
-      console.log('✅ OAuth callback handled successfully for user:', JSON.stringify(user, null, 2));
-
-      return {
-        user,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresIn: tokens.expiresIn,
-        tokenType: tokens.tokenType,
-      };
-    } catch (error: unknown) {
-      return rejectWithValue((error as Error).message || 'Failed to complete authentication');
+      return await fetchAuthProviders();
+    } catch {
+      return rejectWithValue('Failed to fetch providers') as any;
     }
   }
 );
 
-export const refreshToken = createAsyncThunk(
-  'oauth/refreshToken',
-  async (refreshToken: string, { rejectWithValue }) => {
+export const checkAuthStatus = createAsyncThunk(
+  'oauth/checkAuthStatus',
+  async (_, { rejectWithValue }) => {
     try {
-      const tokens = await openAuthApi.refreshAccessToken(refreshToken);
+      const accessToken = sessionStorage.getItem('access_token');
 
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresIn: tokens.expiresIn,
-        tokenType: tokens.tokenType
-      };
+      const response = await fetch(`${getApiUrl()}/api/public/v1/auth/me`, {
+        method: 'GET',
+        credentials: 'include', // enables session-cookie fallback for password auth
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) return { isAuthenticated: false, user: null };
+        throw new Error(`Auth check failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { isAuthenticated: true, user: data.user as User };
     } catch (error: unknown) {
-      return rejectWithValue((error as Error).message || 'Failed to refresh token');
+      return rejectWithValue((error as Error).message || 'Failed to check authentication');
     }
   }
 );
 
 export const logoutUser = createAsyncThunk(
   'oauth/logout',
-  async (accessToken: string | null, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      if (accessToken) {
-        await openAuthApi.revokeToken(accessToken);
-      }
+      const accessToken = sessionStorage.getItem('access_token');
+      await fetch(`${getApiUrl()}/api/public/v1/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+      });
+
+      localStorage.removeItem('oauth_redirect_path');
+      sessionStorage.removeItem('access_token');
+      sessionStorage.removeItem('refresh_token');
+
       return null;
     } catch (error: unknown) {
       return rejectWithValue((error as Error).message || 'Failed to logout');
@@ -106,45 +117,27 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
-/**
- * Fetch user context (team, organization, company) after login
- */
 export const fetchUserContext = createAsyncThunk(
   'oauth/fetchUserContext',
-  async ({ userId, accessToken }: { userId: string; accessToken: string }, { dispatch, rejectWithValue }) => {
+  async (userId: string, { dispatch, rejectWithValue }) => {
     try {
-      console.log('🔍 Fetching user context for userId:', userId);
-
-      // Step 1: Fetch team by user ID
-      const team = await fetchTeamByUserId(userId, accessToken);
+      const team = await fetchTeamByUserId(userId);
       if (team) {
-        console.log('👥 Found team:', team.name);
         dispatch(setCurrentTeam(team));
 
-        // Step 2: Fetch organization by team ID
-        const organization = await fetchOrganizationByTeamId(team.id, accessToken);
+        const organization = await fetchOrganizationByTeamId(team.id);
         if (organization) {
-          console.log('🏢 Found organization:', organization.name);
           dispatch(setCurrentOrganization(organization));
 
-          // Step 3: Fetch company by organization ID
-          const company = await fetchCompanyByOrganizationId(organization.id, accessToken);
+          const company = await fetchCompanyByOrganizationId(organization.id);
           if (company) {
-            console.log('🏭 Found company:', company.name);
             dispatch(setCurrentCompany(company));
-          } else {
-            console.warn('⚠️ No company found for organization');
           }
-        } else {
-          console.warn('⚠️ No organization found for team');
         }
-      } else {
-        console.warn('⚠️ No team found for user');
       }
 
       return { team, organization: null, company: null };
     } catch (error: unknown) {
-      console.error('❌ Failed to fetch user context:', error);
       return rejectWithValue((error as Error).message || 'Failed to fetch user context');
     }
   }

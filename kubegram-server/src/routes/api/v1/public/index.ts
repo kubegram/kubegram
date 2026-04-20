@@ -11,6 +11,7 @@ import certificates from '../certificates';
 import projects from '../projects';
 import iac from '../iac';
 import graph from '../graph';
+import mfa from '../mfa';
 
 const publicV1Routes = new Hono();
 
@@ -25,5 +26,6 @@ publicV1Routes.route('/certificates', certificates);
 publicV1Routes.route('/projects', projects);
 publicV1Routes.route('/iac', iac);
 publicV1Routes.route('/graph', graph);
+publicV1Routes.route('/mfa', mfa);
 
 export { publicV1Routes };

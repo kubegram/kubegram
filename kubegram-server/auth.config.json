@@ -1,0 +1,9 @@
+{
+  "passwordAuth": {
+    "encryptionEnabled": false,
+    "publicKeyFile": null,
+    "privateKeyFile": null,
+    "keyAlgorithm": "RSA-OAEP",
+    "keySize": 2048
+  }
+}

@@ -1,13 +1,18 @@
 import { cors } from 'hono/cors';
 import config from '../config/env';
 
-// Only allow localhost origins in development/local environment
+// Only allow localhost origins in development/local environment or self-serve mode
+const isPermissiveCors = config.isDevelopment || config.isSelfServe;
+
+// Common headers allowed in permissive mode (can't use * with credentials: true)
+const permissiveHeaders = ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With'];
+
 export const corsMiddleware = cors({
-    origin: config.isDevelopment
+    origin: isPermissiveCors
         ? (origin) => origin // Allow any origin
         : config.corsOrigin,
-    allowMethods: config.isDevelopment ? ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'] : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: config.isDevelopment ? ['*'] : ['Content-Type', 'Authorization'],
+    allowMethods: isPermissiveCors ? ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'] : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowHeaders: isPermissiveCors ? permissiveHeaders : ['Content-Type', 'Authorization'],
     credentials: true,
 });
 
@@ -19,10 +24,10 @@ export interface CorsOptions {
 }
 
 export const corsOptions: CorsOptions = {
-    origin: config.isDevelopment
+    origin: isPermissiveCors
         ? '*'
         : config.corsOrigin,
-    methods: config.isDevelopment ? ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'] : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: isPermissiveCors ? ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'] : ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
 };
 
@@ -30,8 +35,8 @@ export function setCorsHeaders(headers: Headers, origin?: string | null): Header
     // Determine if origin is allowed
     let allowedOrigin = '';
 
-    if (config.isDevelopment && origin) {
-        // In development, allow any origin
+    if (isPermissiveCors && origin) {
+        // In development or self-serve mode, allow any origin
         allowedOrigin = origin;
     } else if (config.isProduction && origin) {
         // In production, only allow the configured CORS origin
@@ -42,8 +47,8 @@ export function setCorsHeaders(headers: Headers, origin?: string | null): Header
 
     if (allowedOrigin) {
         headers.set('Access-Control-Allow-Origin', allowedOrigin);
-        headers.set('Access-Control-Allow-Methods', config.isDevelopment ? 'GET, POST, PUT, DELETE, OPTIONS, PATCH' : corsOptions.methods.join(', '));
-        headers.set('Access-Control-Allow-Headers', config.isDevelopment ? '*' : 'Content-Type, Authorization');
+        headers.set('Access-Control-Allow-Methods', isPermissiveCors ? 'GET, POST, PUT, DELETE, OPTIONS, PATCH' : corsOptions.methods.join(', '));
+        headers.set('Access-Control-Allow-Headers', isPermissiveCors ? permissiveHeaders.join(', ') : 'Content-Type, Authorization');
         headers.set('Access-Control-Allow-Credentials', 'true');
     }
 

@@ -1,48 +1,25 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { OAuthState, User } from './types';
-import { initiateLogin, handleCallback, refreshToken, logoutUser, fetchUserContext } from './oauthThunks';
+import { initiateLogin, checkAuthStatus, logoutUser, fetchUserContext, fetchAvailableProviders } from './oauthThunks';
+
+interface SetTokensPayload {
+  accessToken: string;
+  refreshToken: string | null;
+}
 
 const initialState: OAuthState = {
   user: null,
-  accessToken: null,
-  refreshToken: null,
+  accessToken: null,  // Kept for type compatibility but not used with session cookies
+  refreshToken: null, // Kept for type compatibility but not used with session cookies
   isLoading: false,
   error: null,
   isAuthenticated: false,
+  availableProviders: [],
 };
-
-// Key for persisting auth state
-const AUTH_STORAGE_KEY = 'kubegram_auth';
-
-// Try to load state from localStorage
-const loadState = (): Partial<OAuthState> => {
-  try {
-    const serializedState = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (serializedState === null) {
-      return {};
-    }
-    const parsed = JSON.parse(serializedState);
-
-    // Handle migration from old token format to new format
-    if (parsed.providerToken && !parsed.accessToken) {
-      return {
-        ...parsed,
-        accessToken: parsed.providerToken,
-        providerToken: undefined // Remove old field
-      };
-    }
-
-    return parsed;
-  } catch (_) {
-    return {};
-  }
-};
-
-const savedState = loadState();
 
 const oauthSlice = createSlice({
   name: 'oauth',
-  initialState: { ...initialState, ...savedState },
+  initialState,
   reducers: {
     logout: (state) => {
       state.user = null;
@@ -50,7 +27,8 @@ const oauthSlice = createSlice({
       state.refreshToken = null;
       state.isAuthenticated = false;
       state.error = null;
-      localStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem('access_token');
+      sessionStorage.removeItem('refresh_token');
     },
     clearError: (state) => {
       state.error = null;
@@ -58,7 +36,11 @@ const oauthSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
-    }
+    },
+    setTokens: (state, action: PayloadAction<SetTokensPayload>) => {
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
+    },
   },
   extraReducers: (builder) => {
     // initiateLogin
@@ -75,59 +57,23 @@ const oauthSlice = createSlice({
       state.error = action.payload as string;
     });
 
-    // handleCallback
-    builder.addCase(handleCallback.pending, (state) => {
+    // checkAuthStatus - check session cookie validity
+    builder.addCase(checkAuthStatus.pending, (state) => {
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(handleCallback.fulfilled, (state, action) => {
+    builder.addCase(checkAuthStatus.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
-      state.accessToken = action.payload.accessToken;
-      state.refreshToken = action.payload.refreshToken;
-      state.isAuthenticated = true;
-
-      // Persist state
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-        user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        isAuthenticated: true
-      }));
+      state.isAuthenticated = action.payload.isAuthenticated;
+      // Token fields remain null - session is managed by HTTP-only cookie
     });
-    builder.addCase(handleCallback.rejected, (state, action) => {
+    builder.addCase(checkAuthStatus.rejected, (state, action) => {
       state.isLoading = false;
       state.error = action.payload as string;
-    });
-
-    // refreshToken
-    builder.addCase(refreshToken.pending, (state) => {
-      state.isLoading = true;
-      state.error = null;
-    });
-    builder.addCase(refreshToken.fulfilled, (state, action) => {
-      state.isLoading = false;
-      state.accessToken = action.payload.accessToken;
-      state.refreshToken = action.payload.refreshToken;
-      state.isAuthenticated = true;
-
-      // Update persisted state
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({
-        user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        isAuthenticated: true
-      }));
-    });
-    builder.addCase(refreshToken.rejected, (state, action) => {
-      state.isLoading = false;
-      state.error = action.payload as string;
-      // On refresh failure, clear auth state
+      // On auth check failure, ensure we're marked as not authenticated
       state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
       state.isAuthenticated = false;
-      localStorage.removeItem(AUTH_STORAGE_KEY);
     });
 
     // logoutUser
@@ -146,7 +92,6 @@ const oauthSlice = createSlice({
       state.accessToken = null;
       state.refreshToken = null;
       state.isAuthenticated = false;
-      localStorage.removeItem(AUTH_STORAGE_KEY);
     });
 
     // fetchUserContext - No state changes needed, context is stored in other slices
@@ -161,8 +106,27 @@ const oauthSlice = createSlice({
       console.warn('⚠️ Failed to fetch user context:', action.payload);
       // Don't fail the entire auth flow if context fetch fails
     });
+
+    // fetchAvailableProviders - Fetch auth providers from backend (includes password when IS_SELF_SERVE=true)
+    builder.addCase(fetchAvailableProviders.pending, () => {
+      // Optional: could track a separate loading state for providers
+      console.log('🔄 Fetching available auth providers...');
+    });
+    builder.addCase(fetchAvailableProviders.fulfilled, (state, action) => {
+      state.availableProviders = action.payload;
+      console.log('✅ Available auth providers fetched:', action.payload.map(p => p.id).join(', '));
+    });
+    builder.addCase(fetchAvailableProviders.rejected, (_state, action) => {
+      console.warn('⚠️ Failed to fetch auth providers:', action.payload);
+      // Don't fail the auth flow if providers fetch fails - fall back to hardcoded list
+    });
   },
 });
 
-export const { logout, clearError, setUser } = oauthSlice.actions;
+export const { logout, clearError, setUser, setTokens } = oauthSlice.actions;
+
+// Selectors
+export const selectAvailableProviders = (state: { oauth: OAuthState }) =>
+  state.oauth.availableProviders;
+
 export default oauthSlice.reducer;

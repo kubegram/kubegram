@@ -1,31 +1,17 @@
-import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError } from 'axios';
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { authClient } from '../auth/client';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090';
+interface RetryableRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
-// Flag to prevent multiple refresh token requests simultaneously
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: string) => void;
-  reject: (reason?: unknown) => void;
-}> = [];
-
-/**
- * Process the failed queue after token refresh
- */
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) {
-      reject(error);
-    } else {
-      resolve(token || undefined);
-    }
-  });
-
-  failedQueue = [];
-};
+// Use relative URL in development to leverage Vite proxy (avoids CORS)
+// Use full URL in production
+const API_BASE_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8090');
 
 /**
- * Create centralized axios client with auth interceptors
+ * Create centralized axios client with session cookie support
+ * Uses HTTP-only cookies for authentication (no Bearer tokens)
  */
 export const createApiClient = (): AxiosInstance => {
   const client = axios.create({
@@ -33,52 +19,16 @@ export const createApiClient = (): AxiosInstance => {
     headers: {
       'Content-Type': 'application/json',
     },
+    withCredentials: true, // Required for HTTP-only session cookies
   });
 
-  // Request interceptor - Add auth token and Kubegram headers to requests
+  // Request interceptor - Add Kubegram context headers
   client.interceptors.request.use(
     async (config) => {
       // Ensure headers object exists
       if (!config.headers) {
         config.headers = new axios.AxiosHeaders();
       }
-
-      let token: string | null = null;
-      let userId: string | null = null;
-
-      // Get auth data from localStorage
-      const authData = localStorage.getItem('kubegram_auth');
-      if (authData) {
-        try {
-          const parsedAuth = JSON.parse(authData);
-
-          // Get token and userId
-          if (parsedAuth.accessToken) {
-            token = parsedAuth.accessToken;
-            // Add Authorization header
-            config.headers.Authorization = `Bearer ${parsedAuth.accessToken}`;
-          }
-
-          if (parsedAuth.user?.id) {
-            userId = parsedAuth.user.id;
-          }
-        } catch (error) {
-          console.error('Failed to parse auth data from localStorage:', error);
-        }
-      }
-
-      // Helper to perform authenticated raw requests to avoid circular dependency with apiClient
-      const fetchEntity = async (url: string, token: string) => {
-        try {
-          const response = await axios.get(`${API_BASE_URL}${url}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          return response.data;
-        } catch (error) {
-          console.warn(`Failed to auto-fetch context from ${url}:`, error);
-          return null;
-        }
-      };
 
       // 1. Team Context
       let teamId: string | null = null;
@@ -90,19 +40,6 @@ export const createApiClient = (): AxiosInstance => {
           if (team?.id) teamId = team.id;
         } catch (e) {
           console.error('Failed to parse team data', e);
-        }
-      }
-
-      // If missing team but have user+token, try to fetch
-      if (!teamId && userId && token) {
-        // Prevent infinite loops: Don't refetch if the request is trying to fetch teams/user info
-        if (!config.url?.includes('/api/v1/teams') && !config.url?.includes('/api/v1/users')) {
-          const team = await fetchEntity(`/api/v1/teams?userId=${userId}`, token);
-          if (team?.id) {
-            teamId = team.id;
-            localStorage.setItem('x-kubegram-current-team', JSON.stringify(team));
-            // Also update the teams list cache if possible, but minimal side effects is better for interceptor
-          }
         }
       }
 
@@ -123,17 +60,6 @@ export const createApiClient = (): AxiosInstance => {
         }
       }
 
-      // If missing org but have team+token, try to fetch
-      if (!orgId && teamId && token) {
-        if (!config.url?.includes('/api/v1/organizations')) {
-          const org = await fetchEntity(`/api/v1/organizations?teamId=${teamId}`, token);
-          if (org?.id) {
-            orgId = org.id;
-            localStorage.setItem('x-kubegram-current-organization', JSON.stringify(org));
-          }
-        }
-      }
-
       if (orgId) {
         config.headers['X-Kubegram-Organization-Id'] = orgId;
       }
@@ -151,19 +77,14 @@ export const createApiClient = (): AxiosInstance => {
         }
       }
 
-      // If missing company but have org+token, try to fetch
-      if (!companyId && orgId && token) {
-        if (!config.url?.includes('/api/v1/companies')) {
-          const company = await fetchEntity(`/api/v1/companies?organizationId=${orgId}`, token);
-          if (company?.id) {
-            companyId = company.id;
-            localStorage.setItem('x-kubegram-current-company', JSON.stringify(company));
-          }
-        }
-      }
-
       if (companyId) {
         config.headers['X-Kubegram-Company-Id'] = companyId;
+      }
+
+      // 4. Bearer token (PKCE flow)
+      const accessToken = sessionStorage.getItem('access_token');
+      if (accessToken) {
+        config.headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
       return config;
@@ -173,118 +94,41 @@ export const createApiClient = (): AxiosInstance => {
     }
   );
 
-  // Response interceptor - Handle 401 errors and token refresh
+  // Response interceptor - Handle auth errors
   client.interceptors.response.use(
     (response) => {
       return response;
     },
     async (error: AxiosError) => {
-      const originalRequest = error.config as any;
+      const originalRequest = error.config as RetryableRequestConfig | undefined;
 
-      // Handle 400 Bad Request - invalidate token
-      if (error.response?.status === 400) {
-        // Clear auth data
-        localStorage.removeItem('kubegram_auth');
-
-        // Dispatch custom event to trigger login modal
-        window.dispatchEvent(new CustomEvent('triggerLoginModal', {
-          detail: {
-            reason: 'invalid_token',
-            message: 'Your session is invalid. Please log in again.'
-          }
-        }));
-
-        return Promise.reject(error);
-      }
-
-      // Handle 401 Unauthorized errors
-      if (error.response?.status === 401 && !originalRequest._retry) {
+      // Handle 401 Unauthorized - attempt token refresh before triggering login modal
+      if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
         originalRequest._retry = true;
-
-        if (isRefreshing) {
-          // If already refreshing, queue the request
-          return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          }).then((token) => {
-            if (originalRequest.headers && token) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            return client(originalRequest);
-          }).catch((err) => {
-            return Promise.reject(err);
-          });
-        }
-
-        isRefreshing = true;
-
-        try {
-          // Dispatch token refresh action
-          const authData = localStorage.getItem('oauth');
-          if (authData) {
-            const parsedAuth = JSON.parse(authData);
-            const refreshToken = parsedAuth.state?.refreshToken;
-
-            if (refreshToken) {
-              // Call token refresh endpoint
-              const refreshResponse = await axios.post(
-                `${API_BASE_URL}/api/v1/public/auth/refresh`,
-                { refreshToken },
-                { headers: { 'Content-Type': 'application/json' } }
-              );
-
-              const newTokens = refreshResponse.data;
-
-              // Update localStorage with new tokens
-              const updatedAuthData = {
-                ...parsedAuth,
-                state: {
-                  ...parsedAuth.state,
-                  accessToken: newTokens.accessToken,
-                  refreshToken: newTokens.refreshToken || refreshToken,
-                },
-              };
-              localStorage.setItem('oauth', JSON.stringify(updatedAuthData));
-
-              // Process the queue with new token
-              processQueue(null, newTokens.accessToken);
-
-              // Retry the original request with new token
-              if (originalRequest.headers) {
-                originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
-              }
+        const refreshToken = sessionStorage.getItem('refresh_token');
+        if (refreshToken) {
+          try {
+            const result = await authClient.refresh(refreshToken);
+            if (!result.err && result.tokens) {
+              sessionStorage.setItem('access_token', result.tokens.access);
+              sessionStorage.setItem('refresh_token', result.tokens.refresh);
+              originalRequest.headers['Authorization'] = `Bearer ${result.tokens.access}`;
               return client(originalRequest);
             }
+          } catch {
+            // fall through to login modal
           }
-
-          // No refresh token available, dispatch login modal
-          throw new Error('No refresh token available');
-        } catch (refreshError) {
-          // Token refresh failed, dispatch login modal
-          processQueue(refreshError, null);
-
-          // Clear auth data and trigger login modal
-          localStorage.removeItem('oauth');
-
-          // Dispatch custom event to trigger login modal
-          window.dispatchEvent(new CustomEvent('triggerLoginModal', {
-            detail: {
-              reason: 'token_expired',
-              message: 'Your session has expired. Please log in again.'
-            }
-          }));
-
-          return Promise.reject(refreshError);
-        } finally {
-          isRefreshing = false;
         }
+        window.dispatchEvent(new CustomEvent('triggerLoginModal', {
+          detail: {
+            reason: 'session_expired',
+            message: 'Your session has expired. Please log in again.'
+          }
+        }));
       }
 
       // Handle 403 Forbidden errors
       if (error.response?.status === 403) {
-        // Clear auth data
-        localStorage.removeItem('oauth');
-        localStorage.removeItem('kubegram_auth');
-
         // Dispatch custom event to trigger login modal
         window.dispatchEvent(new CustomEvent('triggerLoginModal', {
           detail: {
@@ -292,8 +136,6 @@ export const createApiClient = (): AxiosInstance => {
             message: 'You do not have permission to access this resource. Please log in with appropriate credentials.'
           }
         }));
-
-        return Promise.reject(error);
       }
 
       return Promise.reject(error);
@@ -307,27 +149,13 @@ export const createApiClient = (): AxiosInstance => {
 export const apiClient = createApiClient();
 
 /**
- * Helper function to get API config with auth token
- * Updated to preserve interceptor headers while adding/overriding Authorization
+ * Helper function to get API config
+ * Session cookie is sent automatically with withCredentials: true
  */
-export const getApiConfig = (token?: string): AxiosRequestConfig => {
-  const baseConfig: AxiosRequestConfig = {
+export const getApiConfig = (): AxiosRequestConfig => {
+  return {
     headers: {
       'Content-Type': 'application/json',
     },
   };
-
-  if (token) {
-    // Only add Authorization header if token is provided
-    // This will override any Authorization header from interceptors
-    return {
-      ...baseConfig,
-      headers: {
-        ...baseConfig.headers,
-        'Authorization': `Bearer ${token}`,
-      },
-    };
-  }
-
-  return baseConfig;
 };

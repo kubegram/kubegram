@@ -30,6 +30,8 @@ export const config = {
     redisDb: parseInt(process.env.REDIS_DB || '0', 10),
     // HA mode: when true, OpenAuth storage uses Redis for cross-instance session sharing
     enableHA: (process.env.ENABLE_HA || 'false').toLowerCase() === 'true',
+    // Self-serve mode: when true, enables email/password auth (local dev / self-hosted)
+    isSelfServe: (process.env.IS_SELF_SERVE || 'false').toLowerCase() === 'true',
     // Security
     globalEncryptionKey: SecretsManager.getGlobalEncryptionKey(),
     // GitHub App integration: URL of kubegram-github-app + shared secret
