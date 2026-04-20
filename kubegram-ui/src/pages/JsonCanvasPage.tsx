@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { HelpCircle, Download, Upload, Activity, Zap, PenTool } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { useCodeGeneration } from '@/hooks/useCodeGeneration';
+import { usePlanning } from '@/hooks/usePlanning';
+import type { ConversationMessage } from '@/store/api/codegen';
 import { useGraphConversion } from '@/hooks/useGraphConversion-v2';
 import { useJsonCanvasState } from '@/hooks/canvas/useJsonCanvasState';
 import { toggleToolbar, setShowHelpModal } from '@/store/slices/uiSlice';
@@ -150,6 +152,9 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
     clearGeneratedCode
   } = useCodeGeneration();
 
+  // Initialize planning
+  const { isPlanning, generatePlan } = usePlanning();
+
   // Debug logging for canvas state changes
   useEffect(() => {
     console.log('Canvas state changed:', {
@@ -251,6 +256,40 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
   const handleCloseCodeGeneration = () => {
     setShowCodeGenerationModal(false);
   };
+
+  const handleAIGenerateCode = useCallback((context?: ConversationMessage[]) => {
+    const codeGenerationRequest = {
+      graph: {
+        ...canvasGraph,
+        id: project?.graph?.id ?? 'temp-id',
+        name: project?.graph?.name ?? 'Temp Graph',
+        companyId: project?.graph?.companyId ?? user?.id ?? '1',
+        userId: project?.graph?.userId ?? user?.id ?? '1',
+        graphType: project?.graph?.graphType ?? GraphQL.GraphType.Kubernetes,
+      },
+      project: {
+        id: project?.id ?? 'unknown',
+        name: project?.name ?? 'Untitled Project',
+      },
+      provider: selectedLlmProvider,
+      model: selectedLlmModel,
+      context: context?.map(m => m.content),
+    };
+    const token = getAuthToken();
+    generateCode(codeGenerationRequest, token || undefined);
+  }, [canvasGraph, project, user, selectedLlmProvider, selectedLlmModel, generateCode]);
+
+  const handleAIGeneratePlan = useCallback((userRequest?: string) => {
+    const graphForPlan = {
+      ...canvasGraph,
+      id: project?.graph?.id ?? 'temp-id',
+      name: project?.graph?.name ?? 'Temp Graph',
+      companyId: project?.graph?.companyId ?? user?.id ?? '1',
+      userId: project?.graph?.userId ?? user?.id ?? '1',
+      graphType: project?.graph?.graphType ?? GraphQL.GraphType.Kubernetes,
+    };
+    generatePlan(graphForPlan, userRequest, selectedLlmProvider, selectedLlmModel);
+  }, [canvasGraph, project, user, selectedLlmProvider, selectedLlmModel, generatePlan]);
 
   const handleRestoreGraph = useCallback(() => {
     dispatch(restorePreviousGraph());
@@ -756,10 +795,8 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
       <CanvasAIAssistant
         isOpen={showAIPanel}
         onToggle={() => setShowAIPanel(!showAIPanel)}
-        onGeneratePlan={async (userRequest?: string) => {
-          console.log('AI generation requested:', userRequest);
-          alert('AI integration would connect to external AI service here');
-        }}
+        onGenerateCode={handleAIGenerateCode}
+        onGeneratePlan={handleAIGeneratePlan}
         currentGraph={{
           ...canvasGraph,
           id: project?.graph?.id ?? 'temp-graph',
@@ -770,7 +807,7 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
         }}
         generatedCode={generatedCode}
         isGenerating={isGenerating}
-        isPlanning={false}
+        isPlanning={isPlanning}
         error={codeError}
       />
 

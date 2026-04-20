@@ -15,6 +15,7 @@ type Config struct {
 type ServerConfig struct {
 	Port     int    `mapstructure:"port"`
 	LogLevel string `mapstructure:"logLevel"`
+	Version  string `mapstructure:"version"` // "latest" or a pinned version e.g. "v1.0.0-abc1234"
 }
 
 type ComposeConfig struct {
@@ -49,6 +50,7 @@ type MCPConfig struct {
 func SetDefaults() {
 	viper.SetDefault("server.port", 8090)
 	viper.SetDefault("server.logLevel", "info")
+	viper.SetDefault("server.version", "latest")
 	viper.SetDefault("operator.namespace", "default")
 	viper.SetDefault("mcp.port", 8080)
 	viper.SetDefault("mcp.mode", "local")

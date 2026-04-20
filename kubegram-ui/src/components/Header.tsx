@@ -30,16 +30,14 @@ const Header: React.FC<HeaderProps> = memo(
   ({ isSidebarCollapsed, onToggleSidebar, isCollapsed, onToggleCollapse }) => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { user, isAuthenticated, accessToken } = useSelector((state: RootState) => state.oauth);
+    const { user, isAuthenticated } = useSelector((state: RootState) => state.oauth);
 
     const handleLogin = () => {
       navigate('/login');
     };
 
     const handleLogout = async () => {
-      if (accessToken) {
-        await dispatch(logoutUser(accessToken) as any);
-      }
+      await dispatch(logoutUser() as any);
       dispatch(logout());
       navigate('/');
     };

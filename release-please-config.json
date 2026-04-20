@@ -3,6 +3,12 @@
   "separate-pull-requests": true,
   "pull-request-title-pattern": "chore: release ${component} ${version}",
   "packages": {
+    "kubegram-server": {
+      "release-type": "node",
+      "component": "kubegram-server",
+      "tag-prefix": "kubegram-server/",
+      "changelog-path": "kubegram-server/CHANGELOG.md"
+    },
     "kubegram-operator": {
       "release-type": "go",
       "component": "kubegram-operator",

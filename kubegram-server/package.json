@@ -1,6 +1,6 @@
 {
   "name": "kubegram-server",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Bun server with SSR and API routes for Kubegram",
   "type": "module",
   "scripts": {
@@ -19,6 +19,11 @@
     "db-backup": "./scripts/clear-database.sh --backup-only",
     "db-restore": "./scripts/restore-database.sh",
     "build": "echo 'No build step required for Bun server'",
+    "build:binary:linux-x64": "bun build ./src/index.ts --compile --target=bun-linux-x64 --outfile dist/kubegram-server-linux-x64",
+    "build:binary:linux-arm64": "bun build ./src/index.ts --compile --target=bun-linux-arm64 --outfile dist/kubegram-server-linux-arm64",
+    "build:binary:darwin-x64": "bun build ./src/index.ts --compile --target=bun-darwin-x64 --outfile dist/kubegram-server-darwin-x64",
+    "build:binary:darwin-arm64": "bun build ./src/index.ts --compile --target=bun-darwin-arm64 --outfile dist/kubegram-server-darwin-arm64",
+    "build:binaries": "bun run build:binary:linux-x64 && bun run build:binary:linux-arm64 && bun run build:binary:darwin-x64 && bun run build:binary:darwin-arm64",
     "lint": "bunx eslint src",
     "lint:fix": "bunx eslint src --fix",
     "typecheck": "NODE_OPTIONS='--max-old-space-size=6144' tsc --noEmit",

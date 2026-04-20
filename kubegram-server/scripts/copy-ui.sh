@@ -13,14 +13,14 @@ NC='\033[0m' # No Color
 echo -e "${YELLOW}📦 Copying React build files...${NC}"
 
 # Define paths
-UI_DIR="../kubegram-ui-v2/dist"
+UI_DIR="../kubegram-ui/dist"
 PUBLIC_DIR="./public"
 
 # Check if UI dist directory exists
 if [ ! -d "$UI_DIR" ]; then
   echo -e "${RED}❌ Error: UI build directory not found at $UI_DIR${NC}"
   echo -e "${YELLOW}💡 Please build the React app first by running:${NC}"
-  echo -e "   cd ../kubegram-ui-v2 && npm run build"
+  echo -e "   cd ../kubegram-ui && npm run build"
   exit 1
 fi
 

@@ -23,12 +23,9 @@ export const fetchOrganizationsThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'organization/fetchOrganizations',
-  async (_, { dispatch, getState, rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const organizations = await organizationApi.fetchOrganizations(token || undefined);
+      const organizations = await organizationApi.fetchOrganizations();
       dispatch(setOrganizations(organizations));
       return organizations;
     } catch (error) {
@@ -47,12 +44,9 @@ export const fetchOrganizationByIdThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'organization/fetchOrganizationById',
-  async (organizationId, { getState, rejectWithValue }) => {
+  async (organizationId, { rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const organization = await organizationApi.fetchOrganizationById(organizationId, token || undefined);
+      const organization = await organizationApi.fetchOrganizationById(organizationId);
       return organization;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch organization';
@@ -70,12 +64,9 @@ export const createOrganizationThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'organization/createOrganization',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const organization = await organizationApi.createOrganization(input, token || undefined);
+      const organization = await organizationApi.createOrganization(input);
       dispatch(addOrganization(organization));
       return organization;
     } catch (error) {
@@ -94,12 +85,9 @@ export const updateOrganizationThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'organization/updateOrganization',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      const organization = await organizationApi.updateOrganization(input, token || undefined);
+      const organization = await organizationApi.updateOrganization(input);
       dispatch(updateOrganizationAction({ id: input.id, updates: organization }));
       return organization;
     } catch (error) {
@@ -118,12 +106,9 @@ export const deleteOrganizationThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'organization/deleteOrganization',
-  async (organizationId, { dispatch, getState, rejectWithValue }) => {
+  async (organizationId, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
-      await organizationApi.deleteOrganization(organizationId, token || undefined);
+      await organizationApi.deleteOrganization(organizationId);
       dispatch(deleteOrganizationAction(organizationId));
       return organizationId;
     } catch (error) {

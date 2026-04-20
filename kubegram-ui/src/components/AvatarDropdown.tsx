@@ -8,12 +8,10 @@ import type { RootState } from '../store';
 export function AvatarDropdown() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, accessToken } = useSelector((state: RootState) => state.oauth);
+  const { user } = useSelector((state: RootState) => state.oauth);
 
   const handleSignOut = async () => {
-    if (accessToken) {
-      await dispatch(logoutUser(accessToken) as any);
-    }
+    await dispatch(logoutUser() as any);
     dispatch(logout());
     navigate('/');
   };

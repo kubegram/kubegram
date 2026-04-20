@@ -15,11 +15,8 @@ import type {
  */
 export const fetchLlmConfigs = createAsyncThunk(
   'canvas/entities/fetchLlmConfigs',
-  async (_) => {
-    // We might need to handle token here if not handled by axios interceptor
-    const authData = localStorage.getItem('kubegram_auth');
-    const token = authData ? JSON.parse(authData).accessToken : undefined;
-    return await getProviders(token);
+  async () => {
+    return await getProviders();
   }
 );
 

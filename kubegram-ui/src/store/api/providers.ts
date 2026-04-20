@@ -7,11 +7,11 @@ export interface LlmProvider {
     apiUrl: string;
 }
 
-export const getProviders = async (token?: string): Promise<LlmProvider[]> => {
+export const getProviders = async (): Promise<LlmProvider[]> => {
     // Use the path from swagger: /api/v1/providers
     const response = await apiClient.get<any>(
         '/api/v1/providers',
-        token ? getApiConfig(token) : undefined
+        getApiConfig()
     );
 
     // Swagger says response schema is ProvidersList { providers: Provider[] }

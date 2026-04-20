@@ -25,16 +25,11 @@ export const fetchCompaniesThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'company/fetchCompanies',
-  async (_, { dispatch, getState, rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
       dispatch(setLoading(true));
       dispatch(setError(null));
-      // token is string | null, API expects string | undefined. 
-      // If null/undefined, it just won't send auth header which might be fine for some calls or handled by API
-      const companies = await companyApi.fetchCompanies(token || undefined);
+      const companies = await companyApi.fetchCompanies();
       dispatch(setCompanies(companies));
       return companies;
     } catch (error) {
@@ -56,14 +51,11 @@ export const fetchCompanyByIdThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'company/fetchCompanyById',
-  async (companyId, { dispatch, getState, rejectWithValue }) => {
+  async (companyId, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
       dispatch(setLoading(true));
       dispatch(setError(null));
-      const company = await companyApi.fetchCompanyById(companyId, token || undefined);
+      const company = await companyApi.fetchCompanyById(companyId);
       return company;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch company';
@@ -84,14 +76,11 @@ export const createCompanyThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'company/createCompany',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
       dispatch(setLoading(true));
       dispatch(setError(null));
-      const company = await companyApi.createCompany(input, token || undefined);
+      const company = await companyApi.createCompany(input);
       dispatch(addCompany(company));
       return company;
     } catch (error) {
@@ -113,14 +102,11 @@ export const updateCompanyThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'company/updateCompany',
-  async (input, { dispatch, getState, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
       dispatch(setLoading(true));
       dispatch(setError(null));
-      const company = await companyApi.updateCompany(input, token || undefined);
+      const company = await companyApi.updateCompany(input);
       dispatch(updateCompanyAction({ id: input.id, updates: company }));
       return company;
     } catch (error) {
@@ -142,14 +128,11 @@ export const deleteCompanyThunk = createAsyncThunk<
   { rejectValue: string; state: RootState }
 >(
   'company/deleteCompany',
-  async (companyId, { dispatch, getState, rejectWithValue }) => {
+  async (companyId, { dispatch, rejectWithValue }) => {
     try {
-      const state = getState();
-      const token = state.oauth.accessToken;
-
       dispatch(setLoading(true));
       dispatch(setError(null));
-      await companyApi.deleteCompany(companyId, token || undefined);
+      await companyApi.deleteCompany(companyId);
       dispatch(deleteCompanyAction(companyId));
       return companyId;
     } catch (error) {
