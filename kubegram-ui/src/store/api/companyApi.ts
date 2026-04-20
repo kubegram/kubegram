@@ -1,7 +1,6 @@
 
-// import { graphqlSdk } from '@/lib/graphql-client';
 import type { Company, Project, Organization } from '@/types/canvas';
-import { apiClient, getApiConfig } from '@/lib/api/axiosClient';
+import { apiClient } from '@/lib/api/axiosClient';
 
 
 
@@ -61,24 +60,19 @@ export interface UpdateCompanyInput {
 
 /**
  * Fetch all companies for the current user
+ * Session cookie is sent automatically via axios withCredentials
  */
-export const fetchCompanies = async (token?: string): Promise<Company[]> => {
-  const response = await apiClient.get<BackendCompany[]>(
-    '/api/v1/public/companies',
-    token ? getApiConfig(token) : undefined
-  );
+export const fetchCompanies = async (): Promise<Company[]> => {
+  const response = await apiClient.get<BackendCompany[]>('/api/v1/public/companies');
   return response.data.map(mapBackendToFrontend);
 };
 
 /**
  * Fetch a single company by ID
  */
-export const fetchCompanyById = async (companyId: string, token?: string): Promise<Company | null> => {
+export const fetchCompanyById = async (companyId: string): Promise<Company | null> => {
   try {
-    const response = await apiClient.get<BackendCompany>(
-      `/api/v1/public/companies/${companyId}`,
-      token ? getApiConfig(token) : undefined
-    );
+    const response = await apiClient.get<BackendCompany>(`/api/v1/public/companies/${companyId}`);
     return mapBackendToFrontend(response.data);
   } catch (error: any) {
     if (error.response?.status === 404) {
@@ -91,12 +85,9 @@ export const fetchCompanyById = async (companyId: string, token?: string): Promi
 /**
  * Fetch company by organization ID
  */
-export const fetchCompanyByOrganizationId = async (organizationId: string, token?: string): Promise<Company | null> => {
+export const fetchCompanyByOrganizationId = async (organizationId: string): Promise<Company | null> => {
   try {
-    const response = await apiClient.get<BackendCompany>(
-      `/api/v1/public/companies?organizationId=${organizationId}`,
-      token ? getApiConfig(token) : undefined
-    );
+    const response = await apiClient.get<BackendCompany>(`/api/v1/public/companies?organizationId=${organizationId}`);
     return mapBackendToFrontend(response.data);
   } catch (error: any) {
     if (error.response?.status === 404) {
@@ -109,35 +100,24 @@ export const fetchCompanyByOrganizationId = async (organizationId: string, token
 /**
  * Create a new company
  */
-export const createCompany = async (input: CreateCompanyInput, token?: string): Promise<Company> => {
-  const response = await apiClient.post<BackendCompany>(
-    '/api/v1/public/companies',
-    { name: input.name },
-    token ? getApiConfig(token) : undefined
-  );
+export const createCompany = async (input: CreateCompanyInput): Promise<Company> => {
+  const response = await apiClient.post<BackendCompany>('/api/v1/public/companies', { name: input.name });
   return mapBackendToFrontend(response.data);
 };
 
 /**
  * Update an existing company
  */
-export const updateCompany = async (input: UpdateCompanyInput, token?: string): Promise<Company> => {
-  const response = await apiClient.put<BackendCompany>(
-    `/api/v1/public/companies/${input.id}`,
-    { name: input.name },
-    token ? getApiConfig(token) : undefined
-  );
+export const updateCompany = async (input: UpdateCompanyInput): Promise<Company> => {
+  const response = await apiClient.put<BackendCompany>(`/api/v1/public/companies/${input.id}`, { name: input.name });
   return mapBackendToFrontend(response.data);
 };
 
 /**
  * Delete a company by ID
  */
-export const deleteCompany = async (companyId: string, token?: string): Promise<boolean> => {
-  await apiClient.delete(
-    `/api/v1/public/companies/${companyId}`,
-    token ? getApiConfig(token) : undefined
-  );
+export const deleteCompany = async (companyId: string): Promise<boolean> => {
+  await apiClient.delete(`/api/v1/public/companies/${companyId}`);
   return true;
 };
 

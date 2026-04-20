@@ -19,9 +19,26 @@ export interface OAuthState {
   isLoading: boolean;
   error: string | null;
   isAuthenticated: boolean;
+  availableProviders: AuthProvider[];
 }
 
-export type OAuthProvider = 'github' | 'google' | 'gmail' | 'slack' | 'gitlab' | 'okta' | 'oidc' | 'sso';
+export type OAuthProvider =
+  | 'github'
+  | 'google'
+  | 'gmail'
+  | 'slack'
+  | 'gitlab'
+  | 'okta'
+  | 'oidc'
+  | 'sso'
+  | 'password';
+
+export interface AuthProvider {
+  id: OAuthProvider;
+  name: string;
+  authUrl: string;
+  registerUrl?: string;
+}
 
 export interface AuthResponse {
   user: User;

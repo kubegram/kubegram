@@ -13,13 +13,31 @@ import { GraphQL } from '@kubegram/common-ts';
 /**
  * GraphQL Configuration
  * Reads from environment variables with fallback defaults
+ * In development, HTTP uses relative URL to leverage Vite proxy (avoids CORS)
  */
+const getGraphqlHttpEndpoint = (): string => {
+    if (import.meta.env.DEV) {
+        // Use relative URL to leverage Vite proxy
+        return '/graphql';
+    }
+    return import.meta.env.VITE_GRAPHQL_HTTP_URL || 'http://localhost:8090/graphql';
+};
+
+const getGraphqlWsEndpoint = (): string => {
+    if (import.meta.env.DEV) {
+        // Use same-origin WebSocket through Vite proxy (avoids CORS)
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        return `${protocol}//${window.location.host}/graphql`;
+    }
+    return import.meta.env.VITE_GRAPHQL_WS_URL || 'ws://localhost:8090/graphql';
+};
+
 export const graphqlConfig = {
     /** HTTP endpoint for queries and mutations */
-    httpEndpoint: import.meta.env.VITE_GRAPHQL_HTTP_URL || 'http://localhost:8090/graphql',
+    httpEndpoint: getGraphqlHttpEndpoint(),
 
     /** WebSocket endpoint for subscriptions */
-    wsEndpoint: import.meta.env.VITE_GRAPHQL_WS_URL || 'ws://localhost:8090/graphql',
+    wsEndpoint: getGraphqlWsEndpoint(),
 
     /** Default retry configuration for subscriptions */
     retryAttempts: 5,

@@ -1,7 +1,9 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { OAuthProvider } from '../slices/oauth/types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8090';
+// Use relative URL in development to leverage Vite proxy (avoids CORS)
+// Use full URL in production
+const API_URL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8090');
 
 export const getProviderConfig = createAsyncThunk(
   'oauth/getProviderConfig',

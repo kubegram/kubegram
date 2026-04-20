@@ -1,0 +1,42 @@
+{
+  "Argo Pigeon": {
+    "icon": "argo_pigeon.svg",
+    "description": ""
+  },
+  "Load Balancer": {
+    "icon": "lb-canvas.svg",
+    "description": ""
+  },
+  "Linkerd": {
+    "icon": "linkerd.svg",
+    "description": ""
+  },
+  "Logger": {
+    "icon": "logger-canvas.svg",
+    "description": ""
+  },
+  "Monitor": {
+    "icon": "monitor-canvas.svg",
+    "description": ""
+  },
+  "Nginx": {
+    "icon": "nginx.svg",
+    "description": ""
+  },
+  "Secret": {
+    "icon": "secret-canvas.svg",
+    "description": ""
+  },
+  "Server": {
+    "icon": "server.svg",
+    "description": ""
+  },
+  "Service": {
+    "icon": "service-canvas.svg",
+    "description": ""
+  },
+  "Traefik Proxy": {
+    "icon": "traefik_proxy.svg",
+    "description": ""
+  }
+}

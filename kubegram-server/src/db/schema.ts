@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, serial, timestamp, integer, uuid, boolean } from 'drizzle-orm/pg-core';
 import { relations, type InferSelectModel, type InferInsertModel } from 'drizzle-orm';
 
 // Companies table
@@ -61,6 +61,10 @@ export const users = pgTable('users', {
   role: text('role').default('team_member'), // admin, manager, team_member
   provider: text('provider'),
   providerId: text('provider_id'),
+  passwordHash: text('password_hash'),
+  mfaEnabled: boolean('mfa_enabled').default(false),
+  mfaSecret: text('mfa_secret'),
+  mfaVerified: boolean('mfa_verified').default(false),
   teamId: integer('team_id').references(() => teams.id),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),

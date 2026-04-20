@@ -1,7 +1,6 @@
 
-// import { graphqlSdk } from '@/lib/graphql-client';
 import type { Organization, Project } from '@/types/canvas';
-import { apiClient, getApiConfig } from '@/lib/api/axiosClient';
+import { apiClient } from '@/lib/api/axiosClient';
 
 /**
  * Backend Interfaces (matching Swagger)
@@ -54,24 +53,19 @@ export interface UpdateOrganizationInput {
 
 /**
  * Fetch all organizations for the current user
+ * Session cookie is sent automatically via axios withCredentials
  */
-export const fetchOrganizations = async (token?: string): Promise<Organization[]> => {
-  const response = await apiClient.get<BackendOrganization[]>(
-    '/api/v1/public/organizations',
-    token ? getApiConfig(token) : undefined
-  );
+export const fetchOrganizations = async (): Promise<Organization[]> => {
+  const response = await apiClient.get<BackendOrganization[]>('/api/v1/public/organizations');
   return response.data.map(mapBackendToFrontend);
 };
 
 /**
  * Fetch a single organization by ID
  */
-export const fetchOrganizationById = async (organizationId: string, token?: string): Promise<Organization | null> => {
+export const fetchOrganizationById = async (organizationId: string): Promise<Organization | null> => {
   try {
-    const response = await apiClient.get<BackendOrganization>(
-      `/api/v1/public/organizations/${organizationId}`,
-      token ? getApiConfig(token) : undefined
-    );
+    const response = await apiClient.get<BackendOrganization>(`/api/v1/public/organizations/${organizationId}`);
     return mapBackendToFrontend(response.data);
   } catch (error: any) {
     if (error.response?.status === 404) {
@@ -84,12 +78,9 @@ export const fetchOrganizationById = async (organizationId: string, token?: stri
 /**
  * Fetch organization by team ID
  */
-export const fetchOrganizationByTeamId = async (teamId: string, token?: string): Promise<Organization | null> => {
+export const fetchOrganizationByTeamId = async (teamId: string): Promise<Organization | null> => {
   try {
-    const response = await apiClient.get<BackendOrganization>(
-      `/api/v1/public/organizations?teamId=${teamId}`,
-      token ? getApiConfig(token) : undefined
-    );
+    const response = await apiClient.get<BackendOrganization>(`/api/v1/public/organizations?teamId=${teamId}`);
     return mapBackendToFrontend(response.data);
   } catch (error: any) {
     if (error.response?.status === 404) {
@@ -102,35 +93,24 @@ export const fetchOrganizationByTeamId = async (teamId: string, token?: string):
 /**
  * Create a new organization
  */
-export const createOrganization = async (input: CreateOrganizationInput, token?: string): Promise<Organization> => {
-  const response = await apiClient.post<BackendOrganization>(
-    '/api/v1/public/organizations',
-    { name: input.name },
-    token ? getApiConfig(token) : undefined
-  );
+export const createOrganization = async (input: CreateOrganizationInput): Promise<Organization> => {
+  const response = await apiClient.post<BackendOrganization>('/api/v1/public/organizations', { name: input.name });
   return mapBackendToFrontend(response.data);
 };
 
 /**
  * Update an existing organization
  */
-export const updateOrganization = async (input: UpdateOrganizationInput, token?: string): Promise<Organization> => {
-  const response = await apiClient.put<BackendOrganization>(
-    `/api/v1/public/organizations/${input.id}`,
-    { name: input.name },
-    token ? getApiConfig(token) : undefined
-  );
+export const updateOrganization = async (input: UpdateOrganizationInput): Promise<Organization> => {
+  const response = await apiClient.put<BackendOrganization>(`/api/v1/public/organizations/${input.id}`, { name: input.name });
   return mapBackendToFrontend(response.data);
 };
 
 /**
  * Delete an organization by ID
  */
-export const deleteOrganization = async (organizationId: string, token?: string): Promise<boolean> => {
-  await apiClient.delete(
-    `/api/v1/public/organizations/${organizationId}`,
-    token ? getApiConfig(token) : undefined
-  );
+export const deleteOrganization = async (organizationId: string): Promise<boolean> => {
+  await apiClient.delete(`/api/v1/public/organizations/${organizationId}`);
   return true;
 };
 

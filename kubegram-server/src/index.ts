@@ -12,6 +12,10 @@ import { redisClient } from './state/redis';
 logger.info('Starting Kubegram Server', { mode: config.nodeEnv });
 logger.info('Configuration', { publicDir: './public', corsOrigin: config.corsOrigin });
 
+if (config.isSelfServe) {
+  logger.info('Kubegram deployed on self-serve mode');
+}
+
 // Connect Redis when HA mode is enabled
 if (config.enableHA) {
   logger.info('HA mode enabled, connecting to Redis...');
@@ -46,8 +50,44 @@ honoApp.use('*', corsMiddleware);
 honoApp.use('*', openAuthMiddleware);
 honoApp.onError(openAuthErrorHandler);
 
-// Mount OAuth app at root for /.well-known/ endpoints (JWKS, etc.)
-honoApp.use('*', async (c) => {
+// API routes must be registered before the OpenAuth catch-all, otherwise the
+// catch-all intercepts every request and returns 404 before routes are reached.
+import { apiRoutes } from './routes';
+honoApp.route('/api', apiRoutes);
+
+// OpenAuth uses hono/tiny (a different Hono constructor), so honoApp.route() can't merge
+// its routes (app.routes is undefined).  Instead we URL-rewrite: strip /oauth from the
+// path so OpenAuth's root-level routes (/authorize, /:provider/*, /token, /.well-known/*)
+// can match.  The select callback is hardcoded to basePath="/oauth" (see auth/openauth.ts)
+// so provider-selection links still point to /oauth/github/authorize.
+honoApp.use('/oauth/*', async (c) => {
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.slice('/oauth'.length) || '/';
+  return app.handle(new Request(url.toString(), c.req.raw));
+});
+
+// When only one provider is configured, OpenAuth's /authorize handler redirects directly
+// to /:provider/authorize (without the /oauth prefix).  The browser follows that redirect
+// to /github/authorize, so we forward it to OpenAuth here instead of hitting the SSR.
+honoApp.use('/:provider/authorize', async (c, next) => {
+  const response = await app.handle(c.req.raw);
+  if (response.status !== 404) return response;
+  return next();
+});
+
+// OpenAuth's getRelativeUrl computes the OAuth callback URL relative to the stripped URL
+// (e.g. /github/authorize → /github/callback).  GitHub/Google redirect back to that
+// non-prefixed path, so we need to forward it to OpenAuth from here.
+honoApp.use('/:provider/callback', async (c, next) => {
+  const response = await app.handle(c.req.raw);
+  if (response.status !== 404) return response;
+  return next();
+});
+
+// The OpenAuth discovery doc (GET /oauth/.well-known/oauth-authorization-server) returns
+// jwks_uri without the /oauth prefix (e.g. http://localhost:8090/.well-known/jwks.json).
+// Handle that root-level path so token verification works.
+honoApp.use('/.well-known/*', async (c) => {
   return app.handle(c.req.raw);
 });
 
@@ -66,10 +106,6 @@ honoApp.get('/logo.png', async (_c) => {
 // Static files fallback
 honoApp.use('/assets/*', serveStatic({ root: './public' }));
 honoApp.use('/*', serveStatic({ root: './public' }));
-
-// API routes
-import { apiRoutes } from './routes';
-honoApp.route('/api', apiRoutes);
 
 // SSR fallback
 honoApp.get('*', renderSSR);

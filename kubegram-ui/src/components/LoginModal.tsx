@@ -1,9 +1,11 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Github, Chrome, Gitlab, Key, LogIn } from 'lucide-react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { initiateLogin } from '../store/slices/oauth/oauthThunks';
+import { selectAvailableProviders } from '../store/slices/oauth/oauthSlice';
 import type { OAuthProvider } from '../store/slices/oauth/types';
+import { PasswordLoginForm } from './PasswordLoginForm';
 
 /**
  * KUBEGRAM Logo Component
@@ -88,8 +90,18 @@ const otherProviders = [
  * - Dropdown menu for other providers (Gmail, GitLab, Okta, OIDC, SSO)
  * - Dark themed design matching app aesthetic
  */
-const LoginModal: React.FC<LoginModalProps> = ({ isOpen, isLoading }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, isLoading }) => {
   const dispatch = useDispatch();
+  const availableProviders = useSelector(selectAvailableProviders);
+
+  // Check if password provider is available (IS_SELF_SERVE=true on backend)
+  const passwordProvider = availableProviders.find(p => p.id === 'password');
+  const hasPasswordProvider = !!passwordProvider;
+
+  // Use dynamic providers from backend, fall back to hardcoded list if not loaded
+  const providersToShow = availableProviders.length > 0
+    ? availableProviders.filter(p => p.id !== 'password')
+    : [...mainProviders, ...otherProviders];
 
   const handleOAuthLogin = async (provider: OAuthProvider) => {
     try {
@@ -98,6 +110,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, isLoading }) => {
       console.error(`OAuth login failed for ${provider}:`, error);
     }
   };
+
+  // Go to provider selection page (/oauth/authorize) when clicking main login button
+  const handleLoginToSelectionPage = async () => {
+    try {
+      await dispatch(initiateLogin(null) as any);
+    } catch (error: any) {
+      console.error('OAuth login failed:', error);
+    }
+  };
+
 
   if (!isOpen) return null;
 
@@ -131,42 +153,64 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, isLoading }) => {
           Please sign in to access your Kubernetes clusters and manage your infrastructure.
         </p>
 
-        {/* Provider Icons Grid */}
+        {/* Provider Icons Grid - click to login directly with that provider */}
         <div className="grid grid-cols-4 gap-4 mb-6 px-2">
-          {[...mainProviders, ...otherProviders].map((provider) => {
-            const Icon = provider.icon;
+          {providersToShow.map((provider) => {
+            // Use hardcoded icon config or default to Key icon
+            const hardcodedProvider = [...mainProviders, ...otherProviders].find(p => p.id === provider.id);
+            const Icon = hardcodedProvider?.icon;
+            const svgPath = hardcodedProvider?.svgPath;
+
             return (
-              <div
+              <button
                 key={provider.id}
-                className="flex flex-col items-center justify-center space-y-2 group"
-                title={provider.name}
+                onClick={() => handleOAuthLogin(provider.id)}
+                disabled={isLoading}
+                className="flex flex-col items-center justify-center space-y-2 group cursor-pointer"
+                title={`Login with ${provider.name}`}
               >
                 <div className="p-3 rounded-full bg-gray-800 border border-gray-700 group-hover:border-gray-500 group-hover:bg-gray-700 transition-all duration-200">
-                  {provider.svgPath ? (
-                    <img src={provider.svgPath} alt={provider.name} className="h-6 w-6 opacity-70 group-hover:opacity-100 transition-opacity" />
+                  {svgPath ? (
+                    <img src={svgPath} alt={provider.name} className="h-6 w-6 opacity-70 group-hover:opacity-100 transition-opacity" />
                   ) : typeof Icon === 'string' ? (
                     <div
                       className="h-6 w-6 text-gray-400 group-hover:text-white transition-colors [&>svg]:w-full [&>svg]:h-full"
                       dangerouslySetInnerHTML={{ __html: Icon }}
                     />
-                  ) : (
+                  ) : Icon ? (
                     <Icon className="h-6 w-6 text-gray-400 group-hover:text-white transition-colors" />
+                  ) : (
+                    <Key className="h-6 w-6 text-gray-400 group-hover:text-white transition-colors" />
                   )}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>
 
-        {/* Single Login Button */}
-        <Button
-          onClick={() => handleOAuthLogin('oidc')}
-          className="w-full flex items-center justify-center space-x-3 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200"
-          disabled={isLoading}
-        >
-          <LogIn className="h-5 w-5" />
-          <span>Login or Sign up</span>
-        </Button>
+        {/* Email & Password Section - shown when password provider is available */}
+        {hasPasswordProvider && (
+          <div className="password-login-section mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex-1 h-px bg-gray-700"></div>
+              <span className="text-gray-500 text-sm">or</span>
+              <div className="flex-1 h-px bg-gray-700"></div>
+            </div>
+            <PasswordLoginForm onSuccess={onClose} />
+          </div>
+        )}
+
+        {/* Single Login Button - redirects to provider selection page (shown when no password provider) */}
+        {!hasPasswordProvider && (
+          <Button
+            onClick={() => handleLoginToSelectionPage()}
+            className="w-full flex items-center justify-center space-x-3 h-12 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200"
+            disabled={isLoading}
+          >
+            <LogIn className="h-5 w-5" />
+            <span>Login or Sign up</span>
+          </Button>
+        )}
 
         {/* Error message placeholder */}
         {isLoading && (

@@ -28,7 +28,8 @@ lerna-debug.log*
 *.pem
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
