@@ -3,6 +3,7 @@ import type { StorageAdapter } from "../types";
 const SEPERATOR = String.fromCharCode(0x1f);
 
 interface CacheEntry {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
   expiry: number;
 }
@@ -29,7 +30,10 @@ export function createMemoryStorage(
     return key.map((k) => k.replaceAll(SEPERATOR, ""));
   }
 
-  async function get(key: string[]): Promise<Record<string, any> | undefined> {
+  async function get(
+    key: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<Record<string, any> | undefined> {
     const item = cache.get(joinKey(encode(key)));
     if (!item) return undefined;
     if (item.expiry > 0 && Date.now() > item.expiry) {
@@ -39,7 +43,12 @@ export function createMemoryStorage(
     return { [joinKey(encode(key))]: item.value };
   }
 
-  async function set(key: string[], value: any, expiry?: Date): Promise<void> {
+  async function set(
+    key: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any,
+    expiry?: Date,
+  ): Promise<void> {
     if (cache.size >= maxSize) {
       const firstKey = cache.keys().next().value;
       if (firstKey) cache.delete(firstKey);
@@ -56,6 +65,7 @@ export function createMemoryStorage(
 
   async function* scan(
     prefix: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): AsyncIterable<[string[], any]> {
     const prefixKey = joinKey(encode(prefix));
     const now = Date.now();
