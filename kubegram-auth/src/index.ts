@@ -21,7 +21,7 @@ export { createAuthApp, issuer } from './openauth.js';
 export type { AuthApp, AuthOptions } from './openauth.js';
 
 export { createMemoryStorage, createRedisStorage, createLruRedisStorage } from './storage/index.js';
-export type { MemoryStorageOptions, RedisStorageOptions, RedisClient } from './storage/index.js';
+export type { MemoryStorageOptions, RedisStorageOptions, RedisClient, StorageAdapter } from './storage/index.js';
 
 export { SessionCache, createSessionCache } from './cache/index.js';
 export type { SessionCacheOptions, SessionCacheStorage } from './cache/index.js';
