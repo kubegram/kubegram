@@ -20,6 +20,7 @@ interface LruRedisStorageOptions {
 }
 
 interface CacheEntry {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   value: any;
   expiry?: number;
 }
@@ -43,7 +44,10 @@ export function createLruRedisStorage(
     return entry.expiry !== undefined && Date.now() >= entry.expiry;
   }
 
-  async function get(key: string[]): Promise<Record<string, any> | undefined> {
+  async function get(
+    key: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<Record<string, any> | undefined> {
     const encoded = encode(key);
     const joinedKey = encoded.join(SEPERATOR);
     const cached = lru.get(joinedKey);
@@ -72,7 +76,12 @@ export function createLruRedisStorage(
     }
   }
 
-  async function set(key: string[], value: any, expiry?: Date): Promise<void> {
+  async function set(
+    key: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any,
+    expiry?: Date,
+  ): Promise<void> {
     const encoded = encode(key);
     const joinedKey = encoded.join(SEPERATOR);
     const entry: CacheEntry = {
@@ -104,11 +113,15 @@ export function createLruRedisStorage(
 
   async function* scan(
     prefix: string[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): AsyncIterable<[string[], any]> {
     const encodedPrefix = encode(prefix);
     const matchPattern = `${keyPrefix}:${encodedPrefix.join(SEPERATOR)}*`;
 
-    for await (const keys of redis.scanStream({ match: matchPattern, count: 100 })) {
+    for await (const keys of redis.scanStream({
+      match: matchPattern,
+      count: 100,
+    })) {
       const values = await redis.mget(...keys);
       for (let i = 0; i < keys.length; i++) {
         const raw = values[i];
@@ -117,7 +130,9 @@ export function createLruRedisStorage(
         try {
           const entry: CacheEntry = JSON.parse(raw);
           if (!isExpired(entry)) {
-            const splitKey = keys[i].slice(keyPrefix.length + 1).split(SEPERATOR);
+            const splitKey = keys[i]
+              .slice(keyPrefix.length + 1)
+              .split(SEPERATOR);
             yield [splitKey, entry.value];
           }
         } catch {
