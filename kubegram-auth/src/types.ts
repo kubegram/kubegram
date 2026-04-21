@@ -81,6 +81,17 @@ export interface AuthStorage {
 }
 
 /**
+ * Storage adapter interface compatible with OpenAuth.js v0.4.x StorageAdapter.
+ * Uses string array keys with a separator and includes scan for listing entries.
+ */
+export interface StorageAdapter {
+  get(key: string[]): Promise<Record<string, any> | undefined>;
+  remove(key: string[]): Promise<void>;
+  set(key: string[], value: any, expiry?: Date): Promise<void>;
+  scan(prefix: string[]): AsyncIterable<[string[], any]>;
+}
+
+/**
  * Callback invoked after successful OAuth authentication.
  * Use this to create/update users in your database.
  * 
