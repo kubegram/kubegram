@@ -131,17 +131,21 @@ export class LLMProviderFactory {
     // DeepSeek's API is compatible with the OpenAI SDK but requires a different
     // base URL. A placeholder key is used when none is configured so the provider
     // can be instantiated — actual calls will fail with a 401 at runtime.
-    return createOpenAI({
+    // DeepSeek only supports Chat Completions, not the v3 Responses API default.
+    const p = createOpenAI({
       apiKey: apiKey || "dummy-key",
       baseURL: config?.baseURL || "https://api.deepseek.com/v1",
     });
+    return (model: string) => p.chat(model as any);
   }
 
   private static createOllamaProvider(config?: ProviderConfig) {
     const baseURL =
       config?.baseURL || this.options.ollamaBaseURL || "http://localhost:11434";
     console.info(`Initializing Ollama provider at ${baseURL}`);
-    return createOpenAI({ apiKey: "not-required", baseURL });
+    // Ollama only supports Chat Completions, not the v3 Responses API default.
+    const p = createOpenAI({ apiKey: "not-required", baseURL });
+    return (model: string) => p.chat(model as any);
   }
 
   private static createOpenRouterProvider(config?: ProviderConfig) {
@@ -150,7 +154,8 @@ export class LLMProviderFactory {
       throw new Error("OPENROUTER_API_KEY is required for OpenRouter provider");
     }
     console.info("Initializing OpenRouter provider");
-    return createOpenAI({
+    // OpenRouter only supports Chat Completions, not the v3 Responses API default.
+    const p = createOpenAI({
       apiKey,
       baseURL: "https://openrouter.ai/api/v1",
       headers: {
@@ -158,6 +163,7 @@ export class LLMProviderFactory {
         "X-Title": "Kubegram",
       },
     });
+    return (model: string) => p.chat(model as any);
   }
 
   static getDefaultModel(provider: ModelProvider): ModelName {
