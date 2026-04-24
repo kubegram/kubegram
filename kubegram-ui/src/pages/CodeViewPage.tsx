@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import KonvaPage from './KonvaPage';
+import JsonCanvasPage from './JsonCanvasPage';
 import CodePanel from '../components/CodePanel';
 import JobHistorySidebar from '../components/JobHistorySidebar';
 import { useAppSelector } from '@/store/hooks';
@@ -67,7 +67,7 @@ const CodeViewPage: React.FC<CodeViewPageProps> = ({
 
             {/* Canvas Area - flexible width */}
             <div className="flex-1 min-w-0">
-                <KonvaPage
+                <JsonCanvasPage
                     isSidebarCollapsed={isSidebarCollapsed}
                     isHeaderCollapsed={isHeaderCollapsed}
                     onNodeSelect={setSelectedNodeId}

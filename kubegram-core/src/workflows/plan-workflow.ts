@@ -18,7 +18,7 @@ import { createLLMProvider, LLMProviderFactory } from "../llm/providers.js";
 import type { LLMRouter } from "../llm/router.js";
 import { validateGraph } from "../utils/codegen.js";
 import { type GraphNode } from "../types/graph.js";
-import { GraphType } from "../types/enums.js";
+import { GraphType, ConnectionType } from "../types/enums.js";
 import type { StepHandler, WorkflowContext } from "../types/workflow.js";
 import {
   PlanStartedEvent,
@@ -169,21 +169,116 @@ export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
   private async generateGraph(state: PlanState): Promise<PlanState> {
     console.info("Step: generateGraph");
 
-    const systemPrompt = `You are an expert infrastructure architect.
-Create a JSON representation of the infrastructure required for the user's request.
-The output must be a valid JSON object with a 'nodes' array and an optional 'edges' array.
-Each node must have: id (uuid), name, nodeType (from enums: MICROSERVICE, DATABASE, CACHE, QUEUE, KUBERNETES_CLUSTER, etc.),
-and optional spec object.
+    const systemPrompt = `You are an expert Kubernetes infrastructure architect.
 
-Example output:
+Given a user's application description, produce a JSON object representing a complete
+Kubernetes graph. Use concrete Kubernetes primitives — not abstract application-level
+concepts. The JSON must have:
+  - "name":        string (short graph name)
+  - "description": string
+  - "nodes":       array of node objects
+  - "edges":       array of edge objects
+
+──────────────────────────────────────────
+NODE OBJECT SCHEMA
+──────────────────────────────────────────
 {
-  "name": "My Graph",
-  "description": "Graph description",
-  "nodes": [
-    { "id": "uuid1", "name": "api-service", "nodeType": "MICROSERVICE", "spec": { "language": "typescript" } },
-    { "id": "uuid2", "name": "main-db", "nodeType": "DATABASE", "spec": { "engine": "postgres" } }
-  ]
-}`;
+  "id":       "<uuid-v4>",
+  "name":     "<kebab-case Kubernetes resource name>",
+  "nodeType": "<one of the allowed types below>",
+  "spec":     { <type-specific fields — see below> }
+}
+
+Allowed nodeType values (use ONLY these exact strings):
+  Workloads:   DEPLOYMENT, STATEFULSET, DAEMONSET, JOB, CRONJOB
+  Pods:        POD
+  Networking:  SERVICE, INGRESS, ENDPOINT, NETWORKPOLICY
+  Config:      CONFIGMAP, SECRET
+  Storage:     PERSISTENTVOLUMECLAIM, PERSISTENTVOLUME, STORAGECLASS, VOLUME
+  RBAC:        SERVICEACCOUNT, ROLE, ROLEBINDING, CLUSTERROLE, CLUSTERROLEBINDING
+  Scaling:     HORIZONTALPODAUTOSCALER, VERTICALPODAUTOSCALER
+  Reliability: PODDISRUPTIONBUDGET
+  Cluster:     NAMESPACE, NODE, RESOURCEQUOTA, LIMITRANGE
+  External:    EXTERNAL_DEPENDENCY
+  Custom:      CUSTOMRESOURCEDEFINITION
+
+──────────────────────────────────────────
+DECOMPOSITION RULES — apply in order
+──────────────────────────────────────────
+1. Every user-facing HTTP/gRPC service → DEPLOYMENT + SERVICE + INGRESS (+ CONFIGMAP, SECRET as needed)
+2. Every stateful workload (database, cache, queue) → STATEFULSET + SERVICE + PERSISTENTVOLUMECLAIM + SECRET + CONFIGMAP
+3. Every background worker / batch job → DEPLOYMENT (long-running) or JOB/CRONJOB (finite)
+4. Every DEPLOYMENT/STATEFULSET that reads config → a CONFIGMAP node wired with CONFIGURES
+5. Every DEPLOYMENT/STATEFULSET that reads credentials → a SECRET node wired with CONFIGURES
+6. Every STATEFULSET with persistence → a PERSISTENTVOLUMECLAIM node wired with BINDS
+7. Namespace scope: wrap all workloads in a NAMESPACE node (one per logical environment)
+8. If auto-scaling is required → add a HORIZONTALPODAUTOSCALER wired with SCALES to the DEPLOYMENT
+9. If the workload needs a service account with specific permissions → add SERVICEACCOUNT + ROLE + ROLEBINDING
+
+──────────────────────────────────────────
+SPEC FIELDS BY NODE TYPE
+──────────────────────────────────────────
+DEPLOYMENT / STATEFULSET / DAEMONSET:
+  { "image": "repo/name:tag", "replicas": 2, "containerPort": 8080,
+    "resources": { "requests": { "cpu": "100m", "memory": "128Mi" },
+                   "limits":   { "cpu": "500m", "memory": "512Mi" } },
+    "labels": { "app": "name" } }
+
+SERVICE:
+  { "type": "ClusterIP|NodePort|LoadBalancer", "port": 80, "targetPort": 8080,
+    "selector": { "app": "name" } }
+
+INGRESS:
+  { "host": "api.example.com", "path": "/", "servicePort": 80,
+    "tls": true, "ingressClass": "nginx" }
+
+CONFIGMAP:
+  { "data": { "KEY": "value" } }
+
+SECRET:
+  { "type": "Opaque|kubernetes.io/tls", "keys": ["DB_PASSWORD", "API_KEY"] }
+
+PERSISTENTVOLUMECLAIM:
+  { "storageClass": "standard", "accessMode": "ReadWriteOnce", "storage": "10Gi" }
+
+HORIZONTALPODAUTOSCALER:
+  { "minReplicas": 2, "maxReplicas": 10, "targetCPUUtilizationPercentage": 70 }
+
+NAMESPACE:
+  { "labels": { "env": "production" } }
+
+──────────────────────────────────────────
+EDGE OBJECT SCHEMA
+──────────────────────────────────────────
+{
+  "from":           "<source node id>",
+  "to":             "<target node id>",
+  "connectionType": "<one of the allowed values below>"
+}
+
+Allowed connectionType values:
+  INGRESS_ROUTES_TO_SERVICE  — Ingress → Service
+  SERVICE_EXPOSES_POD        — Service → Deployment or Service → Pod
+  MANAGES                    — Deployment/StatefulSet → ReplicaSet/Pod
+  CONFIGURES                 — ConfigMap or Secret → any workload
+  CLAIMS                     — PersistentVolumeClaim → PersistentVolume
+  BINDS                      — StatefulSet → PersistentVolumeClaim
+  SCALES                     — HPA → Deployment or StatefulSet
+  AUTHENTICATES              — ServiceAccount → workload
+  AUTHORIZES                 — RoleBinding/ClusterRoleBinding → Role/ClusterRole
+  BELONGS_TO                 — workload → Namespace
+  MONITORS                   — Monitoring node → any workload
+  DEPENDS_ON                 — generic cross-service dependency
+  CONNECTS_TO                — fallback for unlisted relationships
+
+──────────────────────────────────────────
+OUTPUT RULES
+──────────────────────────────────────────
+- Output ONLY the raw JSON object. No markdown, no explanation, no code fences.
+- Every id must be a valid UUID v4.
+- Every edge must reference ids that exist in the nodes array.
+- Do not use abstract types (MICROSERVICE, DATABASE, CACHE, MESSAGE_QUEUE) unless
+  there is absolutely no appropriate K8s primitive — in that case use EXTERNAL_DEPENDENCY.`;
 
     let userPrompt = `Request: ${state.userRequest}\n\nExisting Context: ${state.planContext.join("\n")}`;
 
@@ -220,14 +315,35 @@ Please modify the existing graph or add to it based on the request. Preserve exi
       }),
     );
 
+    // Wire up edges from the LLM's flat edge list, using the LLM-returned connectionType
+    const validConnectionTypes = new Set<string>(Object.values(ConnectionType));
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    for (const edge of generatedData.edges ?? []) {
+      const from = edge.from ?? edge.fromNode ?? edge.source;
+      const to = edge.to ?? edge.toNode ?? edge.target;
+      const source = nodeMap.get(from);
+      const target = nodeMap.get(to);
+      if (source && target) {
+        const rawType = edge.connectionType as string | undefined;
+        const resolvedType: ConnectionType =
+          rawType && validConnectionTypes.has(rawType)
+            ? (rawType as ConnectionType)
+            : ConnectionType.CONNECTS_TO;
+        (source.edges ??= []).push({
+          connectionType: resolvedType,
+          node: target,
+        });
+      }
+    }
+
     state.graph = {
-      id: uuidv4(),
+      id: state.graph?.id || uuidv4(),
       name: generatedData.name || "Generated Graph",
       description: generatedData.description || "Generated from user request",
-      graphType: GraphType.MICROSERVICE,
+      graphType: GraphType.KUBERNETES,
       nodes,
-      companyId: "",
-      userId: "",
+      companyId: state.graph?.companyId ?? "",
+      userId: state.graph?.userId ?? "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

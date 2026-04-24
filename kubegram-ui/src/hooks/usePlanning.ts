@@ -33,11 +33,15 @@ export const usePlanning = (): UsePlanningReturn => {
             setPlanResult(null);
 
             try {
-                console.log('🚀 Initiating plan generation...', {
-                    graphId: graph.id,
-                    nodeCount: graph.nodes?.length || 0,
-                    userRequest: userRequest || '(none)',
-                });
+                console.group('🚀 Plan request');
+                console.log('userRequest:', userRequest || '(none)');
+                console.log('provider:', provider ?? '(default)', '| model:', model ?? '(default)');
+                console.log('graph — id:', graph.id, '| name:', graph.name, '| nodes:', graph.nodes?.length ?? 0);
+                if (graph.nodes?.length) {
+                    console.table(graph.nodes.map(n => ({ id: n?.id, name: n?.name, type: n?.nodeType })));
+                }
+                console.log('full payload:', { graph, userRequest, modelProvider: provider, modelName: model });
+                console.groupEnd();
 
                 // Initialize plan job
                 const jobStatus: PlanJobStatus = await initializePlan(
@@ -54,14 +58,21 @@ export const usePlanning = (): UsePlanningReturn => {
                 const response = await pollPlanCompletion(jobStatus.jobId);
 
                 if (response.result) {
-                    console.log('✅ Plan completed successfully');
+                    const { graph, context } = response.result;
+                    console.group('✅ Plan completed');
+                    console.log('Job status:', response.job);
+                    console.log('Graph — id:', graph.id, '| name:', graph.name, '| nodes:', graph.nodes?.length ?? 0);
+                    if (graph.nodes?.length) {
+                        console.table(graph.nodes.map(n => ({ id: n?.id, name: n?.name, type: n?.nodeType })));
+                    }
+                    console.log('Context (%d items):', context.length);
+                    context.forEach((item, i) => console.log(`  [${i + 1}]`, item));
+                    console.groupEnd();
                     setPlanResult(response.result);
 
-                    // Navigate to compare view with plan results
-                    navigate('/compare', {
+                    navigate('/plan-view', {
                         state: {
                             planResult: response.result,
-                            sourceGraph: graph,
                         },
                     });
                 } else {

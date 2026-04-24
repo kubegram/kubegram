@@ -7,7 +7,6 @@ import { fetchAuthProviders } from '../../api/userApi';
 import { setCurrentTeam } from '../team/teamSlice';
 import { setCurrentOrganization } from '../organization/organizationSlice';
 import { setCurrentCompany } from '../company/companySlice';
-import { authClient, CALLBACK_URL } from '@/lib/auth/client';
 
 // Use relative URL in development to leverage Vite proxy (avoids CORS)
 // Use full URL in production
@@ -17,6 +16,7 @@ export const initiateLogin = createAsyncThunk(
   'oauth/initiateLogin',
   async (provider: OAuthProvider | null, { rejectWithValue }) => {
     try {
+      console.log('Initiating login with provider:', provider);
       const currentPath = window.location.pathname + window.location.search;
       if (!currentPath.includes('/oauth/callback')) {
         localStorage.setItem('oauth_redirect_path', currentPath);
@@ -33,21 +33,17 @@ export const initiateLogin = createAsyncThunk(
         return { initiated: true };
       }
 
-      // For OAuth providers (github, google, etc.), use PKCE client-side flow
-      const { url, challenge } = await authClient.authorize(
-        CALLBACK_URL,
-        'code',
-        {
-          pkce: true,
-          provider,
-        }
-      );
-
-      sessionStorage.setItem('pkce_challenge', JSON.stringify(challenge));
-      window.location.href = url;
+      // For OAuth providers (github, google, etc.), navigate to backend — backend owns the full OAuth flow
+      // Note: The server injects client_id from OAuth provider config (appConfig.getOauthProviderConfig)
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8090';
+      const callbackUrl = `${backendUrl}/oauth/callback`;
+      const state = crypto.randomUUID();
+      const authorizeUrl = `${backendUrl}/oauth/authorize?provider=${provider}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&state=${state}`;
+      window.location.href = authorizeUrl;
 
       return { initiated: true };
     } catch (error: unknown) {
+      console.error('Failed to initiate login:', error);
       return rejectWithValue((error as Error).message || 'Failed to initiate login');
     }
   }

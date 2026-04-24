@@ -8,6 +8,7 @@ import {
   ChevronUp,
   Search,
   RotateCcw,
+  Trash2,
   Minus,
   MoreHorizontal,
   MoveRight,
@@ -28,6 +29,7 @@ interface KonvaToolbarProps {
   onToggleCollapse?: () => void;
   onRestore?: () => void;
   canRestore?: boolean;
+  onClearCanvas?: () => void;
   onToggleAISuggestions?: () => void;
   isAISuggestionsEnabled?: boolean;
 }
@@ -46,6 +48,7 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
     onToggleCollapse,
     onRestore,
     canRestore = false,
+    onClearCanvas,
     onToggleAISuggestions,
     isAISuggestionsEnabled = true,
   }) => {
@@ -322,6 +325,19 @@ const KonvaToolbar: React.FC<KonvaToolbarProps> = memo(
                 title="Undo: Restore Previous Graph"
               >
                 <RotateCcw className="w-4 h-4" />
+              </Button>
+            )}
+
+            {/* Clear Canvas Button */}
+            {onClearCanvas && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearCanvas}
+                className="h-8 w-8 p-0 hover:bg-gray-700 text-red-400 hover:text-red-300"
+                title="Clear Canvas"
+              >
+                <Trash2 className="w-4 h-4" />
               </Button>
             )}
 

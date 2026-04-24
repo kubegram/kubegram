@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import KonvaPage from './KonvaPage';
+import JsonCanvasPage from './JsonCanvasPage';
 import { useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,6 +19,24 @@ interface LocationState {
 
 type TabType = 'spec' | 'context';
 
+function contextToMarkdown(context: string[]): string {
+  const changes = context.filter(s => !s.startsWith('Assumption:') && !s.startsWith('Recommendation:'));
+  const assumptions = context.filter(s => s.startsWith('Assumption:'));
+  const recommendations = context.filter(s => s.startsWith('Recommendation:'));
+
+  const lines: string[] = ['# Infrastructure Plan\n'];
+  if (changes.length) {
+    lines.push('## Planned Changes\n', ...changes.map(s => `- ${s}`), '');
+  }
+  if (assumptions.length) {
+    lines.push('## Assumptions\n', ...assumptions.map(s => `- ${s.replace(/^Assumption:\s*/, '')}`), '');
+  }
+  if (recommendations.length) {
+    lines.push('## Recommendations\n', ...recommendations.map(s => `- ${s.replace(/^Recommendation:\s*/, '')}`), '');
+  }
+  return lines.join('\n');
+}
+
 const PlanViewPage: React.FC<PlanViewPageProps> = ({
   isSidebarCollapsed = false,
   isHeaderCollapsed = false,
@@ -29,7 +47,12 @@ const PlanViewPage: React.FC<PlanViewPageProps> = ({
 
   // Resolve plan data: from route state or mock data in preview mode
   const [planResult, setPlanResult] = useState<PlanResult | null>(locationState?.planResult ?? null);
-  const [planMarkdown, setPlanMarkdown] = useState<string>(locationState?.planMarkdown ?? '');
+  const [planMarkdown, setPlanMarkdown] = useState<string>(
+    locationState?.planMarkdown ??
+    (locationState?.planResult?.context?.length
+      ? contextToMarkdown(locationState.planResult.context)
+      : '')
+  );
 
   // Load mock data in preview mode if no route state
   React.useEffect(() => {
@@ -55,7 +78,7 @@ const PlanViewPage: React.FC<PlanViewPageProps> = ({
             </span>
           </div>
         </div>
-        <KonvaPage
+        <JsonCanvasPage
           isSidebarCollapsed={isSidebarCollapsed}
           isHeaderCollapsed={isHeaderCollapsed}
           initialGraphData={planGraph}

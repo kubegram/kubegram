@@ -105,6 +105,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, isLoading }) =
 
   const handleOAuthLogin = async (provider: OAuthProvider) => {
     try {
+      console.log('Logging in with provider:', provider);
       await dispatch(initiateLogin(provider) as any);
     } catch (error: any) {
       console.error(`OAuth login failed for ${provider}:`, error);
