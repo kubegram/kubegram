@@ -119,7 +119,9 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
     // Hydrate canvas from project graph (on first load or after a switch)
     if ((isFirstLoad || isProjectSwitch) && project.graph && !initialGraphData) {
       const graph = project.graph as any;
-      const projectNodes = (graph.nodes || []);
+      const projectNodes = (graph.nodes || []).filter(
+        (n: any) => typeof n.x === 'number' && typeof n.y === 'number'
+      );
       const projectArrows = (graph.arrows || []);
       
       // Convert to JSON Canvas format for JsonCanvasEditor
@@ -138,6 +140,21 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id]);
+
+  // Hydrate from initialGraphData prop (used by CompareViewPage, PlanViewPage)
+  useEffect(() => {
+    if (!initialGraphData) return;
+    const jsonCanvasData = convertCanvasGraphToJsonCanvas({
+      nodes: (initialGraphData.nodes?.filter((n): n is NonNullable<typeof n> => !!n) ?? []),
+      arrows: (initialGraphData.arrows?.filter((a): a is NonNullable<typeof a> => !!a) ?? []),
+    });
+    jsonCanvasState.loadJsonCanvas(jsonCanvasData);
+    const convertedData = convertJsonCanvasToCanvasGraph(jsonCanvasData);
+    dispatch(setNodes(convertedData.nodes));
+    dispatch(setArrows(convertedData.arrows));
+    setHasHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialGraphData]);
 
   // Initialize graph conversion - this will trigger conversion when canvas changes
   const { graph, isInitialized, canvasGraph } = useGraphConversion();
@@ -280,8 +297,18 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
   }, [canvasGraph, project, user, selectedLlmProvider, selectedLlmModel, generateCode]);
 
   const handleAIGeneratePlan = useCallback((userRequest?: string) => {
+    const currentData = convertJsonCanvasToCanvasGraph(jsonCanvasState.jsonCanvas);
+    const visibleNodes = currentData.nodes.filter(
+      n => typeof n.x === 'number' && typeof n.y === 'number'
+    );
+    const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+    const visibleArrows = currentData.arrows.filter(
+      a => visibleNodeIds.has(a.startNodeId) && visibleNodeIds.has(a.endNodeId)
+    );
     const graphForPlan = {
-      ...canvasGraph,
+      ...currentData,
+      nodes: visibleNodes,
+      arrows: visibleArrows,
       id: project?.graph?.id ?? 'temp-id',
       name: project?.graph?.name ?? 'Temp Graph',
       companyId: project?.graph?.companyId ?? user?.id ?? '1',
@@ -289,10 +316,14 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
       graphType: project?.graph?.graphType ?? GraphQL.GraphType.Kubernetes,
     };
     generatePlan(graphForPlan, userRequest, selectedLlmProvider, selectedLlmModel);
-  }, [canvasGraph, project, user, selectedLlmProvider, selectedLlmModel, generatePlan]);
+  }, [jsonCanvasState.jsonCanvas, project, user, selectedLlmProvider, selectedLlmModel, generatePlan]);
 
   const handleRestoreGraph = useCallback(() => {
     dispatch(restorePreviousGraph());
+  }, [dispatch]);
+
+  const handleClearCanvas = useCallback(() => {
+    dispatch(resetCanvas());
   }, [dispatch]);
 
   // Handler for name update
@@ -744,6 +775,7 @@ const JsonCanvasPage: React.FC<JsonCanvasPageProps> = ({
           onToggleCollapse={handleToggleToolbar}
           onRestore={handleRestoreGraph}
           canRestore={!!previousGraph}
+          onClearCanvas={handleClearCanvas}
         />
       )}
 

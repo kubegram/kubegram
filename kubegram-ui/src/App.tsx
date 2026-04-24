@@ -264,11 +264,11 @@ const AppContent: React.FC = () => {
 
           <Route path="/home" element={<HomePage />} />
 
-          {/* Main App Routes - KonvaPage now handles auth internally */}
+          {/* Main App Routes */}
           <Route
             path="/app"
             element={
-              <KonvaPage
+              <JsonCanvasPage
                 isSidebarCollapsed={isSidebarCollapsed}
                 isHeaderCollapsed={isHeaderCollapsed}
               />
@@ -313,6 +313,19 @@ const AppContent: React.FC = () => {
                   isSidebarCollapsed={isSidebarCollapsed}
                   isHeaderCollapsed={isHeaderCollapsed}
                 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/plan-view"
+            element={
+              <ProtectedRoute>
+                <React.Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
+                  <PlanViewPage
+                    isSidebarCollapsed={isSidebarCollapsed}
+                    isHeaderCollapsed={isHeaderCollapsed}
+                  />
+                </React.Suspense>
               </ProtectedRoute>
             }
           />
@@ -364,7 +377,7 @@ const AppContent: React.FC = () => {
               <Route
                 path="/preview/canvas"
                 element={
-                  <KonvaPage
+                  <JsonCanvasPage
                     isSidebarCollapsed={isSidebarCollapsed}
                     isHeaderCollapsed={isHeaderCollapsed}
                   />

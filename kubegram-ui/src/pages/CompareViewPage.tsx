@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import KonvaPage from './KonvaPage';
+import JsonCanvasPage from './JsonCanvasPage';
 import { useAppDispatch } from '@/store/hooks';
 import { updateGraph, saveCurrentAsPrevious } from '@/store/slices/project/projectSlice';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -161,8 +161,7 @@ const CompareViewPage: React.FC<CompareViewPageProps> = ({
                             Back to Edit
                         </Button>
                     </div>
-                    {/* Default KonvaPage tracks Redux state (Local) */}
-                    <KonvaPage
+                    <JsonCanvasPage
                         isSidebarCollapsed={isSidebarCollapsed}
                         isHeaderCollapsed={isHeaderCollapsed}
                         codePanelMode="sidebar"
@@ -197,7 +196,7 @@ const CompareViewPage: React.FC<CompareViewPageProps> = ({
                         </Button>
                     </div>
                     {/* Pass initialGraphData to show Remote content */}
-                    <KonvaPage
+                    <JsonCanvasPage
                         isSidebarCollapsed={isSidebarCollapsed}
                         isHeaderCollapsed={isHeaderCollapsed}
                         initialGraphData={remoteGraph}
