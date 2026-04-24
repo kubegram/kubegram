@@ -136,7 +136,7 @@ export class LLMProviderFactory {
       apiKey: apiKey || "dummy-key",
       baseURL: config?.baseURL || "https://api.deepseek.com/v1",
     });
-    return (model: string) => p.chat(model as any);
+    return (model: string) => p.chat(model);
   }
 
   private static createOllamaProvider(config?: ProviderConfig) {
@@ -145,7 +145,7 @@ export class LLMProviderFactory {
     console.info(`Initializing Ollama provider at ${baseURL}`);
     // Ollama only supports Chat Completions, not the v3 Responses API default.
     const p = createOpenAI({ apiKey: "not-required", baseURL });
-    return (model: string) => p.chat(model as any);
+    return (model: string) => p.chat(model);
   }
 
   private static createOpenRouterProvider(config?: ProviderConfig) {
@@ -163,7 +163,7 @@ export class LLMProviderFactory {
         "X-Title": "Kubegram",
       },
     });
-    return (model: string) => p.chat(model as any);
+    return (model: string) => p.chat(model);
   }
 
   static getDefaultModel(provider: ModelProvider): ModelName {
