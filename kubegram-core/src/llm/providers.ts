@@ -53,6 +53,7 @@ export class LLMProviderFactory {
 
   static configure(options: LLMProviderOptions) {
     this.options = options;
+    this.instances.clear();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
