@@ -16,6 +16,7 @@ import { type EventCache, type EventBus } from "@kubegram/events";
 import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
 import type { LLMRouter } from "../llm/router.js";
+import { LLMProviderFactory } from "../llm/providers.js";
 import { buildClientRegistry } from "../llm/baml-registry.js";
 import { b } from "../baml_client/index.js";
 import type {
@@ -121,6 +122,9 @@ export class CodegenWorkflow extends BaseWorkflow<CodegenState, WorkflowStep> {
     context: WorkflowContext,
     options: CodegenWorkflowOptions = {},
   ): Promise<CodegenWorkflowResult> {
+    if (options.llmProviderOptions) {
+      LLMProviderFactory.configure(options.llmProviderOptions);
+    }
     const state = createInitialCodegenState(
       initialGraph,
       options,

@@ -8,6 +8,7 @@ import type { Graph, GraphNode } from "../types/graph.js";
 import type { GeneratedCodeGraph } from "../types/codegen.js";
 import { ModelProvider, ModelName, DEFAULT_MODEL } from "../types/enums.js";
 import type { BaseWorkflowState } from "../types/workflow.js";
+import type { LLMProviderOptions } from "../llm/providers.js";
 
 // Re-export base types
 export type { WorkflowContext, WorkflowEvent } from "../types/workflow.js";
@@ -162,6 +163,8 @@ export interface CodegenWorkflowOptions {
    * Used to compute the "needed nodes" delta. If omitted, all nodes are treated as new.
    */
   existingDbGraph?: Graph | null;
+  /** API keys forwarded to LLMProviderFactory.configure() at run time. */
+  llmProviderOptions?: LLMProviderOptions;
 }
 
 // ---------------------------------------------------------------------------
@@ -202,6 +205,8 @@ export interface PlanWorkflowOptions {
   modelProvider?: ModelProvider;
   modelName?: ModelName;
   graph: Graph;
+  /** API keys forwarded to LLMProviderFactory.configure() at run time. */
+  llmProviderOptions?: LLMProviderOptions;
 }
 
 // ---------------------------------------------------------------------------
@@ -294,6 +299,8 @@ export interface ValidationWorkflowOptions {
   timeout?: number;
   modelProvider?: ModelProvider;
   modelName?: ModelName;
+  /** API keys forwarded to LLMProviderFactory.configure() at run time. */
+  llmProviderOptions?: LLMProviderOptions;
 }
 
 export interface ValidationWorkflowResult {

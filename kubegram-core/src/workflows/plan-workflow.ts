@@ -14,7 +14,7 @@ import { type EventCache, type EventBus } from "@kubegram/events";
 
 import { Checkpointer } from "../types/checkpointer.js";
 import { WorkflowPubSub } from "../state/pubsub.js";
-import { createLLMProvider } from "../llm/providers.js";
+import { createLLMProvider, LLMProviderFactory } from "../llm/providers.js";
 import type { LLMRouter } from "../llm/router.js";
 import { validateGraph } from "../utils/codegen.js";
 import { type GraphNode } from "../types/graph.js";
@@ -91,6 +91,9 @@ export class PlanWorkflow extends BaseWorkflow<PlanState, PlanWorkflowStep> {
     context: WorkflowContext,
     options: PlanWorkflowOptions,
   ): Promise<PlanWorkflowResult> {
+    if (options.llmProviderOptions) {
+      LLMProviderFactory.configure(options.llmProviderOptions);
+    }
     const state = createInitialPlanState(userRequest, options);
 
     // Emit domain event for workflow start
